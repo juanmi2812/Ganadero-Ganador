@@ -1,17 +1,46 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { CheckCircle2 } from "lucide-react";
-import { collection, addDoc } from "firebase/firestore";
-import { db } from "../firebase"; // Asegúrate de que apunte a tu archivo firebase.js
+import { collection, addDoc, onSnapshot } from "firebase/firestore";
+import { db } from "../firebase";
 
 export default function NuevoAnimal() {
   const [exito, setExito] = useState(false);
+  const [vientres, setVientres] = useState([]);
+  const [sementales, setSementales] = useState([]);
+
   const [datosFormulario, setDatosFormulario] = useState({
     arete: "",
-    tipo: "Vientre",
+    tipo: "Desarrollo",
     raza: "",
     peso: "",
     fechaNacimiento: "",
+    madre: "",
+    padre: "",
   });
+
+  // Cargamos las listas de madres y padres existentes
+  useEffect(() => {
+    const cancelarSuscripcion = onSnapshot(
+      collection(db, "animales"),
+      (snapshot) => {
+        const lista = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setVientres(
+          lista.filter(
+            (a) => a.tipo === "Vientre" && !a.estado?.includes("Baja")
+          )
+        );
+        setSementales(
+          lista.filter(
+            (a) => a.tipo === "Semental" && !a.estado?.includes("Baja")
+          )
+        );
+      }
+    );
+    return () => cancelarSuscripcion();
+  }, []);
 
   const manejarCambio = (e) => {
     setDatosFormulario({ ...datosFormulario, [e.target.name]: e.target.value });
@@ -20,36 +49,34 @@ export default function NuevoAnimal() {
   const guardarAnimal = async (e) => {
     e.preventDefault();
 
-    // Armamos el objeto con los datos del formulario
     const animalNuevo = {
       arete: datosFormulario.arete,
       tipo: datosFormulario.tipo,
       raza: datosFormulario.raza,
       peso: `${datosFormulario.peso} kg`,
+      madre: datosFormulario.madre, // Guardamos el arete o ID de la madre
+      padre: datosFormulario.padre, // Guardamos el arete o ID del padre
       estado: "Sano",
-      fechaRegistro: new Date().toISOString(), // Registra la fecha y hora exactas
+      fechaRegistro: new Date().toISOString(),
     };
 
     try {
-      // AQUÍ OCURRE LA MAGIA: Guardamos directo en la colección "animales" de Firebase
       await addDoc(collection(db, "animales"), animalNuevo);
-
       setExito(true);
-
-      // Ocultar mensaje de éxito después de 3 segundos y limpiar formulario
       setTimeout(() => {
         setExito(false);
         setDatosFormulario({
           arete: "",
-          tipo: "Vientre",
+          tipo: "Desarrollo",
           raza: "",
           peso: "",
           fechaNacimiento: "",
+          madre: "",
+          padre: "",
         });
       }, 3000);
     } catch (error) {
-      console.error("Error al guardar en Firebase:", error);
-      alert("Hubo un error al guardar. Revisa la consola de CodeSandbox.");
+      console.error(error);
     }
   };
 
@@ -58,8 +85,8 @@ export default function NuevoAnimal() {
       <div className="header">
         <h1>Registrar Nuevo Animal</h1>
         <p>
-          Captura los datos iniciales de un nuevo vientre, semental o cría en
-          desarrollo.
+          Vincula crías con sus progenitores para llevar la trazabilidad
+          genética.
         </p>
       </div>
 
@@ -73,7 +100,7 @@ export default function NuevoAnimal() {
             style={{ marginBottom: "20px" }}
           >
             <CheckCircle2 size={20} />
-            <span>¡Animal guardado en la nube exitosamente!</span>
+            <span>¡Animal y parentesco registrados en la nube!</span>
           </div>
         )}
 
@@ -90,7 +117,6 @@ export default function NuevoAnimal() {
               <input
                 type="text"
                 name="arete"
-                placeholder="Ej. MX-099"
                 value={datosFormulario.arete}
                 onChange={manejarCambio}
                 required
@@ -103,16 +129,10 @@ export default function NuevoAnimal() {
                 name="tipo"
                 value={datosFormulario.tipo}
                 onChange={manejarCambio}
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  borderRadius: "6px",
-                  border: "1px solid #d1d5db",
-                }}
               >
-                <option value="Vientre">Vientre (Hembra reproductiva)</option>
-                <option value="Semental">Semental</option>
-                <option value="Desarrollo">Desarrollo (Cría/Becerro)</option>
+                <option value="Desarrollo">Desarrollo (Cría)</option>
+                <option value="Vientre">Vientre (Hembra)</option>
+                <option value="Semental">Semental (Macho)</option>
               </select>
             </div>
 
@@ -121,7 +141,6 @@ export default function NuevoAnimal() {
               <input
                 type="text"
                 name="raza"
-                placeholder="Ej. Angus..."
                 value={datosFormulario.raza}
                 onChange={manejarCambio}
                 required
@@ -133,11 +152,55 @@ export default function NuevoAnimal() {
               <input
                 type="number"
                 name="peso"
-                placeholder="Ej. 250"
                 value={datosFormulario.peso}
                 onChange={manejarCambio}
                 required
               />
+            </div>
+
+            {/* SELECCIÓN DE PADRES */}
+            <div className="input-group">
+              <label>Madre (Vientre)</label>
+              <select
+                name="madre"
+                value={datosFormulario.madre}
+                onChange={manejarCambio}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  borderRadius: "6px",
+                  border: "1px solid #d1d5db",
+                }}
+              >
+                <option value="">-- Seleccionar --</option>
+                {vientres.map((v) => (
+                  <option key={v.id} value={v.arete}>
+                    {v.arete} ({v.raza})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="input-group">
+              <label>Padre (Semental)</label>
+              <select
+                name="padre"
+                value={datosFormulario.padre}
+                onChange={manejarCambio}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  borderRadius: "6px",
+                  border: "1px solid #d1d5db",
+                }}
+              >
+                <option value="">-- Seleccionar --</option>
+                {sementales.map((s) => (
+                  <option key={s.id} value={s.arete}>
+                    {s.arete} ({s.raza})
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="input-group" style={{ gridColumn: "span 2" }}>
@@ -147,7 +210,6 @@ export default function NuevoAnimal() {
                 name="fechaNacimiento"
                 value={datosFormulario.fechaNacimiento}
                 onChange={manejarCambio}
-                required
               />
             </div>
           </div>
@@ -157,7 +219,7 @@ export default function NuevoAnimal() {
             className="btn-primary"
             style={{ marginTop: "24px" }}
           >
-            Guardar Registro
+            Guardar con Genealogía
           </button>
         </form>
       </div>
