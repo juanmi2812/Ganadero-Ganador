@@ -7,6 +7,8 @@ import {
   Baby,
   Scale,
   AlertTriangle,
+  TrendingUp,
+  Calendar,
 } from "lucide-react";
 import {
   collection,
@@ -71,20 +73,58 @@ export default function DashboardGanado() {
     return () => cancelarEventos();
   }, [animalActivo]);
 
-  // --- LÓGICA DE FILTRADO ACTUALIZADA ---
+  // --- LÓGICA DE CÁLCULO DE PESO (KPIs) ---
+  const obtenerEstadisticasPeso = () => {
+    if (!animalActivo || !historialEventos.length) return null;
+
+    // 1. Limpiar el peso inicial (quitar "kg" si existe y convertir a número)
+    const pesoInicial =
+      parseFloat(animalActivo.peso?.replace(/[^0-9.]/g, "")) || 0;
+    const fechaInicial = new Date(
+      animalActivo.fechaRegistro || animalActivo.fechaNacimiento
+    );
+
+    // 2. Filtrar solo eventos de repeso y ordenar por fecha (el más reciente primero)
+    const repesos = historialEventos
+      .filter((ev) => ev.tipo === "Repeso")
+      .map((ev) => ({
+        peso: parseFloat(ev.resultado?.replace(/[^0-9.]/g, "")),
+        fecha: new Date(ev.fecha),
+      }))
+      .sort((a, b) => b.fecha - a.fecha);
+
+    if (repesos.length === 0)
+      return { actual: pesoInicial, gananciaTotal: 0, gdp: 0 };
+
+    const pesoActual = repesos[0].peso;
+    const fechaActual = repesos[0].fecha;
+
+    // 3. Cálculo de Ganancia Total
+    const gananciaTotal = pesoActual - pesoInicial;
+
+    // 4. Cálculo de GDP (Ganancia Diaria de Peso)
+    const diffTiempo = Math.abs(fechaActual - fechaInicial);
+    const diasTranscurridos =
+      Math.ceil(diffTiempo / (1000 * 60 * 60 * 24)) || 1;
+    const gdp = gananciaTotal / diasTranscurridos;
+
+    return {
+      actual: pesoActual,
+      gananciaTotal: gananciaTotal.toFixed(2),
+      gdp: gdp.toFixed(3),
+      dias: diasTranscurridos,
+    };
+  };
+
+  const stats = obtenerEstadisticasPeso();
+
   const ganadoFiltrado = inventario.filter((animal) => {
     const cumpleBusqueda = animal.arete
       ?.toLowerCase()
       .includes(busqueda.toLowerCase());
-
-    // "Todos" ahora incluye activos y bajas
     if (filtroActivo === "Todos") return cumpleBusqueda;
-
-    // "Bajas" solo muestra los que tienen estado de baja
     if (filtroActivo === "Bajas")
       return cumpleBusqueda && animal.estado?.includes("Baja");
-
-    // Los filtros por tipo (Vientre, Semental, etc.) ocultan las bajas por defecto
     return (
       cumpleBusqueda &&
       animal.tipo === filtroActivo &&
@@ -124,27 +164,6 @@ export default function DashboardGanado() {
     }
   };
 
-  const guardarBaja = async (e) => {
-    e.preventDefault();
-    try {
-      const animalRef = doc(db, "animales", animalActivo.id);
-      await updateDoc(animalRef, { estado: `Baja - ${datosBaja.motivo}` });
-      await addDoc(collection(db, "eventos"), {
-        animalId: animalActivo.id,
-        tipo: "Baja del Sistema",
-        resultado: `Motivo: ${datosBaja.motivo}. ${datosBaja.notas}`,
-        fecha: datosBaja.fecha,
-      });
-      setMostrandoBaja(false);
-      setAnimalActivo({
-        ...animalActivo,
-        estado: `Baja - ${datosBaja.motivo}`,
-      });
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
   return (
     <div
       className="dashboard-container"
@@ -152,9 +171,10 @@ export default function DashboardGanado() {
     >
       <div className="header">
         <h1>Mi Ganado</h1>
-        <p>Control de inventario y eventos en tiempo real.</p>
+        <p>Control de inventario y análisis de rendimiento.</p>
       </div>
 
+      {/* FILTROS */}
       <div
         style={{
           display: "flex",
@@ -196,6 +216,7 @@ export default function DashboardGanado() {
         />
       </div>
 
+      {/* GRID DE TARJETAS */}
       <div
         style={{
           display: "grid",
@@ -258,6 +279,7 @@ export default function DashboardGanado() {
         ))}
       </div>
 
+      {/* MODAL EXPEDIENTE CON CÁLCULOS BI */}
       {animalActivo && (
         <div className="modal-overlay" onClick={() => setAnimalActivo(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -271,6 +293,81 @@ export default function DashboardGanado() {
               </button>
             </div>
 
+            {/* --- PANEL DE DESEMPEÑO (KPIs) --- */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "12px",
+                marginBottom: "20px",
+              }}
+            >
+              <div
+                style={{
+                  backgroundColor: "#f0fdf4",
+                  padding: "12px",
+                  borderRadius: "8px",
+                  border: "1px solid #bbf7d0",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    color: "#166534",
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                    marginBottom: "4px",
+                  }}
+                >
+                  <TrendingUp size={14} /> GANANCIA TOTAL
+                </div>
+                <span
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: "bold",
+                    color: "#14532d",
+                  }}
+                >
+                  {stats?.gananciaTotal > 0
+                    ? `+${stats.gananciaTotal} kg`
+                    : "--"}
+                </span>
+              </div>
+              <div
+                style={{
+                  backgroundColor: "#eff6ff",
+                  padding: "12px",
+                  borderRadius: "8px",
+                  border: "1px solid #bfdbfe",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    color: "#1e40af",
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                    marginBottom: "4px",
+                  }}
+                >
+                  <Activity size={14} /> GDP (PROM. DIARIO)
+                </div>
+                <span
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: "bold",
+                    color: "#1e3a8a",
+                  }}
+                >
+                  {stats?.gdp > 0 ? `${stats.gdp} kg/día` : "--"}
+                </span>
+              </div>
+            </div>
+
             <div
               style={{
                 backgroundColor: "#f3f4f6",
@@ -280,49 +377,118 @@ export default function DashboardGanado() {
                 fontSize: "13px",
               }}
             >
-              <strong>Dimensiones:</strong> {animalActivo.raza} |{" "}
-              {animalActivo.tipo} | Peso Inicial: {animalActivo.peso}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "4px",
+                }}
+              >
+                <span>
+                  <strong>Raza:</strong> {animalActivo.raza}
+                </span>
+                <span>
+                  <strong>Peso Inicial:</strong> {animalActivo.peso}
+                </span>
+              </div>
               {animalActivo.madre && (
-                <div style={{ marginTop: "4px" }}>
-                  <strong>Madre:</strong> {animalActivo.madre}
-                </div>
-              )}
-              {animalActivo.padre && (
-                <div style={{ marginTop: "4px" }}>
+                <div>
+                  <strong>Madre:</strong> {animalActivo.madre} |{" "}
                   <strong>Padre:</strong> {animalActivo.padre}
                 </div>
               )}
             </div>
 
-            {!animalActivo.estado?.includes("Baja") &&
-              !mostrandoFormulario &&
-              !mostrandoBaja && (
-                <div
-                  style={{ display: "flex", gap: "12px", marginBottom: "16px" }}
-                >
-                  <button
-                    className="btn-outline"
-                    style={{ flex: 1 }}
-                    onClick={() => setMostrandoFormulario(true)}
-                  >
-                    <Plus size={18} /> Evento
-                  </button>
-                  <button
-                    className="btn-outline"
-                    style={{
-                      flex: 1,
-                      color: "#ef4444",
-                      borderColor: "#ef4444",
-                    }}
-                    onClick={() => setMostrandoBaja(true)}
-                  >
-                    <AlertTriangle size={18} /> Baja
-                  </button>
-                </div>
-              )}
+            {/* BOTONES DE ACCIÓN */}
+            {!animalActivo.estado?.includes("Baja") && !mostrandoFormulario && (
+              <button
+                className="btn-outline"
+                style={{ width: "100%", marginBottom: "16px" }}
+                onClick={() => setMostrandoFormulario(true)}
+              >
+                <Plus size={18} /> Registrar Pesaje o Evento
+              </button>
+            )}
 
-            <h3>Historial</h3>
-            <div style={{ maxHeight: "250px", overflowY: "auto" }}>
+            {/* FORMULARIO EVENTO */}
+            {mostrandoFormulario && (
+              <form
+                onSubmit={guardarEvento}
+                style={{
+                  backgroundColor: "#f9fafb",
+                  padding: "16px",
+                  borderRadius: "8px",
+                  marginBottom: "16px",
+                  border: "1px solid #e5e7eb",
+                }}
+              >
+                <h4 style={{ marginTop: 0, marginBottom: "12px" }}>
+                  Capturar Dato
+                </h4>
+                <div style={{ display: "grid", gap: "12px" }}>
+                  <select
+                    value={datosEvento.tipo}
+                    onChange={(e) =>
+                      setDatosEvento({ ...datosEvento, tipo: e.target.value })
+                    }
+                    style={{ padding: "8px", borderRadius: "4px" }}
+                  >
+                    <option value="Repeso">Repeso (Kilos actualizados)</option>
+                    <option value="Vacunación">Vacunación</option>
+                    <option value="Palpación">Palpación</option>
+                    <option value="Parto">Parto</option>
+                  </select>
+                  <input
+                    type="text"
+                    placeholder={
+                      datosEvento.tipo === "Repeso" ? "Ej: 350" : "Notas..."
+                    }
+                    value={datosEvento.resultado}
+                    onChange={(e) =>
+                      setDatosEvento({
+                        ...datosEvento,
+                        resultado: e.target.value,
+                      })
+                    }
+                    style={{ padding: "8px", borderRadius: "4px" }}
+                    required
+                  />
+                  <input
+                    type="date"
+                    value={datosEvento.fecha}
+                    onChange={(e) =>
+                      setDatosEvento({ ...datosEvento, fecha: e.target.value })
+                    }
+                    style={{ padding: "8px", borderRadius: "4px" }}
+                    required
+                  />
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      type="submit"
+                      className="btn-primary"
+                      style={{ flex: 1, margin: 0 }}
+                    >
+                      Guardar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMostrandoFormulario(false)}
+                      style={{
+                        padding: "8px",
+                        border: "1px solid #ccc",
+                        background: "white",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+
+            <h3>Historial de Campo</h3>
+            <div style={{ maxHeight: "200px", overflowY: "auto" }}>
               {historialEventos.map((ev) => (
                 <div
                   key={ev.id}
@@ -330,9 +496,14 @@ export default function DashboardGanado() {
                     padding: "10px",
                     borderBottom: "1px solid #eee",
                     fontSize: "14px",
+                    display: "flex",
+                    justifyContent: "space-between",
                   }}
                 >
-                  <strong>{ev.tipo}:</strong> {ev.resultado} <br />
+                  <div>
+                    <strong>{ev.tipo}:</strong> {ev.resultado}{" "}
+                    {ev.tipo === "Repeso" ? "kg" : ""}
+                  </div>
                   <span style={{ fontSize: "11px", color: "#9ca3af" }}>
                     {ev.fecha}
                   </span>
