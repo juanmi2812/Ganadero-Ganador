@@ -6,6 +6,7 @@ import NuevoAnimal from "./views/NuevoAnimal";
 import CalendarioAlertas from "./views/CalendarioAlertas";
 import ReportesBI from "./views/ReportesBI"; // <-- 1. IMPORTAMOS EL MÓDULO BI
 import { LogOut } from "lucide-react";
+import logoConvivet from "./assets/logo_convivet.jpg"; // <-- AQUÍ IMPORTAMOS EL LOGO
 import "./styles.css";
 
 export default function App() {
@@ -28,9 +29,18 @@ export default function App() {
         style={{ overflowX: "auto", whiteSpace: "nowrap" }}
       >
         <div
-          style={{ fontWeight: "bold", fontSize: "18px", marginRight: "16px" }}
+          style={{ 
+            fontWeight: "bold", 
+            fontSize: "18px", 
+            marginRight: "16px",
+            display: "flex", 
+            alignItems: "center", 
+            gap: "8px" 
+          }}
         >
-          🐮 Control Ganadero
+          {/* REEMPLAZAMOS LA VACA POR EL LOGO */}
+          <img src={logoConvivet} alt="Logo Convivet" style={{ height: "24px", width: "auto", borderRadius: "4px" }} />
+          Control Ganadero
         </div>
 
         <button

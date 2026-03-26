@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Chrome, Apple } from "lucide-react";
+import logoConvivet from "../assets/logo_convivet.jpg";
 // Importamos las funciones reales de Firebase (comentadas por ahora para que no rompan CodeSandbox sin llaves reales)
 // import { iniciarSesionCorreo, registrarCorreo, iniciarSesionGoogle, iniciarSesionApple } from "../firebase";
 
@@ -52,7 +53,11 @@ export default function Login({ alIniciarSesion }) {
   return (
     <div className="login-wrapper">
       <div className="login-card">
-        <div className="login-logo">🐮</div>
+        <div className="login-logo"><img 
+  src={logoConvivet} 
+  alt="Convivet Logo" 
+  style={{ height: "55px", width: "auto", margin: "0 auto 16px auto", display: "block" }} 
+/></div>
         <h2 style={{ margin: "0 0 8px 0", color: "#111827" }}>
           {esRegistro ? "Crear Nueva Cuenta" : "Control Ganadero"}
         </h2>
