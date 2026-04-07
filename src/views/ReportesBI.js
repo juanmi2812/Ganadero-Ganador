@@ -64,7 +64,7 @@ export default function ReportesBI() {
     if (filtroCategoria !== "Todas" && a.tipo !== filtroCategoria) return false;
     if (filtroGenero !== "Todos" && a.generoFormat !== filtroGenero.toLowerCase()) return false;
     if (filtroAlerta === "Fertilidad" && a.estado !== "Alerta: Revisión de Fertilidad") return false;
-    if (filtroAlerta === "En Venta" && a.estado !== "Disponible para Venta") return false;
+    if (filtroAlerta === "En Venta" && a.estado !== "Disponible para Venta" && a.estado !== "Desecho") return false;
     return true;
   });
 

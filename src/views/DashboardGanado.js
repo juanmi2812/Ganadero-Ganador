@@ -66,7 +66,7 @@ export default function DashboardGanado() {
               if (haParido || mesesDeEdad >= 48) {
                 nuevaCategoria = "Vaca";
                 if (!haParido && mesesDeEdad >= 48) {
-                  if (!nuevoEstado.includes('Baja') && nuevoEstado !== "Alerta: Revisión de Fertilidad") {
+                  if (!nuevoEstado.includes('Baja') && nuevoEstado !== "Desecho" && nuevoEstado !== "Alerta: Revisión de Fertilidad") {
                     nuevoEstado = "Alerta: Revisión de Fertilidad";
                   }
                   if (!animalesConAlerta.has(animal.id)) {
@@ -183,9 +183,9 @@ export default function DashboardGanado() {
 
     if (filtroActivo === "Todos") return true;
     if (filtroActivo === "Bajas") return animal.estado?.includes('Baja');
-    if (filtroActivo === "En Venta") return animal.estado === "Disponible para Venta";
+    if (filtroActivo === "En Venta") return animal.estado === "Disponible para Venta" || animal.estado === "Desecho";
     
-    return animal.tipo === filtroActivo && !animal.estado?.includes('Baja') && animal.estado !== "Disponible para Venta";
+    return animal.tipo === filtroActivo && !animal.estado?.includes('Baja') && animal.estado !== "Disponible para Venta" && animal.estado !== "Desecho";
   });
 
   // --- ACCIONES ---
@@ -246,6 +246,14 @@ export default function DashboardGanado() {
       const animalRef = doc(db, "animales", animalActivo.id);
       await updateDoc(animalRef, { tipo: "Semental", estado: "Sano" });
       setAnimalActivo({ ...animalActivo, tipo: "Semental", estado: "Sano" });
+    } catch (error) { console.error(error); }
+  };
+
+  const marcarDesecho = async () => {
+    try {
+      const animalRef = doc(db, "animales", animalActivo.id);
+      await updateDoc(animalRef, { estado: "Desecho" });
+      setAnimalActivo({ ...animalActivo, estado: "Desecho" });
     } catch (error) { console.error(error); }
   };
 
@@ -385,6 +393,9 @@ export default function DashboardGanado() {
                 <button className="btn-primary" style={{ flex: 1, margin: 0 }} onClick={() => setMostrandoFormulario(!mostrandoFormulario)}>+ Evento</button>
                 {animalActivo.tipo === "Torete" && (
                   <button className="btn-outline" style={{ flex: 1, margin: 0, borderColor: "#3b82f6", color: "#3b82f6" }} onClick={hacerSemental}>🔥 Hacer Semental</button>
+                )}
+                {(["Vaca", "Semental", "Novillona"].includes(animalActivo.tipo)) && animalActivo.estado !== "Desecho" && (
+                  <button className="btn-outline" style={{ flex: 1, margin: 0, borderColor: "#f59e0b", color: "#f59e0b" }} onClick={marcarDesecho}>🗑️ Descartar</button>
                 )}
                 <button className="btn-outline" style={{ color: "#ef4444", borderColor: "#ef4444" }} onClick={() => setMostrandoBaja(true)}><AlertTriangle size={18} /></button>
               </div>
