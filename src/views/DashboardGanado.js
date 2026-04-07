@@ -48,6 +48,7 @@ export default function DashboardGanado() {
             const mesesDeEdad = differenceInMonths(hoy, fechaNac);
             const sexo = animal.sexo ? animal.sexo.toLowerCase() : "";
             let nuevaCategoria = animal.tipo;
+            let nuevoEstado = animal.estado || "Sano";
 
             if (mesesDeEdad < 2) {
               nuevaCategoria = "Lactante";
@@ -64,11 +65,14 @@ export default function DashboardGanado() {
             } else if (sexo === "macho") {
               if (mesesDeEdad >= 12 && animal.tipo !== "Semental") {
                 nuevaCategoria = "Torete";
+                if (!nuevoEstado.includes('Baja') && nuevoEstado !== "Venta") {
+                   nuevoEstado = "Venta"; // Pasa a venta automáticamente
+                }
               }
             }
 
-            if (nuevaCategoria && nuevaCategoria !== animal.tipo) {
-              await updateDoc(doc(db, "animales", animal.id), { tipo: nuevaCategoria });
+            if (nuevaCategoria !== animal.tipo || nuevoEstado !== animal.estado) {
+              await updateDoc(doc(db, "animales", animal.id), { tipo: nuevaCategoria, estado: nuevoEstado });
             }
           }
         } catch (error) {
@@ -189,6 +193,14 @@ export default function DashboardGanado() {
     } catch (error) { console.error(error); }
   };
 
+  const hacerSemental = async () => {
+    try {
+      const animalRef = doc(db, "animales", animalActivo.id);
+      await updateDoc(animalRef, { tipo: "Semental", estado: "Sano" });
+      setAnimalActivo({ ...animalActivo, tipo: "Semental", estado: "Sano" });
+    } catch (error) { console.error(error); }
+  };
+
   return (
     <div className="dashboard-container" style={{ padding: "0 16px", maxWidth: "1200px", margin: "0 auto" }}>
       
@@ -288,6 +300,9 @@ export default function DashboardGanado() {
             {!animalActivo.estado?.includes('Baja') && (
               <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
                 <button className="btn-primary" style={{ flex: 1, margin: 0 }} onClick={() => setMostrandoFormulario(!mostrandoFormulario)}>+ Evento</button>
+                {animalActivo.tipo === "Torete" && (
+                  <button className="btn-outline" style={{ flex: 1, margin: 0, borderColor: "#3b82f6", color: "#3b82f6" }} onClick={hacerSemental}>🔥 Hacer Semental</button>
+                )}
                 <button className="btn-outline" style={{ color: "#ef4444", borderColor: "#ef4444" }} onClick={() => setMostrandoBaja(true)}><AlertTriangle size={18} /></button>
               </div>
             )}
