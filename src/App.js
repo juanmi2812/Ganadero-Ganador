@@ -5,6 +5,7 @@ import DashboardGanado from "./views/DashboardGanado";
 import NuevoAnimal from "./views/NuevoAnimal";
 import CalendarioAlertas from "./views/CalendarioAlertas";
 import ReportesBI from "./views/ReportesBI"; // <-- 1. IMPORTAMOS EL MÓDULO BI
+import ConfiguracionFinanciera from "./views/ConfiguracionFinanciera";
 import { LogOut } from "lucide-react";
 import logoConvivet from "./assets/logo_convivet.jpg"; // <-- AQUÍ IMPORTAMOS EL LOGO
 import "./styles.css";
@@ -77,6 +78,12 @@ export default function App() {
           Excel
         </button>
         <button
+          className={`nav-btn ${vistaActiva === "finanzas" ? "active" : ""}`}
+          onClick={() => setVistaActiva("finanzas")}
+        >
+          Configuración
+        </button>
+        <button
           className="nav-btn"
           onClick={cerrarSesion}
           style={{
@@ -96,6 +103,7 @@ export default function App() {
         {vistaActiva === "nuevo" && <NuevoAnimal />}
         {vistaActiva === "calendario" && <CalendarioAlertas />}
         {vistaActiva === "reportes" && <ReportesBI />}{" "}
+        {vistaActiva === "finanzas" && <ConfiguracionFinanciera />}
         {/* <-- 3. MOSTRAMOS LA VISTA --> */}
       </div>
     </div>

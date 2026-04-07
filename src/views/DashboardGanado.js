@@ -10,6 +10,7 @@ export default function DashboardGanado() {
   const [inventario, setInventario] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [filtroActivo, setFiltroActivo] = useState("Todos");
+  const [config, setConfig] = useState(null); // Finanzas
   
   const [animalActivo, setAnimalActivo] = useState(null);
   const [historialEventos, setHistorialEventos] = useState([]);
@@ -17,7 +18,7 @@ export default function DashboardGanado() {
   const [mostrandoBaja, setMostrandoBaja] = useState(false);
   
   const [datosEvento, setDatosEvento] = useState({ 
-    tipo: "Repeso", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes"
+    tipo: "Repeso", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes", costo: ""
   });
   const [datosBaja, setDatosBaja] = useState({ 
     motivo: "Venta", notas: "", fecha: new Date().toISOString().split('T')[0] 
@@ -124,6 +125,13 @@ export default function DashboardGanado() {
     return () => cancelarEventos();
   }, [animalActivo]);
 
+  useEffect(() => {
+    const cancelarConfig = onSnapshot(doc(db, "configuracion", "financiera"), (docSnap) => {
+      if (docSnap.exists()) setConfig(docSnap.data());
+    });
+    return () => cancelarConfig();
+  }, []);
+
   // --- LÓGICA DE NEGOCIO (BI & CALCULOS) ---
   const obtenerEstadisticasPeso = () => {
     if (!animalActivo) return null;
@@ -151,7 +159,23 @@ export default function DashboardGanado() {
     return { actual: pesoActual, gananciaTotal: gananciaTotal.toFixed(2), gdp: gdp.toFixed(3) };
   };
 
+  const obtenerRentabilidad = () => {
+    if (!animalActivo || !config) return null;
+
+    const fechaInicial = new Date(animalActivo.fechaNacimiento ? animalActivo.fechaNacimiento + "T00:00:00" : (animalActivo.fechaRegistro || new Date()));
+    const diffTiempo = Math.abs(new Date() - fechaInicial);
+    const diasEnRancho = Math.ceil(diffTiempo / (1000 * 60 * 60 * 24)) || 1;
+
+    const tarifaDiaria = config.costoDiario[animalActivo.tipo] || 30;
+    const costoMantenimiento = diasEnRancho * tarifaDiaria;
+    const costoMedicoTotal = historialEventos.reduce((total, ev) => total + (Number(ev.costo) || 0), 0);
+    const costoTotalInvertido = costoMantenimiento + costoMedicoTotal;
+
+    return { costoMantenimiento, costoMedicoTotal, costoTotalInvertido, diasEnRancho };
+  };
+
   const stats = obtenerEstadisticasPeso();
+  const finanzas = obtenerRentabilidad();
 
   const ganadoFiltrado = inventario.filter((animal) => {
     const cumpleBusqueda = animal.arete?.toLowerCase().includes(busqueda.toLowerCase());
@@ -172,7 +196,8 @@ export default function DashboardGanado() {
         animalId: animalActivo.id, 
         tipo: datosEvento.tipo, 
         resultado: datosEvento.resultado, 
-        fecha: datosEvento.fecha 
+        fecha: datosEvento.fecha,
+        costo: Number(datosEvento.costo) || 0
       });
 
       // Actualización directa si el evento nuevo es un Parto (Sube la categoría de inmediato sin esperar refresh)
@@ -201,7 +226,7 @@ export default function DashboardGanado() {
          }
       }
 
-      setDatosEvento({ tipo: "Repeso", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes" });
+      setDatosEvento({ tipo: "Repeso", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes", costo: "" });
       setMostrandoFormulario(false);
     } catch (error) { console.error(error); }
   };
@@ -298,6 +323,40 @@ export default function DashboardGanado() {
               </div>
             </div>
 
+            {/* PANEL FINANCIERO */}
+            {finanzas && (
+              <div style={{ backgroundColor: "#f9fafb", padding: "12px", borderRadius: "8px", border: "1px solid #e5e7eb", marginBottom: "20px" }}>
+                <h3 style={{ fontSize: "13px", color: "#374151", marginBottom: "8px", borderBottom: "1px solid #e5e7eb", paddingBottom: "6px" }}>Análisis de Rentabilidad Acumulada</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  <div>
+                    <span style={{ fontSize: "11px", color: "#6b7280" }}>Mantenimiento ({finanzas.diasEnRancho} días):</span>
+                    <div style={{ fontWeight: "600", color: "#374151", fontSize: "14px" }}>${Math.round(finanzas.costoMantenimiento).toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: "11px", color: "#6b7280" }}>Insumos Médicos:</span>
+                    <div style={{ fontWeight: "600", color: "#374151", fontSize: "14px" }}>${Math.round(finanzas.costoMedicoTotal).toLocaleString()}</div>
+                  </div>
+                </div>
+                <div style={{ 
+                  marginTop: "10px", width: "100%", textAlign: "center", fontSize: "15px", padding: "8px", borderRadius: "6px",
+                  backgroundColor: animalActivo.estado?.includes('Fertilidad') ? "#fee2e2" : "#e0e7ff",
+                  color: animalActivo.estado?.includes('Fertilidad') ? "#b91c1c" : "#4338ca",
+                  border: `1px solid ${animalActivo.estado?.includes('Fertilidad') ? '#f87171' : '#818cf8'}`
+                }}>
+                  <strong>Inversión: ${Math.round(finanzas.costoTotalInvertido).toLocaleString()}</strong>
+                  {animalActivo.estado?.includes('Fertilidad') && <div style={{ fontSize: "11px", marginTop: "4px" }}>Pérdida por infertilidad (Descarte recomendado).</div>}
+                </div>
+                {animalActivo.estado === "Disponible para Venta" && config && (
+                  <div style={{ marginTop: "10px", backgroundColor: "#ecfdf5", padding: "8px", borderRadius: "6px", border: "1px solid #6ee7b7" }}>
+                    <div style={{ fontSize: "11px", color: "#047857" }}>Venta Estimada ({config.pesoPromedioVentaTorete} kg x ${config.precioKiloMercado}): <strong>${(config.pesoPromedioVentaTorete * config.precioKiloMercado).toLocaleString()}</strong></div>
+                    <div style={{ fontSize: "13px", color: "#065f46", fontWeight: "bold", marginTop: "2px" }}>
+                      Utilidad: ${( (config.pesoPromedioVentaTorete * config.precioKiloMercado) - finanzas.costoTotalInvertido ).toLocaleString()}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* GENEALOGÍA (HIJOS) */}
             {(animalActivo.tipo === "Vientre" || animalActivo.tipo === "Semental") && (
               <div style={{ marginBottom: "20px" }}>
@@ -337,13 +396,20 @@ export default function DashboardGanado() {
                 <select value={datosEvento.tipo} onChange={(e) => setDatosEvento({...datosEvento, tipo: e.target.value})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }}>
                   <option value="Repeso">Repeso (Actualizar Kilos)</option>
                   <option value="Palpación">Palpación</option>
-                  <option value="Vacunación">Vacuna</option>
+                  <option value="Vacunación">Vacunación</option>
+                  <option value="Tratamiento Médico">Tratamiento Médico</option>
                   <option value="Parto">Parto</option>
                 </select>
                 <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
                   <input type="date" value={datosEvento.fecha} onChange={(e) => setDatosEvento({...datosEvento, fecha: e.target.value})} style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} required />
-                  <input type="text" placeholder="Resultado (Ej: 350)" value={datosEvento.resultado} onChange={(e) => setDatosEvento({...datosEvento, resultado: e.target.value})} style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} required />
+                  <input type="text" placeholder="Resultado (Ej: Terminado)" value={datosEvento.resultado} onChange={(e) => setDatosEvento({...datosEvento, resultado: e.target.value})} style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} required />
                 </div>
+                
+                {(datosEvento.tipo === "Vacunación" || datosEvento.tipo === "Tratamiento Médico") && (
+                  <div style={{ marginBottom: "10px" }}>
+                    <input type="number" placeholder="Costo del Insumo Médico ($ MXN)" value={datosEvento.costo} onChange={(e) => setDatosEvento({...datosEvento, costo: e.target.value})} style={{ width: "100%", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} />
+                  </div>
+                )}
 
                 <div style={{ marginBottom: "15px" }}>
                   <label style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px", display: "block", fontWeight: "bold" }}>Recordatorio (Para insumos):</label>
@@ -362,7 +428,10 @@ export default function DashboardGanado() {
             <div style={{ maxHeight: "150px", overflowY: "auto" }}>
               {historialEventos.map(ev => (
                 <div key={ev.id} style={{ padding: "8px", borderBottom: "1px solid #eee", fontSize: "13px", display: "flex", justifyContent: "space-between" }}>
-                  <span><strong>{ev.tipo}:</strong> {ev.resultado} {ev.tipo === "Repeso" ? "kg" : ""}</span>
+                  <span>
+                    <strong>{ev.tipo}:</strong> {ev.resultado} {ev.tipo === "Repeso" ? "kg" : ""}
+                    {ev.costo > 0 && <span style={{ color: "#ef4444", marginLeft: "8px", fontSize: "11px" }}>($ {ev.costo})</span>}
+                  </span>
                   <span style={{ color: "#9ca3af" }}>{ev.fecha}</span>
                 </div>
               ))}
