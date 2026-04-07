@@ -11,6 +11,7 @@ export default function NuevoAnimal() {
   const [datosFormulario, setDatosFormulario] = useState({
     arete: "",
     tipo: "Desarrollo",
+    sexo: "Hembra",
     raza: "",
     peso: "",
     fechaNacimiento: "",
@@ -52,8 +53,10 @@ export default function NuevoAnimal() {
     const animalNuevo = {
       arete: datosFormulario.arete,
       tipo: datosFormulario.tipo,
+      sexo: datosFormulario.sexo,
       raza: datosFormulario.raza,
       peso: `${datosFormulario.peso} kg`,
+      fechaNacimiento: datosFormulario.fechaNacimiento,
       madre: datosFormulario.madre, // Guardamos el arete o ID de la madre
       padre: datosFormulario.padre, // Guardamos el arete o ID del padre
       estado: "Sano",
@@ -68,6 +71,7 @@ export default function NuevoAnimal() {
         setDatosFormulario({
           arete: "",
           tipo: "Desarrollo",
+          sexo: "Hembra",
           raza: "",
           peso: "",
           fechaNacimiento: "",
@@ -124,7 +128,7 @@ export default function NuevoAnimal() {
             </div>
 
             <div className="input-group">
-              <label>Tipo de Animal</label>
+              <label>Tipo (Categoría Inicial)</label>
               <select
                 name="tipo"
                 value={datosFormulario.tipo}
@@ -133,6 +137,19 @@ export default function NuevoAnimal() {
                 <option value="Desarrollo">Desarrollo (Cría)</option>
                 <option value="Vientre">Vientre (Hembra)</option>
                 <option value="Semental">Semental (Macho)</option>
+              </select>
+            </div>
+
+            <div className="input-group">
+              <label>Sexo</label>
+              <select
+                name="sexo"
+                value={datosFormulario.sexo}
+                onChange={manejarCambio}
+                required
+              >
+                <option value="Hembra">Hembra</option>
+                <option value="Macho">Macho</option>
               </select>
             </div>
 
@@ -204,12 +221,13 @@ export default function NuevoAnimal() {
             </div>
 
             <div className="input-group" style={{ gridColumn: "span 2" }}>
-              <label>Fecha de Nacimiento</label>
+              <label>Fecha de Nacimiento (Calcula automáticamente la categoría)</label>
               <input
                 type="date"
                 name="fechaNacimiento"
                 value={datosFormulario.fechaNacimiento}
                 onChange={manejarCambio}
+                required
               />
             </div>
           </div>
