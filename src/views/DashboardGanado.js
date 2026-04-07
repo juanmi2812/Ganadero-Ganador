@@ -36,6 +36,11 @@ export default function DashboardGanado() {
           const hembrasConParto = new Set();
           partosSnap.forEach(d => hembrasConParto.add(d.data().animalId));
 
+          const qAlertas = query(collection(db, "alertas"), where("titulo", "==", "Revisión de Fertilidad"));
+          const alertasSnap = await getDocs(qAlertas);
+          const animalesConAlerta = new Set();
+          alertasSnap.forEach(d => animalesConAlerta.add(d.data().animalId));
+
           const hoy = new Date();
           
           for (const animal of inventario) {
@@ -59,14 +64,28 @@ export default function DashboardGanado() {
               const haParido = hembrasConParto.has(animal.id);
               if (haParido || mesesDeEdad >= 48) {
                 nuevaCategoria = "Vaca";
+                if (!haParido && mesesDeEdad >= 48) {
+                  if (!nuevoEstado.includes('Baja') && nuevoEstado !== "Alerta: Revisión de Fertilidad") {
+                    nuevoEstado = "Alerta: Revisión de Fertilidad";
+                  }
+                  if (!animalesConAlerta.has(animal.id)) {
+                    await addDoc(collection(db, "alertas"), {
+                      animalId: animal.id,
+                      areteAnimal: animal.arete,
+                      titulo: "Revisión de Fertilidad",
+                      fechaProgramada: hoy.toISOString().split('T')[0],
+                      completada: false
+                    });
+                  }
+                }
               } else if (mesesDeEdad >= 12 && mesesDeEdad < 48 && !haParido) {
                 nuevaCategoria = "Novillona";
               }
             } else if (sexo === "macho") {
               if (mesesDeEdad >= 12 && animal.tipo !== "Semental") {
                 nuevaCategoria = "Torete";
-                if (!nuevoEstado.includes('Baja') && nuevoEstado !== "Venta") {
-                   nuevoEstado = "Venta"; // Pasa a venta automáticamente
+                if (!nuevoEstado.includes('Baja') && nuevoEstado !== "Disponible para Venta") {
+                   nuevoEstado = "Disponible para Venta"; 
                 }
               }
             }
@@ -136,9 +155,13 @@ export default function DashboardGanado() {
 
   const ganadoFiltrado = inventario.filter((animal) => {
     const cumpleBusqueda = animal.arete?.toLowerCase().includes(busqueda.toLowerCase());
-    if (filtroActivo === "Todos") return cumpleBusqueda;
-    if (filtroActivo === "Bajas") return cumpleBusqueda && animal.estado?.includes('Baja');
-    return cumpleBusqueda && animal.tipo === filtroActivo && !animal.estado?.includes('Baja');
+    if (!cumpleBusqueda) return false;
+
+    if (filtroActivo === "Todos") return true;
+    if (filtroActivo === "Bajas") return animal.estado?.includes('Baja');
+    if (filtroActivo === "En Venta") return animal.estado === "Disponible para Venta";
+    
+    return animal.tipo === filtroActivo && !animal.estado?.includes('Baja') && animal.estado !== "Disponible para Venta";
   });
 
   // --- ACCIONES ---
@@ -208,7 +231,7 @@ export default function DashboardGanado() {
 
       {/* FILTROS RÁPIDOS */}
       <div style={{ display: "flex", gap: "8px", marginBottom: "20px", overflowX: "auto", paddingBottom: "8px" }}>
-        {["Todos", "Vientre", "Semental", "Desarrollo", "Bajas"].map((tipo) => (
+        {["Todos", "Vaca", "Novillona", "Semental", "Torete", "En Venta", "Bajas"].map((tipo) => (
           <button 
             key={tipo} 
             onClick={() => setFiltroActivo(tipo)} 
@@ -293,6 +316,7 @@ export default function DashboardGanado() {
 
             <div style={{ backgroundColor: "#f3f4f6", padding: "12px", borderRadius: "8px", marginBottom: "16px", fontSize: "13px" }}>
               <strong>Info:</strong> {animalActivo.raza} | <strong>Peso Inicial:</strong> {animalActivo.peso} <br/>
+              <strong>Estado Actual:</strong> <span style={{ color: animalActivo.estado?.includes("Alerta") ? "red" : (animalActivo.estado === "Disponible para Venta" ? "orange" : "green") }}>{animalActivo.estado || "Sano"}</span> <br/>
               {animalActivo.madre && <span><strong>Madre:</strong> {animalActivo.madre} | <strong>Padre:</strong> {animalActivo.padre}</span>}
             </div>
 
