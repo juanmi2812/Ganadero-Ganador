@@ -3,7 +3,6 @@ import { collection, onSnapshot, doc } from "firebase/firestore";
 import { db } from "../firebase";
 import { PieChart, Pie, Cell, Tooltip as RTTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 import { AlertCircle, DollarSign, Activity, TrendingUp } from "lucide-react";
-import { differenceInMonths } from "date-fns";
 import Header from "../components/Header";
 
 // Paletas de Colores Dinámicas

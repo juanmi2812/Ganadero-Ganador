@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { CheckCircle2, Settings, DollarSign } from "lucide-react";
+import { CheckCircle2, DollarSign } from "lucide-react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import Header from "../components/Header";
