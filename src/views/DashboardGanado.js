@@ -16,7 +16,7 @@ export default function DashboardGanado() {
   const [mostrandoBaja, setMostrandoBaja] = useState(false);
   
   const [datosEvento, setDatosEvento] = useState({ 
-    tipo: "Repeso", resultado: "", fecha: new Date().toISOString().split('T')[0] 
+    tipo: "Repeso", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes"
   });
   const [datosBaja, setDatosBaja] = useState({ 
     motivo: "Venta", notas: "", fecha: new Date().toISOString().split('T')[0] 
@@ -89,7 +89,29 @@ export default function DashboardGanado() {
         resultado: datosEvento.resultado, 
         fecha: datosEvento.fecha 
       });
-      setDatosEvento({ tipo: "Repeso", resultado: "", fecha: new Date().toISOString().split('T')[0] });
+
+      if (datosEvento.recordatorio && datosEvento.recordatorio !== "Ninguno") {
+         const eventDate = new Date(datosEvento.fecha + "T00:00:00");
+         let reminderDate;
+         if (datosEvento.recordatorio === "1 día antes") {
+            eventDate.setDate(eventDate.getDate() - 1);
+            reminderDate = eventDate.toISOString().split('T')[0];
+         } else if (datosEvento.recordatorio === "1 semana antes") {
+            eventDate.setDate(eventDate.getDate() - 7);
+            reminderDate = eventDate.toISOString().split('T')[0];
+         }
+         
+         if (reminderDate) {
+            await addDoc(collection(db, "alertas"), {
+               fechaProgramada: reminderDate,
+               titulo: `${datosEvento.tipo} de arete ${animalActivo.arete}`,
+               areteAnimal: animalActivo.arete,
+               completada: false
+            });
+         }
+      }
+
+      setDatosEvento({ tipo: "Repeso", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes" });
       setMostrandoFormulario(false);
     } catch (error) { console.error(error); }
   };
@@ -210,13 +232,26 @@ export default function DashboardGanado() {
             {/* FORMULARIO EVENTO */}
             {mostrandoFormulario && (
               <form onSubmit={guardarEvento} style={{ padding: "15px", background: "#f9fafb", borderRadius: "8px", marginBottom: "15px" }}>
-                <select value={datosEvento.tipo} onChange={(e) => setDatosEvento({...datosEvento, tipo: e.target.value})} style={{ width: "100%", marginBottom: "10px", padding: "8px" }}>
+                <select value={datosEvento.tipo} onChange={(e) => setDatosEvento({...datosEvento, tipo: e.target.value})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }}>
                   <option value="Repeso">Repeso (Actualizar Kilos)</option>
                   <option value="Palpación">Palpación</option>
                   <option value="Vacunación">Vacuna</option>
                   <option value="Parto">Parto</option>
                 </select>
-                <input type="text" placeholder="Resultado (Ej: 350)" value={datosEvento.resultado} onChange={(e) => setDatosEvento({...datosEvento, resultado: e.target.value})} style={{ width: "100%", marginBottom: "10px", padding: "8px" }} required />
+                <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+                  <input type="date" value={datosEvento.fecha} onChange={(e) => setDatosEvento({...datosEvento, fecha: e.target.value})} style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} required />
+                  <input type="text" placeholder="Resultado (Ej: 350)" value={datosEvento.resultado} onChange={(e) => setDatosEvento({...datosEvento, resultado: e.target.value})} style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} required />
+                </div>
+
+                <div style={{ marginBottom: "15px" }}>
+                  <label style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px", display: "block", fontWeight: "bold" }}>Recordatorio (Para insumos):</label>
+                  <select value={datosEvento.recordatorio} onChange={(e) => setDatosEvento({...datosEvento, recordatorio: e.target.value})} style={{ width: "100%", padding: "8px", border: "1px solid #86efac", borderRadius: "4px", backgroundColor: "#f0fdf4", color: "#166534", fontWeight: "600" }}>
+                    <option value="Ninguno">Sin recordatorio</option>
+                    <option value="1 día antes">1 día antes</option>
+                    <option value="1 semana antes">1 semana antes (Recomendado)</option>
+                  </select>
+                </div>
+
                 <button type="submit" className="btn-primary" style={{ width: "100%" }}>Guardar Evento</button>
               </form>
             )}
