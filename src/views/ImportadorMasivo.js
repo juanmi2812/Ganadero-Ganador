@@ -141,7 +141,7 @@ export default function ImportadorMasivo() {
       </div>
 
       {/* Zona de arrastrar y soltar archivo */}
-      <label className="upload-box" htmlFor="excel-upload">
+      <label className="upload-box" htmlFor="excel-upload" style={{ display: "block" }}>
         <UploadCloud size={48} color="#9ca3af" style={{ margin: "0 auto" }} />
         <h3 style={{ color: "#374151", marginTop: "16px" }}>
           Haz clic para subir tu Excel
