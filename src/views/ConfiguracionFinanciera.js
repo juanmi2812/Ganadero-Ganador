@@ -40,7 +40,6 @@ export default function ConfiguracionFinanciera() {
       }
     };
     cargarConfig();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const manejarCambioCosto = (categoria, valor) => {
