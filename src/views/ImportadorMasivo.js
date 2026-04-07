@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { UploadCloud, FileSpreadsheet, CheckCircle2, Database } from "lucide-react";
-import { collection, addDoc, query, where, getDocs, limit } from "firebase/firestore";
+import { collection, addDoc, doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 
 export default function ImportadorMasivo() {
@@ -9,20 +9,14 @@ export default function ImportadorMasivo() {
   const [mensajeExito, setMensajeExito] = useState(false);
 
   const [cargandoDemo, setCargandoDemo] = useState(false);
-  const [yaExisteDemo, setYaExisteDemo] = useState(false);
+  const [demoYaGenerada, setDemoYaGenerada] = useState(false);
 
-  React.useEffect(() => {
-    // Revisar si ya existen animales de prueba en la base de datos
+  useEffect(() => {
     const verificarDemo = async () => {
       try {
-        const q = query(collection(db, "animales"), where("esDemo", "==", true), limit(1));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          setYaExisteDemo(true);
-        }
-      } catch (error) {
-        console.error("Error validando demo", error);
-      }
+        const snap = await getDoc(doc(db, "configuracion", "demoGenerada"));
+        if (snap.exists()) setDemoYaGenerada(true);
+      } catch (e) { console.error(e); }
     };
     verificarDemo();
   }, []);
@@ -63,8 +57,7 @@ export default function ImportadorMasivo() {
             fechaNacimiento: restarMesesAFecha(getRandomInt(50, 120)), // 4 a 10 años
             pesoActual: getRandomInt(400, 650),
             estado: Math.random() > 0.05 ? "Sano" : "Desecho",
-            fechaRegistro: new Date().toISOString().split('T')[0],
-            esDemo: true
+            fechaRegistro: new Date().toISOString().split('T')[0]
         });
     }
 
@@ -77,8 +70,7 @@ export default function ImportadorMasivo() {
             fechaNacimiento: restarMesesAFecha(meses), 
             pesoActual: getRandomInt(280, 420),
             estado: meses >= 48 ? "Alerta: Revisión de Fertilidad" : "Sano",
-            fechaRegistro: new Date().toISOString().split('T')[0],
-            esDemo: true
+            fechaRegistro: new Date().toISOString().split('T')[0]
         });
     }
 
@@ -90,8 +82,7 @@ export default function ImportadorMasivo() {
             fechaNacimiento: restarMesesAFecha(getRandomInt(12, 30)), 
             pesoActual: getRandomInt(350, 500),
             estado: Math.random() > 0.2 ? "Disponible para Venta" : "Sano",
-            fechaRegistro: new Date().toISOString().split('T')[0],
-            esDemo: true
+            fechaRegistro: new Date().toISOString().split('T')[0]
         });
     }
 
@@ -104,8 +95,7 @@ export default function ImportadorMasivo() {
             fechaNacimiento: restarMesesAFecha(getRandomInt(2, 11)), 
             pesoActual: getRandomInt(80, 220),
             estado: "Sano",
-            fechaRegistro: new Date().toISOString().split('T')[0],
-            esDemo: true
+            fechaRegistro: new Date().toISOString().split('T')[0]
         });
     }
 
@@ -117,8 +107,7 @@ export default function ImportadorMasivo() {
             fechaNacimiento: restarMesesAFecha(getRandomInt(60, 100)), 
             pesoActual: getRandomInt(800, 1100),
             estado: "Sano",
-            fechaRegistro: new Date().toISOString().split('T')[0],
-            esDemo: true
+            fechaRegistro: new Date().toISOString().split('T')[0]
         });
     }
 
@@ -132,7 +121,8 @@ export default function ImportadorMasivo() {
             }
         }
         setMensajeExito(true);
-        setYaExisteDemo(true);
+        await setDoc(doc(db, "configuracion", "demoGenerada"), { fecha: new Date().toISOString(), cantidad: batchSize });
+        setDemoYaGenerada(true);
     } catch (e) {
         console.error("Error inyectando data", e);
     }
@@ -211,7 +201,7 @@ export default function ImportadorMasivo() {
       )}
 
       {/* Mensaje de éxito simulado */}
-      {mensajeExito && !cargandoDemo && (
+      {mensajeExito && (
         <div className="file-status status-success" style={{ marginTop: "20px" }}>
           <CheckCircle2 size={20} />
           <span>
@@ -221,22 +211,30 @@ export default function ImportadorMasivo() {
       )}
 
       {/* BOTÓN MÁGICO GENERADOR DE PRUEBAS */}
-      {!yaExisteDemo && (
-          <div style={{ marginTop: "50px", paddingTop: "30px", borderTop: "2px dashed #e5e7eb", textAlign: "center" }}>
-              <Database size={40} color="#10b981" style={{ margin: "0 auto" }} />
-              <h3 style={{ color: "#374151", marginTop: "10px" }}>¿Necesitas datos para probar la aplicación?</h3>
-              <p style={{ color: "#6b7280", fontSize: "14px", marginBottom: "20px" }}>
-                  Esta función inyectará 150 cabezas de ganado simuladas (Vacas, Sementales, Novillonas en Alerta y Toretes en Venta) directo a tu base de datos para que la app cobre vida.
-              </p>
-              <button
-                  className="btn-primary"
-                  style={{ backgroundColor: "#10b981", maxWidth: "300px", margin: "0 auto" }}
-                  onClick={generarBaseDemo}
-                  disabled={cargandoDemo}
-              >
-                  {cargandoDemo ? "Inyectando 150 animales (Espera)..." : "⚡ Generar 150 Animales de Prueba"}
-              </button>
-          </div>
+      {!demoYaGenerada ? (
+        <div style={{ marginTop: "50px", paddingTop: "30px", borderTop: "2px dashed #e5e7eb", textAlign: "center" }}>
+            <Database size={40} color="#10b981" style={{ margin: "0 auto" }} />
+            <h3 style={{ color: "#374151", marginTop: "10px" }}>¿Necesitas datos para probar la aplicación?</h3>
+            <p style={{ color: "#6b7280", fontSize: "14px", marginBottom: "20px" }}>
+                Esta función inyectará 150 cabezas de ganado simuladas (Vacas, Sementales, Novillonas en Alerta y Toretes en Venta) directo a tu base de datos para que la app cobre vida.
+            </p>
+            <button
+                className="btn-primary"
+                style={{ backgroundColor: "#10b981", maxWidth: "300px", margin: "0 auto" }}
+                onClick={generarBaseDemo}
+                disabled={cargandoDemo}
+            >
+                {cargandoDemo ? "Inyectando 150 animales (Espera)..." : "⚡ Generar 150 Animales de Prueba"}
+            </button>
+        </div>
+      ) : (
+        <div style={{ marginTop: "50px", paddingTop: "30px", borderTop: "2px dashed #e5e7eb", textAlign: "center" }}>
+            <CheckCircle2 size={40} color="#10b981" style={{ margin: "0 auto" }} />
+            <h3 style={{ color: "#166534", marginTop: "10px" }}>✅ Base de datos de demostración activa</h3>
+            <p style={{ color: "#6b7280", fontSize: "14px" }}>
+                Los 150 animales de prueba ya fueron inyectados exitosamente. Ve a "Mi Ganado" o "Reportes BI" para explorar los datos.
+            </p>
+        </div>
       )}
 
     </div>
