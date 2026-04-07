@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Search, X, Plus, Activity, Baby, Scale, AlertTriangle, TrendingUp } from "lucide-react";
-import { collection, onSnapshot, addDoc, query, where, doc, updateDoc } from "firebase/firestore"; 
+import { collection, onSnapshot, addDoc, query, where, doc, updateDoc, getDocs } from "firebase/firestore"; 
+import { differenceInMonths } from "date-fns";
 import { db } from "../firebase";
 import Header from "../components/Header";
 
@@ -21,6 +22,63 @@ export default function DashboardGanado() {
   const [datosBaja, setDatosBaja] = useState({ 
     motivo: "Venta", notas: "", fecha: new Date().toISOString().split('T')[0] 
   });
+  const [sincronizado, setSincronizado] = useState(false);
+
+  // --- EFECTOS AUTOMÁTICOS (OPCIÓN A) ---
+  useEffect(() => {
+    if (inventario.length > 0 && !sincronizado) {
+      setSincronizado(true);
+      
+      const sincronizarCategorias = async () => {
+        try {
+          const qPartos = query(collection(db, "eventos"), where("tipo", "==", "Parto"));
+          const partosSnap = await getDocs(qPartos);
+          const hembrasConParto = new Set();
+          partosSnap.forEach(d => hembrasConParto.add(d.data().animalId));
+
+          const hoy = new Date();
+          
+          for (const animal of inventario) {
+            if (animal.estado?.includes('Baja')) continue;
+            if (!animal.fechaNacimiento) continue;
+
+            const fechaNac = new Date(animal.fechaNacimiento + "T00:00:00");
+            if (isNaN(fechaNac.getTime())) continue;
+
+            const mesesDeEdad = differenceInMonths(hoy, fechaNac);
+            const sexo = animal.sexo ? animal.sexo.toLowerCase() : "";
+            let nuevaCategoria = animal.tipo;
+
+            if (mesesDeEdad < 2) {
+              nuevaCategoria = "Lactante";
+            } else if (mesesDeEdad >= 2 && mesesDeEdad < 12) {
+              nuevaCategoria = sexo === "hembra" ? "Becerra" : "Becerro";
+              if (!sexo) nuevaCategoria = "Becerro/a";
+            } else if (sexo === "hembra") {
+              const haParido = hembrasConParto.has(animal.id);
+              if (haParido || mesesDeEdad >= 48) {
+                nuevaCategoria = "Vaca";
+              } else if (mesesDeEdad >= 12 && mesesDeEdad < 48 && !haParido) {
+                nuevaCategoria = "Novillona";
+              }
+            } else if (sexo === "macho") {
+              if (mesesDeEdad >= 12 && animal.tipo !== "Semental") {
+                nuevaCategoria = "Torete";
+              }
+            }
+
+            if (nuevaCategoria && nuevaCategoria !== animal.tipo) {
+              await updateDoc(doc(db, "animales", animal.id), { tipo: nuevaCategoria });
+            }
+          }
+        } catch (error) {
+          console.error("Error al sincronizar categorías:", error);
+        }
+      };
+
+      sincronizarCategorias();
+    }
+  }, [inventario, sincronizado]);
 
   // --- EFECTOS (FIREBASE) ---
   useEffect(() => {
@@ -89,6 +147,11 @@ export default function DashboardGanado() {
         resultado: datosEvento.resultado, 
         fecha: datosEvento.fecha 
       });
+
+      // Actualización directa si el evento nuevo es un Parto (Sube la categoría de inmediato sin esperar refresh)
+      if (datosEvento.tipo === "Parto" && animalActivo.tipo !== "Vaca") {
+         await updateDoc(doc(db, "animales", animalActivo.id), { tipo: "Vaca" });
+      }
 
       if (datosEvento.recordatorio && datosEvento.recordatorio !== "Ninguno") {
          const eventDate = new Date(datosEvento.fecha + "T00:00:00");
