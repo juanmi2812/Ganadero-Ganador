@@ -1,14 +1,14 @@
 {
   "files": {
     "main.css": "/static/css/main.6abfc503.css",
-    "main.js": "/static/js/main.a36f0ea1.js",
+    "main.js": "/static/js/main.2fdac7f4.js",
     "static/media/logo_convivet.jpg": "/static/media/logo_convivet.0c0b3289b78b362690aa.jpg",
     "index.html": "/index.html",
     "main.6abfc503.css.map": "/static/css/main.6abfc503.css.map",
-    "main.a36f0ea1.js.map": "/static/js/main.a36f0ea1.js.map"
+    "main.2fdac7f4.js.map": "/static/js/main.2fdac7f4.js.map"
   },
   "entrypoints": [
     "static/css/main.6abfc503.css",
-    "static/js/main.a36f0ea1.js"
+    "static/js/main.2fdac7f4.js"
   ]
 }

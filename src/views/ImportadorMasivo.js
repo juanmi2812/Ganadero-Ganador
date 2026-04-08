@@ -111,13 +111,76 @@ export default function ImportadorMasivo() {
         });
     }
 
+    const tiposEvento = ["Vacunación", "Repeso", "Tratamiento", "Desparasitación"];
+    const vacunas = ["Brucella", "Clostridial", "IBR", "DVB", "Leptospira", "Rabia Bovina"];
+    const tratamientos = ["Antibiótico Oxitetraciclina", "Antiinflamatorio Flunixin", "Vitaminas ADE", "Suero Oral"];
+
+    const generarFechaAleatoria = (mesesAtras) => {
+        let d = new Date();
+        d.setDate(d.getDate() - getRandomInt(1, mesesAtras * 30));
+        return d.toISOString().split('T')[0];
+    };
+
     try {
         const batchSize = animalesAGenerar.length;
         for(let i=0; i<batchSize; i++) {
-            await addDoc(collection(db, "animales"), animalesAGenerar[i]);
-            // (Opcional) Injectar un evento de Repeso inicial simulado para crear mas data
-            if(Math.random() > 0.5) {
-                // wait to inject events so it doesnt block UI completely, we just do a simple insert.
+            const docRef = await addDoc(collection(db, "animales"), animalesAGenerar[i]);
+            const animalId = docRef.id;
+            const animal = animalesAGenerar[i];
+
+            // Generar entre 2 y 5 eventos por animal
+            const numEventos = getRandomInt(2, 5);
+            for(let j=0; j<numEventos; j++) {
+                const tipoEv = getRandom(tiposEvento);
+                let resultado = "";
+                let costo = 0;
+
+                if (tipoEv === "Vacunación") {
+                    resultado = getRandom(vacunas);
+                    costo = getRandomInt(80, 350);
+                } else if (tipoEv === "Repeso") {
+                    resultado = `${getRandomInt(animal.pesoActual - 50, animal.pesoActual + 30)} kg`;
+                    costo = 0;
+                } else if (tipoEv === "Tratamiento") {
+                    resultado = getRandom(tratamientos);
+                    costo = getRandomInt(200, 900);
+                } else {
+                    resultado = "Ivermectina 1%";
+                    costo = getRandomInt(50, 180);
+                }
+
+                await addDoc(collection(db, "eventos"), {
+                    animalId: animalId,
+                    tipo: tipoEv,
+                    resultado: resultado,
+                    fecha: generarFechaAleatoria(10),
+                    costo: costo
+                });
+            }
+
+            // Para vacas: 60% de probabilidad de tener un parto registrado
+            if (animal.tipo === "Vaca" && Math.random() > 0.4) {
+                await addDoc(collection(db, "eventos"), {
+                    animalId: animalId,
+                    tipo: "Parto",
+                    resultado: `Cría ${Math.random() > 0.5 ? "macho" : "hembra"} sana`,
+                    fecha: generarFechaAleatoria(18),
+                    costo: 0
+                });
+            }
+
+            // Generar algunas alertas futuras (vacunaciones próximas)
+            if (Math.random() > 0.7) {
+                const diasFuturo = getRandomInt(3, 30);
+                let fechaAlerta = new Date();
+                fechaAlerta.setDate(fechaAlerta.getDate() + diasFuturo);
+
+                await addDoc(collection(db, "alertas"), {
+                    fechaProgramada: fechaAlerta.toISOString().split('T')[0],
+                    titulo: `${getRandom(tiposEvento)} programada`,
+                    areteAnimal: animal.arete,
+                    completada: false
+                });
             }
         }
         setMensajeExito(true);
