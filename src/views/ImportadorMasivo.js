@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { UploadCloud, FileSpreadsheet, CheckCircle2, Database } from "lucide-react";
-import { collection, addDoc, doc, getDoc, setDoc } from "firebase/firestore";
+import { UploadCloud, FileSpreadsheet, CheckCircle2, Database, RefreshCw } from "lucide-react";
+import { collection, addDoc, doc, getDoc, setDoc, deleteDoc, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 
 export default function ImportadorMasivo() {
@@ -294,9 +294,32 @@ export default function ImportadorMasivo() {
         <div style={{ marginTop: "50px", paddingTop: "30px", borderTop: "2px dashed #e5e7eb", textAlign: "center" }}>
             <CheckCircle2 size={40} color="#10b981" style={{ margin: "0 auto" }} />
             <h3 style={{ color: "#166534", marginTop: "10px" }}>✅ Base de datos de demostración activa</h3>
-            <p style={{ color: "#6b7280", fontSize: "14px" }}>
+            <p style={{ color: "#6b7280", fontSize: "14px", marginBottom: "16px" }}>
                 Los 150 animales de prueba ya fueron inyectados exitosamente. Ve a "Mi Ganado" o "Reportes BI" para explorar los datos.
             </p>
+            <button
+                className="btn-outline"
+                style={{ borderColor: "#ef4444", color: "#ef4444", display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px" }}
+                onClick={async () => {
+                    if (!window.confirm("⚠️ Esto borrará TODOS los animales, eventos y alertas de la base de datos y te permitirá regenerarlos. ¿Continuar?")) return;
+                    setCargandoDemo(true);
+                    try {
+                        const colecciones = ["animales", "eventos", "alertas"];
+                        for (const col of colecciones) {
+                            const snap = await getDocs(collection(db, col));
+                            for (const d of snap.docs) { await deleteDoc(doc(db, col, d.id)); }
+                        }
+                        await deleteDoc(doc(db, "configuracion", "demoGenerada"));
+                        setDemoYaGenerada(false);
+                        setMensajeExito(false);
+                    } catch (e) { console.error(e); }
+                    setCargandoDemo(false);
+                }}
+                disabled={cargandoDemo}
+            >
+                <RefreshCw size={16} />
+                {cargandoDemo ? "Limpiando base de datos..." : "Resetear y Regenerar Demo"}
+            </button>
         </div>
       )}
 
