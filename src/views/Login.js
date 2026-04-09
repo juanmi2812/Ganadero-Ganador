@@ -59,7 +59,7 @@ export default function Login({ alIniciarSesion }) {
   style={{ height: "55px", width: "auto", margin: "0 auto 16px auto", display: "block" }} 
 /></div>
         <h2 style={{ margin: "0 0 8px 0", color: "#111827" }}>
-          {esRegistro ? "Crear Nueva Cuenta" : "Control Ganadero"}
+          {esRegistro ? "Crear Nueva Cuenta" : "Ganadero Ganador"}
         </h2>
         <p style={{ color: "#6b7280", marginBottom: "24px", fontSize: "14px" }}>
           {esRegistro
@@ -134,7 +134,7 @@ export default function Login({ alIniciarSesion }) {
             style={{
               background: "none",
               border: "none",
-              color: "#3b82f6",
+              color: "#2e7d32",
               fontWeight: "bold",
               cursor: "pointer",
               padding: 0,
