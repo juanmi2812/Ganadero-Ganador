@@ -258,51 +258,118 @@ export default function DashboardGanado() {
     } catch (error) { console.error(error); }
   };
 
+  // Conteos para los badges
+  const conteos = {
+    Todos: inventario.filter(a => !a.estado?.includes('Baja')).length,
+    Vaca: inventario.filter(a => a.tipo === "Vaca" && !a.estado?.includes('Baja') && a.estado !== "Disponible para Venta" && a.estado !== "Desecho").length,
+    Novillona: inventario.filter(a => a.tipo === "Novillona" && !a.estado?.includes('Baja')).length,
+    Semental: inventario.filter(a => a.tipo === "Semental" && !a.estado?.includes('Baja')).length,
+    Torete: inventario.filter(a => a.tipo === "Torete" && !a.estado?.includes('Baja') && a.estado !== "Disponible para Venta" && a.estado !== "Desecho").length,
+    "En Venta": inventario.filter(a => a.estado === "Disponible para Venta" || a.estado === "Desecho").length,
+    Bajas: inventario.filter(a => a.estado?.includes('Baja')).length,
+  };
+
+  const machos = inventario.filter(a => a.sexo?.toLowerCase() === "macho" && !a.estado?.includes('Baja')).length;
+  const hembras = inventario.filter(a => a.sexo?.toLowerCase() === "hembra" && !a.estado?.includes('Baja')).length;
+
+  const getStatusClass = (estado) => {
+    if (!estado || estado === "Sano") return "status-sano";
+    if (estado.includes("Alerta") || estado.includes("Baja")) return "status-alerta";
+    if (estado === "Disponible para Venta") return "status-venta";
+    if (estado === "Desecho") return "status-desecho";
+    return "status-sano";
+  };
+
+  const getAnimalEmoji = (tipo, sexo) => {
+    if (tipo === "Semental") return "🐂";
+    if (tipo === "Vaca") return "🐄";
+    if (tipo === "Torete") return "🐃";
+    if (tipo === "Novillona") return "🐮";
+    if (tipo === "Becerro" || tipo === "Becerra") return "🐄";
+    if (sexo?.toLowerCase() === "macho") return "♂️";
+    return "♀️";
+  };
+
   return (
-    <div className="dashboard-container" style={{ padding: "0 16px", maxWidth: "1200px", margin: "0 auto" }}>
+    <div className="dashboard-container">
       
       <Header subtitle="Control de inventario y análisis de rendimiento." />
 
-      {/* FILTROS RÁPIDOS */}
-      <div style={{ display: "flex", gap: "8px", marginBottom: "20px", overflowX: "auto", paddingBottom: "8px" }}>
+      {/* KPIs PRINCIPALES */}
+      <div className="kpi-grid">
+        <div className="kpi-card">
+          <div style={{ fontSize: "22px", marginBottom: "6px" }}>🐄</div>
+          <div className="kpi-value">{conteos.Todos}</div>
+          <div className="kpi-label">Total Cabezas</div>
+        </div>
+        <div className="kpi-card">
+          <div style={{ fontSize: "22px", marginBottom: "6px" }}>♂️</div>
+          <div className="kpi-value" style={{ color: "#1565c0" }}>{machos}</div>
+          <div className="kpi-label">Machos</div>
+        </div>
+        <div className="kpi-card">
+          <div style={{ fontSize: "22px", marginBottom: "6px" }}>♀️</div>
+          <div className="kpi-value" style={{ color: "#7b1fa2" }}>{hembras}</div>
+          <div className="kpi-label">Hembras</div>
+        </div>
+        <div className="kpi-card">
+          <div style={{ fontSize: "22px", marginBottom: "6px" }}>💰</div>
+          <div className="kpi-value" style={{ color: "#ef6c00" }}>{conteos["En Venta"]}</div>
+          <div className="kpi-label">En Venta</div>
+        </div>
+      </div>
+
+      {/* FILTROS CON BADGES */}
+      <div className="filter-bar">
         {["Todos", "Vaca", "Novillona", "Semental", "Torete", "En Venta", "Bajas"].map((tipo) => (
           <button 
             key={tipo} 
-            onClick={() => setFiltroActivo(tipo)} 
-            style={{ 
-              padding: "8px 16px", borderRadius: "20px", border: "1px solid", 
-              borderColor: filtroActivo === tipo ? "#3b82f6" : "#d1d5db", 
-              backgroundColor: filtroActivo === tipo ? "#eff6ff" : "white", 
-              color: filtroActivo === tipo ? "#3b82f6" : "#6b7280", 
-              fontWeight: "600", cursor: "pointer", whiteSpace: "nowrap" 
-            }}
+            className={`filter-pill ${filtroActivo === tipo ? "active" : ""}`}
+            onClick={() => setFiltroActivo(tipo)}
           >
             {tipo}
+            <span className="filter-badge" style={{
+              background: filtroActivo === tipo ? "var(--verde-primario)" : "var(--gris-400)"
+            }}>
+              {conteos[tipo] || 0}
+            </span>
           </button>
         ))}
       </div>
 
       {/* BUSCADOR */}
-      <div className="search-bar" style={{ marginBottom: "24px" }}>
+      <div className="search-bar">
         <Search size={20} color="#9ca3af" />
         <input type="text" placeholder="Buscar por número de arete..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
       </div>
 
-      {/* GRID DE ANIMALES */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px", paddingBottom: "40px" }}>
+      {/* LISTA DE ANIMALES */}
+      <div style={{ paddingBottom: "40px" }}>
+        {ganadoFiltrado.length === 0 && (
+          <div style={{ textAlign: "center", padding: "40px 16px", color: "var(--gris-400)" }}>
+            <div style={{ fontSize: "48px", marginBottom: "12px" }}>🔍</div>
+            <p style={{ fontWeight: "600" }}>No se encontraron animales</p>
+            <p style={{ fontSize: "13px" }}>Intenta con otro filtro o término de búsqueda.</p>
+          </div>
+        )}
+
         {ganadoFiltrado.map((animal) => (
-          <div key={animal.id} style={{ 
-            backgroundColor: "white", borderRadius: "12px", padding: "20px", border: "1px solid #e5e7eb", 
-            boxShadow: "0 2px 4px rgba(0,0,0,0.05)", opacity: animal.estado?.includes('Baja') ? 0.7 : 1 
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px" }}>
-              <h3 style={{ margin: 0, fontSize: "20px" }}>{animal.arete}</h3>
-              <span className={`status-badge ${animal.estado?.includes('Baja') ? 'status-alerta' : 'status-sano'}`}>{animal.estado || 'Sano'}</span>
+          <div 
+            key={animal.id} 
+            className="animal-item"
+            onClick={() => setAnimalActivo(animal)}
+            style={{ opacity: animal.estado?.includes('Baja') ? 0.6 : 1 }}
+          >
+            <div className={`animal-avatar ${animal.sexo?.toLowerCase() === "macho" ? "macho" : "hembra"}`}>
+              {getAnimalEmoji(animal.tipo, animal.sexo)}
             </div>
-            <p style={{ margin: "0 0 16px 0", color: "#6b7280", fontSize: "14px" }}>{animal.raza} • {animal.tipo}</p>
-            <button className="btn-outline" style={{ width: "100%", justifyContent: "center" }} onClick={() => setAnimalActivo(animal)}>
-              Ver Ficha Técnica
-            </button>
+            <div className="animal-info">
+              <div className="animal-arete">{animal.arete}</div>
+              <div className="animal-meta">{animal.raza} • {animal.tipo} • {animal.pesoActual ? `${animal.pesoActual} kg` : "--"}</div>
+            </div>
+            <span className={`animal-status ${getStatusClass(animal.estado)}`}>
+              {animal.estado || "Sano"}
+            </span>
           </div>
         ))}
       </div>
