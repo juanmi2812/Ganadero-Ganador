@@ -32,10 +32,19 @@ export default function ImportadorMasivo() {
 
   // Generador Inteligente de Base de Datos para Demostración
   const generarBaseDemo = async () => {
-    if(!window.confirm("¿Estás a punto de inyectar 150 animales realistas a tu base de datos actual. ¿Continuar?")) return;
+    if(!window.confirm("Esto limpiará cualquier dato existente y generará 150 animales con historial médico completo. ¿Continuar?")) return;
     
     setCargandoDemo(true);
     setMensajeExito(false);
+
+    // Paso 0: Limpiar datos previos para evitar duplicados
+    try {
+      const colecciones = ["animales", "eventos", "alertas"];
+      for (const col of colecciones) {
+        const snap = await getDocs(collection(db, col));
+        for (const d of snap.docs) { await deleteDoc(doc(db, col, d.id)); }
+      }
+    } catch (e) { console.error("Error limpiando datos previos:", e); }
 
     const razas = ["Angus", "Brahman", "Hereford", "Charolais", "Simmental", "Brangus"];
     const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
