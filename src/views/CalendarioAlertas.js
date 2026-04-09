@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { collection, onSnapshot, addDoc, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import { Plus, X, Users, User, Layers } from "lucide-react";
+import { CATALOGO_EVENTOS, TIPOS_EVENTO } from "../catalogoEventos";
 
 // Importaciones para el Calendario Visual
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
@@ -34,7 +35,7 @@ export default function CalendarioAlertas() {
   const [animalSeleccionado, setAnimalSeleccionado] = useState("");
 
   const [datosEvento, setDatosEvento] = useState({
-    tipo: "Vacunación",
+    tipo: "Desparasitante",
     resultado: "",
     fecha: new Date().toISOString().split("T")[0],
     costo: "",
@@ -328,14 +329,8 @@ export default function CalendarioAlertas() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
                 <div>
                   <label style={labelStyle}>Tipo de Evento</label>
-                  <select value={datosEvento.tipo} onChange={(e) => setDatosEvento({ ...datosEvento, tipo: e.target.value })} style={inputStyle}>
-                    <option>Vacunación</option>
-                    <option>Desparasitación</option>
-                    <option>Repeso</option>
-                    <option>Tratamiento</option>
-                    <option>Parto</option>
-                    <option>Inseminación</option>
-                    <option>Revisión General</option>
+                  <select value={datosEvento.tipo} onChange={(e) => setDatosEvento({ ...datosEvento, tipo: e.target.value, resultado: "" })} style={inputStyle}>
+                    {TIPOS_EVENTO.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
@@ -344,17 +339,29 @@ export default function CalendarioAlertas() {
                 </div>
               </div>
 
-              <div style={{ marginBottom: "16px" }}>
-                <label style={labelStyle}>Detalle / Resultado</label>
-                <input
-                  type="text"
-                  placeholder="Ej: Brucella, 350 kg, Cría hembra sana..."
-                  value={datosEvento.resultado}
-                  onChange={(e) => setDatosEvento({ ...datosEvento, resultado: e.target.value })}
-                  style={inputStyle}
-                  required
-                />
-              </div>
+              {CATALOGO_EVENTOS[datosEvento.tipo]?.length > 0 && (
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={labelStyle}>Insumo / Tipo Específico</label>
+                  <select value={datosEvento.resultado} onChange={(e) => setDatosEvento({ ...datosEvento, resultado: e.target.value })} style={{ ...inputStyle, border: "1px solid #3b82f6", backgroundColor: "#eff6ff" }} required>
+                    <option value="">-- Selecciona el insumo / tipo --</option>
+                    {CATALOGO_EVENTOS[datosEvento.tipo].map(sub => <option key={sub} value={sub}>{sub}</option>)}
+                  </select>
+                </div>
+              )}
+
+              {(!CATALOGO_EVENTOS[datosEvento.tipo] || CATALOGO_EVENTOS[datosEvento.tipo].length === 0) && (
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={labelStyle}>Detalle / Resultado</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: 350 kg, Cría hembra sana..."
+                    value={datosEvento.resultado}
+                    onChange={(e) => setDatosEvento({ ...datosEvento, resultado: e.target.value })}
+                    style={inputStyle}
+                    required
+                  />
+                </div>
+              )}
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "20px" }}>
                 <div>

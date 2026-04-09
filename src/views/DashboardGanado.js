@@ -4,6 +4,7 @@ import { collection, onSnapshot, addDoc, query, where, doc, updateDoc, getDocs }
 import { differenceInMonths } from "date-fns";
 import { db } from "../firebase";
 import Header from "../components/Header";
+import { CATALOGO_EVENTOS, TIPOS_EVENTO } from "../catalogoEventos";
 
 export default function DashboardGanado() {
   // --- ESTADOS ---
@@ -18,7 +19,7 @@ export default function DashboardGanado() {
   const [mostrandoBaja, setMostrandoBaja] = useState(false);
   
   const [datosEvento, setDatosEvento] = useState({ 
-    tipo: "Repeso", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes", costo: ""
+    tipo: "Desparasitante", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes", costo: ""
   });
   const [datosBaja, setDatosBaja] = useState({ 
     motivo: "Venta", notas: "", fecha: new Date().toISOString().split('T')[0] 
@@ -226,7 +227,7 @@ export default function DashboardGanado() {
          }
       }
 
-      setDatosEvento({ tipo: "Repeso", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes", costo: "" });
+      setDatosEvento({ tipo: "Desparasitante", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes", costo: "" });
       setMostrandoFormulario(false);
     } catch (error) { console.error(error); }
   };
@@ -404,26 +405,28 @@ export default function DashboardGanado() {
             {/* FORMULARIO EVENTO */}
             {mostrandoFormulario && (
               <form onSubmit={guardarEvento} style={{ padding: "15px", background: "#f9fafb", borderRadius: "8px", marginBottom: "15px" }}>
-                <select value={datosEvento.tipo} onChange={(e) => setDatosEvento({...datosEvento, tipo: e.target.value})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }}>
-                  <option value="Repeso">Repeso (Actualizar Kilos)</option>
-                  <option value="Palpación">Palpación</option>
-                  <option value="Vacunación">Vacunación</option>
-                  <option value="Tratamiento Médico">Tratamiento Médico</option>
-                  <option value="Parto">Parto</option>
+                <select value={datosEvento.tipo} onChange={(e) => setDatosEvento({...datosEvento, tipo: e.target.value, resultado: ""})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }}>
+                  {TIPOS_EVENTO.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
-                <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-                  <input type="date" value={datosEvento.fecha} onChange={(e) => setDatosEvento({...datosEvento, fecha: e.target.value})} style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} required />
-                  <input type="text" placeholder="Resultado (Ej: Terminado)" value={datosEvento.resultado} onChange={(e) => setDatosEvento({...datosEvento, resultado: e.target.value})} style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} required />
-                </div>
-                
-                {(datosEvento.tipo === "Vacunación" || datosEvento.tipo === "Tratamiento Médico") && (
-                  <div style={{ marginBottom: "10px" }}>
-                    <input type="number" placeholder="Costo del Insumo Médico ($ MXN)" value={datosEvento.costo} onChange={(e) => setDatosEvento({...datosEvento, costo: e.target.value})} style={{ width: "100%", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} />
-                  </div>
+
+                {CATALOGO_EVENTOS[datosEvento.tipo]?.length > 0 && (
+                  <select value={datosEvento.resultado} onChange={(e) => setDatosEvento({...datosEvento, resultado: e.target.value})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #3b82f6", borderRadius: "4px", backgroundColor: "#eff6ff" }} required>
+                    <option value="">-- Selecciona el insumo / tipo --</option>
+                    {CATALOGO_EVENTOS[datosEvento.tipo].map(sub => <option key={sub} value={sub}>{sub}</option>)}
+                  </select>
                 )}
 
+                {(!CATALOGO_EVENTOS[datosEvento.tipo] || CATALOGO_EVENTOS[datosEvento.tipo].length === 0) && (
+                  <input type="text" placeholder="Resultado (Ej: 350 kg, Cría hembra sana...)" value={datosEvento.resultado} onChange={(e) => setDatosEvento({...datosEvento, resultado: e.target.value})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px", boxSizing: "border-box" }} required />
+                )}
+
+                <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+                  <input type="date" value={datosEvento.fecha} onChange={(e) => setDatosEvento({...datosEvento, fecha: e.target.value})} style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} required />
+                  <input type="number" placeholder="Costo ($)" value={datosEvento.costo} onChange={(e) => setDatosEvento({...datosEvento, costo: e.target.value})} style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} />
+                </div>
+                
                 <div style={{ marginBottom: "15px" }}>
-                  <label style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px", display: "block", fontWeight: "bold" }}>Recordatorio (Para insumos):</label>
+                  <label style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px", display: "block", fontWeight: "bold" }}>Recordatorio:</label>
                   <select value={datosEvento.recordatorio} onChange={(e) => setDatosEvento({...datosEvento, recordatorio: e.target.value})} style={{ width: "100%", padding: "8px", border: "1px solid #86efac", borderRadius: "4px", backgroundColor: "#f0fdf4", color: "#166534", fontWeight: "600" }}>
                     <option value="Ninguno">Sin recordatorio</option>
                     <option value="1 día antes">1 día antes</option>
