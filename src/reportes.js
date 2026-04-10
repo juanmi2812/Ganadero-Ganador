@@ -416,18 +416,20 @@ function prepararDatosProyeccionPartos(animales, eventos) {
     const misEventos = eventos.filter(e => e.animalId === a.id);
     let fechaPartoEstimada = null;
 
-    // A. Buscar Palpación "Gestante X meses"
-    const palp = misEventos.find(e => e.tipo === "Palpación" && e.resultado?.toLowerCase().includes("gestante"));
+    // A. Buscar la palpación MÁS RECIENTE
+    const misEventosDesc = [...misEventos].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    
+    const palp = misEventosDesc.find(e => e.tipo === "Palpación" && e.resultado?.toLowerCase().includes("gestante"));
     if (palp) {
       const match = palp.resultado.match(/(\d+)/);
-      const mesesGes = match ? parseInt(match[0]) : 3; // Default 3 meses si no dice
+      const mesesGes = match ? parseInt(match[0]) : 3;
       const mesesFaltantes = 9 - mesesGes;
       const fechaBase = new Date(palp.fecha + "T00:00:00");
       fechaPartoEstimada = new Date(fechaBase.getFullYear(), fechaBase.getMonth() + mesesFaltantes, fechaBase.getDate());
     } 
-    // B. Buscar Inseminación reciente (si no hay palpación más reciente)
+    // B. Buscar Inseminación reciente (si no hay palpación activa)
     else {
-      const insem = misEventos.find(e => e.tipo === "Inseminación");
+      const insem = misEventosDesc.find(e => e.tipo === "Inseminación");
       if (insem) {
         const fechaBase = new Date(insem.fecha + "T00:00:00");
         fechaPartoEstimada = new Date(fechaBase.getTime() + (285 * 24 * 60 * 60 * 1000));

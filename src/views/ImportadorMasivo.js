@@ -37,12 +37,12 @@ export default function ImportadorMasivo() {
     setCargandoDemo(true);
     setMensajeExito(false);
 
-    // Paso 0: Limpiar datos previos para evitar duplicados
+    // Paso 0: Limpiar datos previos en paralelo
     try {
       const colecciones = ["animales", "eventos", "alertas"];
       for (const col of colecciones) {
         const snap = await getDocs(collection(db, col));
-        for (const d of snap.docs) { await deleteDoc(doc(db, col, d.id)); }
+        await Promise.all(snap.docs.map(d => deleteDoc(doc(db, col, d.id))));
       }
     } catch (e) { console.error("Error limpiando datos previos:", e); }
 
@@ -140,103 +140,51 @@ export default function ImportadorMasivo() {
             const docRef = await addDoc(collection(db, "animales"), animalesAGenerar[i]);
             const animalId = docRef.id;
             const animal = animalesAGenerar[i];
+            const misPromesas = [];
 
             // Generar entre 2 y 5 eventos por animal
             const numEventos = getRandomInt(2, 5);
             for(let j=0; j<numEventos; j++) {
                 const tipoEv = getRandom(tiposEvento);
-                let resultado = "";
-                let costo = 0;
-
-                if (tipoEv === "Vacunación") {
-                    resultado = getRandom(vacunas);
-                    costo = getRandomInt(80, 350);
-                } else if (tipoEv === "Repeso") {
-                    resultado = `${getRandomInt(animal.pesoActual - 50, animal.pesoActual + 30)} kg`;
-                    costo = 0;
-                } else if (tipoEv === "Tratamiento") {
-                    resultado = getRandom(tratamientos);
-                    costo = getRandomInt(200, 900);
-                } else {
-                    resultado = "Ivermectina 1%";
-                    costo = getRandomInt(50, 180);
-                }
-
-                await addDoc(collection(db, "eventos"), {
-                    animalId: animalId,
-                    tipo: tipoEv,
-                    resultado: resultado,
-                    fecha: generarFechaAleatoria(10),
-                    costo: costo
-                });
+                let resultado = (tipoEv === "Vacunación") ? getRandom(vacunas) : 
+                                (tipoEv === "Repeso") ? `${getRandomInt(animal.pesoActual - 50, animal.pesoActual + 30)} kg` :
+                                (tipoEv === "Tratamiento") ? getRandom(tratamientos) : "Ivermectina 1%";
+                
+                misPromesas.push(addDoc(collection(db, "eventos"), {
+                    animalId, tipo: tipoEv, resultado, fecha: generarFechaAleatoria(10), costo: getRandomInt(50, 400)
+                }));
             }
 
-            // Para hembras (Vacas y Novillonas): Generar Palpaciones demo para el reporte de Reproducción
+            // Palpaciones adicionales
             if (["Vaca", "Novillona"].includes(animal.tipo) && Math.random() > 0.3) {
                 const resultadosPalp = ["Gestante", "Vacía - Fresca", "Vacía - Ciclando", "Vacía - Anestro"];
-                const numPalp = getRandomInt(1, 3);
-                for(let k=0; k<numPalp; k++) {
-                    await addDoc(collection(db, "eventos"), {
-                        animalId: animalId,
-                        tipo: "Palpación",
-                        resultado: getRandom(resultadosPalp),
-                        fecha: generarFechaAleatoria(10),
-                        costo: getRandomInt(50, 150)
-                    });
-                }
+                misPromesas.push(addDoc(collection(db, "eventos"), {
+                    animalId, tipo: "Palpación", resultado: getRandom(resultadosPalp), fecha: generarFechaAleatoria(10), costo: 100
+                }));
             }
 
-            // Para vacas: Generar historias reproductivas complejas para stats de IEP y Días Abiertos
-            if (animal.tipo === "Vaca") {
-                const prob = Math.random();
-                if (prob > 0.4) {
-                    // Vaca con historial de 2 partos (IEP calculable)
-                    const fechaParto1 = restarMesesAFecha(getRandomInt(22, 28));
-                    const fechaParto2 = restarMesesAFecha(getRandomInt(8, 12));
-                    const fechaInsem = format(new Date(new Date(fechaParto1 + "T00:00:00").getTime() + (getRandomInt(60, 120) * 24 * 60 * 60 * 1000)), "yyyy-MM-dd");
+            // Historia Reproductiva Compleja (Vaca)
+            if (animal.tipo === "Vaca" && Math.random() > 0.4) {
+                const fP1 = restarMesesAFecha(getRandomInt(22, 28));
+                const fP2 = restarMesesAFecha(getRandomInt(8, 12));
+                const fIn = format(new Date(new Date(fP1 + "T00:00:00").getTime() + (getRandomInt(70, 110) * 86400000)), "yyyy-MM-dd");
 
-                    const eventosHisto = [
-                        { tipo: "Parto", resultado: "Cría sana", fecha: fechaParto1 },
-                        { tipo: "Inseminación", resultado: "Semental SM-001", fecha: fechaInsem },
-                        { tipo: "Parto", resultado: "Cría sana", fecha: fechaParto2 }
-                    ];
+                misPromesas.push(addDoc(collection(db, "eventos"), { animalId, tipo: "Parto", resultado: "Cría sana", fecha: fP1, costo: 0 }));
+                misPromesas.push(addDoc(collection(db, "eventos"), { animalId, tipo: "Inseminación", resultado: "IA Directa", fecha: fIn, costo: 0 }));
+                misPromesas.push(addDoc(collection(db, "eventos"), { animalId, tipo: "Parto", resultado: "Cría sana", fecha: fP2, costo: 0 }));
 
-                    for(const ev of eventosHisto) {
-                        await addDoc(collection(db, "eventos"), { animalId, ...ev, costo: 0 });
-                    }
-
-                    // 50% de probabilidad de estar gestante de nuevo (para Proyección)
-                    if (Math.random() > 0.5) {
-                        const mesesGes = getRandomInt(2, 7);
-                        await addDoc(collection(db, "eventos"), {
-                            animalId, tipo: "Palpación", resultado: `Gestante ${mesesGes} meses`,
-                            fecha: format(new Date(), "yyyy-MM-dd"), costo: 100
-                        });
-                    }
-                } else {
-                    // Vaca con historial simple
-                    await addDoc(collection(db, "eventos"), {
-                        animalId: animalId,
-                        tipo: "Parto",
-                        resultado: `Cría ${Math.random() > 0.5 ? "macho" : "hembra"} sana`,
-                        fecha: generarFechaAleatoria(18),
-                        costo: 0
-                    });
+                if (Math.random() > 0.5) {
+                    misPromesas.push(addDoc(collection(db, "eventos"), {
+                        animalId, tipo: "Palpación", resultado: `Gestante ${getRandomInt(2, 7)} meses`, fecha: format(new Date(), "yyyy-MM-dd"), costo: 100
+                    }));
                 }
-            } else if (animal.tipo === "Novillonas" && Math.random() > 0.5) {
-                // Novillonas con inseminación reciente
-                const fechaInsem = restarMesesAFecha(getRandomInt(1, 4));
-                await addDoc(collection(db, "eventos"), {
-                    animalId, tipo: "Inseminación", resultado: "Inseminación Artificial",
-                    fecha: fechaInsem, costo: 500
-                });
-                if (Math.random() > 0.7) {
-                    await addDoc(collection(db, "eventos"), {
-                        animalId, tipo: "Palpación", resultado: "Gestante 1 mes",
-                        fecha: format(new Date(), "yyyy-MM-dd"), costo: 100
-                    });
-                }
+            } else if (animal.tipo === "Novillona" && Math.random() > 0.5) {
+                misPromesas.push(addDoc(collection(db, "eventos"), {
+                    animalId, tipo: "Inseminación", resultado: "IA", fecha: restarMesesAFecha(getRandomInt(1, 4)), costo: 0
+                }));
             }
+
+            await Promise.all(misPromesas);
 
             // Generar algunas alertas futuras (vacunaciones próximas)
             if (Math.random() > 0.7) {
@@ -376,7 +324,7 @@ export default function ImportadorMasivo() {
                         const colecciones = ["animales", "eventos", "alertas"];
                         for (const col of colecciones) {
                             const snap = await getDocs(collection(db, col));
-                            for (const d of snap.docs) { await deleteDoc(doc(db, col, d.id)); }
+                            await Promise.all(snap.docs.map(d => deleteDoc(doc(db, col, d.id))));
                         }
                         await deleteDoc(doc(db, "configuracion", "demoGenerada"));
                         setDemoYaGenerada(false);
