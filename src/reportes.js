@@ -357,3 +357,181 @@ export function generarExcelReproduccion(eventos) {
     alert("Error al generar Excel de Reproducción");
   }
 }
+
+// ================================================
+// REPORTE 3: PROYECCIÓN DE PARTOS E INDICADORES
+// ================================================
+
+function prepararDatosProyeccionPartos(animales, eventos) {
+  const hoy = new Date();
+  const unAnioAtras = new Date(hoy.getFullYear() - 1, hoy.getMonth(), hoy.getDate());
+
+  // --- 1. INDICADORES HISTÓRICOS ---
+  const vacas = animales.filter(a => ["Vaca", "Novillona"].includes(a.tipo));
+  const partosRecientes = eventos.filter(e => e.tipo === "Parto" && new Date(e.fecha) >= unAnioAtras).length;
+  
+  // % Pariciones: (Partos en 12m / Total Vacas) * 100
+  const tasaParicion = vacas.length > 0 ? Math.round((partosRecientes / vacas.length) * 100) : 0;
+
+  // IEP y Días Abiertos
+  let totalIEP = 0;
+  let conteoIEP = 0;
+
+  vacas.forEach(v => {
+    const misPartos = eventos
+      .filter(e => e.tipo === "Parto" && e.animalId === v.id)
+      .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
+    if (misPartos.length >= 2) {
+      for (let i = 1; i < misPartos.length; i++) {
+        const d1 = new Date(misPartos[i-1].fecha);
+        const d2 = new Date(misPartos[i].fecha);
+        const diff = Math.ceil(Math.abs(d2 - d1) / (1000 * 60 * 60 * 24));
+        if (diff > 250 && diff < 800) { // Filtro de coherencia biológica
+          totalIEP += diff;
+          conteoIEP++;
+        }
+      }
+    }
+  });
+
+  const avgIEP = conteoIEP > 0 ? Math.round(totalIEP / conteoIEP) : 0;
+  const avgDiasAbiertos = avgIEP > 0 ? avgIEP - 285 : 0;
+
+  // --- 2. PROYECCIÓN DE PARTOS (Próximos 9 meses) ---
+  const proyeccion = [];
+  for (let i = 0; i < 9; i++) {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() + i, 1);
+    proyeccion.push({
+      key: format(d, "yyyy-MM"),
+      label: format(d, "MMMM yyyy", { locale: es }),
+      conteo: 0,
+      detalles: []
+    });
+  }
+
+  animales.forEach(a => {
+    if (!["Vaca", "Novillona"].includes(a.tipo)) return;
+
+    const misEventos = eventos.filter(e => e.animalId === a.id);
+    let fechaPartoEstimada = null;
+
+    // A. Buscar Palpación "Gestante X meses"
+    const palp = misEventos.find(e => e.tipo === "Palpación" && e.resultado?.toLowerCase().includes("gestante"));
+    if (palp) {
+      const match = palp.resultado.match(/(\d+)/);
+      const mesesGes = match ? parseInt(match[0]) : 3; // Default 3 meses si no dice
+      const mesesFaltantes = 9 - mesesGes;
+      const fechaBase = new Date(palp.fecha + "T00:00:00");
+      fechaPartoEstimada = new Date(fechaBase.getFullYear(), fechaBase.getMonth() + mesesFaltantes, fechaBase.getDate());
+    } 
+    // B. Buscar Inseminación reciente (si no hay palpación más reciente)
+    else {
+      const insem = misEventos.find(e => e.tipo === "Inseminación");
+      if (insem) {
+        const fechaBase = new Date(insem.fecha + "T00:00:00");
+        fechaPartoEstimada = new Date(fechaBase.getTime() + (285 * 24 * 60 * 60 * 1000));
+      }
+    }
+
+    if (fechaPartoEstimada && fechaPartoEstimada > hoy) {
+      const key = format(fechaPartoEstimada, "yyyy-MM");
+      const mesProy = proyeccion.find(m => m.key === key);
+      if (mesProy) {
+        mesProy.conteo++;
+        mesProy.detalles.push(a.arete);
+      }
+    }
+  });
+
+  return {
+    stats: { avgIEP, avgDiasAbiertos, tasaParicion, partosAnuales: partosRecientes, totalVacas: vacas.length },
+    proyeccion
+  };
+}
+
+export function generarPDFProyeccionPartos(animales, eventos) {
+  try {
+    const { stats, proyeccion } = prepararDatosProyeccionPartos(animales, eventos);
+    const doc = new jsPDF();
+    const fechaHoy = format(new Date(), "dd 'de' MMMM yyyy", { locale: es });
+
+    doc.setFillColor(27, 94, 32);
+    doc.rect(0, 0, doc.internal.pageSize.width, 28, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("PROYECCIÓN DE PARTOS", 14, 14);
+    doc.setFontSize(10);
+    doc.text(`Análisis de eficiencia reproductiva y nacimientos esperados`, 14, 22);
+
+    // Indicadores clave
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(12);
+    doc.text("Indicadores de Eficiencia (Herd Health)", 14, 40);
+    
+    autoTable(doc, {
+      startY: 45,
+      theme: "plain",
+      headStyles: { fillColor: [240, 240, 240], textColor: 50, fontStyle: "bold" },
+      head: [["Métrica", "Valor Actual", "Meta Recomendada"]],
+      body: [
+        ["Intervalo Entre Partos (IEP)", `${stats.avgIEP} días`, "365 - 410 días"],
+        ["Días Abiertos (Promedio)", `${stats.avgDiasAbiertos} días`, "80 - 110 días"],
+        ["Tasa de Parición (Últimos 12m)", `${stats.tasaParicion}%`, "80% - 90%"],
+        ["Partos registrados (Histórico 1y)", stats.partosAnuales, "-"],
+      ],
+    });
+
+    // Proyección de partos
+    doc.text("Próximos Nacimientos por Mes", 14, doc.lastAutoTable.finalY + 15);
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 20,
+      theme: "grid",
+      headStyles: { fillColor: [46, 125, 50], textColor: 255, halign: "center" },
+      bodyStyles: { halign: "center" },
+      head: [["MES ESTIMADO", "PARTOS ESPERADOS", "ARETES PROYECTADOS"]],
+      body: proyeccion.map(p => [
+        p.label.toUpperCase(),
+        p.conteo,
+        p.detalles.join(", ") || "-"
+      ])
+    });
+
+    doc.save(`Proyeccion_Partos_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+  } catch (error) {
+    console.error(error);
+    alert("Error al generar PDF de Proyección de Partos");
+  }
+}
+
+export function generarExcelProyeccionPartos(animales, eventos) {
+  try {
+    const { stats, proyeccion } = prepararDatosProyeccionPartos(animales, eventos);
+    const wb = XLSX.utils.book_new();
+
+    // Hoja 1: Indicadores
+    const wsStats = XLSX.utils.json_to_sheet([
+      { Indicador: "Intervalo Entre Partos (IEP)", Valor: stats.avgIEP, Unidad: "Días" },
+      { Indicador: "Días Abiertos", Valor: stats.avgDiasAbiertos, Unidad: "Días" },
+      { Indicador: "Tasa de Parición", Valor: stats.tasaParicion, Unidad: "%" },
+      { Indicador: "Partos últimos 12 meses", Valor: stats.partosAnuales, Unidad: "Eventos" }
+    ]);
+    XLSX.utils.book_append_sheet(wb, wsStats, "Indicadores_KPIs");
+
+    // Hoja 2: Proyección
+    const wsProy = XLSX.utils.json_to_sheet(proyeccion.map(p => ({
+      "Mes Estimado": p.label,
+      "Cantidad de Partos": p.conteo,
+      "Aretes de Vacas": p.detalles.join(", ")
+    })));
+    XLSX.utils.book_append_sheet(wb, wsProy, "Proyeccion_Nacimientos");
+    
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    saveAs(blob, `Proyeccion_Partos_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+  } catch (error) {
+    console.error(error);
+    alert("Error al generar Excel de Proyección de Partos");
+  }
+}

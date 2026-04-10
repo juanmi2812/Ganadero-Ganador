@@ -186,15 +186,56 @@ export default function ImportadorMasivo() {
                 }
             }
 
-            // Para vacas: 60% de probabilidad de tener un parto registrado
-            if (animal.tipo === "Vaca" && Math.random() > 0.4) {
+            // Para vacas: Generar historias reproductivas complejas para stats de IEP y Días Abiertos
+            if (animal.tipo === "Vaca") {
+                const prob = Math.random();
+                if (prob > 0.4) {
+                    // Vaca con historial de 2 partos (IEP calculable)
+                    const fechaParto1 = restarMesesAFecha(getRandomInt(22, 28));
+                    const fechaParto2 = restarMesesAFecha(getRandomInt(8, 12));
+                    const fechaInsem = format(new Date(new Date(fechaParto1 + "T00:00:00").getTime() + (getRandomInt(60, 120) * 24 * 60 * 60 * 1000)), "yyyy-MM-dd");
+
+                    const eventosHisto = [
+                        { tipo: "Parto", resultado: "Cría sana", fecha: fechaParto1 },
+                        { tipo: "Inseminación", resultado: "Semental SM-001", fecha: fechaInsem },
+                        { tipo: "Parto", resultado: "Cría sana", fecha: fechaParto2 }
+                    ];
+
+                    for(const ev of eventosHisto) {
+                        await addDoc(collection(db, "eventos"), { animalId, ...ev, costo: 0 });
+                    }
+
+                    // 50% de probabilidad de estar gestante de nuevo (para Proyección)
+                    if (Math.random() > 0.5) {
+                        const mesesGes = getRandomInt(2, 7);
+                        await addDoc(collection(db, "eventos"), {
+                            animalId, tipo: "Palpación", resultado: `Gestante ${mesesGes} meses`,
+                            fecha: format(new Date(), "yyyy-MM-dd"), costo: 100
+                        });
+                    }
+                } else {
+                    // Vaca con historial simple
+                    await addDoc(collection(db, "eventos"), {
+                        animalId: animalId,
+                        tipo: "Parto",
+                        resultado: `Cría ${Math.random() > 0.5 ? "macho" : "hembra"} sana`,
+                        fecha: generarFechaAleatoria(18),
+                        costo: 0
+                    });
+                }
+            } else if (animal.tipo === "Novillonas" && Math.random() > 0.5) {
+                // Novillonas con inseminación reciente
+                const fechaInsem = restarMesesAFecha(getRandomInt(1, 4));
                 await addDoc(collection(db, "eventos"), {
-                    animalId: animalId,
-                    tipo: "Parto",
-                    resultado: `Cría ${Math.random() > 0.5 ? "macho" : "hembra"} sana`,
-                    fecha: generarFechaAleatoria(18),
-                    costo: 0
+                    animalId, tipo: "Inseminación", resultado: "Inseminación Artificial",
+                    fecha: fechaInsem, costo: 500
                 });
+                if (Math.random() > 0.7) {
+                    await addDoc(collection(db, "eventos"), {
+                        animalId, tipo: "Palpación", resultado: "Gestante 1 mes",
+                        fecha: format(new Date(), "yyyy-MM-dd"), costo: 100
+                    });
+                }
             }
 
             // Generar algunas alertas futuras (vacunaciones próximas)

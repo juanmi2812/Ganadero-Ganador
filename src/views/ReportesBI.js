@@ -4,7 +4,7 @@ import { db } from "../firebase";
 import { PieChart, Pie, Cell, Tooltip as RTTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 import { AlertCircle, DollarSign, Activity, TrendingUp, Download, FileText, FileSpreadsheet } from "lucide-react";
 import Header from "../components/Header";
-import { generarPDFVientres, generarExcelVientres, generarPDFReproduccion, generarExcelReproduccion } from "../reportes";
+import { generarPDFVientres, generarExcelVientres, generarPDFReproduccion, generarExcelReproduccion, generarPDFProyeccionPartos, generarExcelProyeccionPartos } from "../reportes";
 
 // Paletas de Colores Dinámicas
 const COLORES_INVENTARIO = ["#3b82f6", "#8b5cf6", "#ec4899", "#f43f5e", "#f59e0b", "#10b981"];
@@ -266,6 +266,39 @@ export default function ReportesBI() {
                 className="btn-outline"
                 style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", borderColor: "var(--verde-claro)", color: "var(--verde-medio)" }}
                 onClick={() => generarExcelReproduccion(eventos)}
+              >
+                <FileSpreadsheet size={16} /> Excel
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* REPORTE: PROYECCIÓN DE PARTOS */}
+        <div style={{
+          padding: "16px", borderRadius: "var(--radio)", border: "1px solid var(--gris-200)",
+          background: "var(--gris-100)", marginBottom: "12px"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--gris-900)", display: "flex", alignItems: "center", gap: "6px" }}>
+                📅 Proyección de Partos
+              </div>
+              <div style={{ fontSize: "12px", color: "var(--gris-400)", marginTop: "2px" }}>
+                Nacimientos esperados por mes, Intervalo Entre Partos (IEP) y Días Abiertos.
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                className="btn-outline"
+                style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px" }}
+                onClick={() => generarPDFProyeccionPartos(animales, eventos)}
+              >
+                <FileText size={16} /> PDF
+              </button>
+              <button
+                className="btn-outline"
+                style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", borderColor: "var(--verde-claro)", color: "var(--verde-medio)" }}
+                onClick={() => generarExcelProyeccionPartos(animales, eventos)}
               >
                 <FileSpreadsheet size={16} /> Excel
               </button>
