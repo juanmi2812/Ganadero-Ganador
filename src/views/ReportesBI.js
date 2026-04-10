@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import { collection, onSnapshot, doc } from "firebase/firestore";
 import { db } from "../firebase";
 import { PieChart, Pie, Cell, Tooltip as RTTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
-import { AlertCircle, DollarSign, Activity, TrendingUp } from "lucide-react";
+import { AlertCircle, DollarSign, Activity, TrendingUp, Download, FileText, FileSpreadsheet } from "lucide-react";
 import Header from "../components/Header";
+import { generarPDFVientres, generarExcelVientres } from "../reportes";
 
 // Paletas de Colores Dinámicas
 const COLORES_INVENTARIO = ["#3b82f6", "#8b5cf6", "#ec4899", "#f43f5e", "#f59e0b", "#10b981"];
@@ -194,6 +195,51 @@ export default function ReportesBI() {
             </ResponsiveContainer>
           </div>
         </div>
+      </div>
+
+      {/* ===================== REPORTES DESCARGABLES ===================== */}
+      <div className="card" style={{ marginTop: "24px" }}>
+        <div className="card-header">
+          <div className="card-icon verde"><Download size={22} /></div>
+          <div>
+            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700 }}>Reportes Descargables</h3>
+            <p style={{ margin: "2px 0 0", fontSize: "13px", color: "var(--gris-400)" }}>Genera reportes profesionales para compartir con tu equipo.</p>
+          </div>
+        </div>
+
+        {/* REPORTE: VIENTRES */}
+        <div style={{
+          padding: "16px", borderRadius: "var(--radio)", border: "1px solid var(--gris-200)",
+          background: "var(--gris-100)", marginBottom: "12px"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--gris-900)", display: "flex", alignItems: "center", gap: "6px" }}>
+                🐄 Reporte de Vientres
+              </div>
+              <div style={{ fontSize: "12px", color: "var(--gris-400)", marginTop: "2px" }}>
+                Inventario de Vacas y Novillonas — Partos, estado reproductivo, costos e historial médico.
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                className="btn-outline"
+                style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px" }}
+                onClick={() => generarPDFVientres(animales, eventos, config)}
+              >
+                <FileText size={16} /> PDF
+              </button>
+              <button
+                className="btn-outline"
+                style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", borderColor: "var(--verde-claro)", color: "var(--verde-medio)" }}
+                onClick={() => generarExcelVientres(animales, eventos, config)}
+              >
+                <FileSpreadsheet size={16} /> Excel
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );

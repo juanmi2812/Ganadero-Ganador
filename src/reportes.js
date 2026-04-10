@@ -1,0 +1,210 @@
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import { differenceInMonths, format } from "date-fns";
+import { es } from "date-fns/locale";
+
+// ================================================
+// REPORTE 1: INVENTARIO DE VIENTRES
+// ================================================
+
+function prepararDatosVientres(animales, eventos, config) {
+  // Filtramos solo vientres activos (Vacas + Novillonas que no estén de baja)
+  const vientres = animales.filter(
+    (a) =>
+      ["Vaca", "Novillona"].includes(a.tipo) &&
+      !a.estado?.includes("Baja")
+  );
+
+  const hoy = new Date();
+
+  return vientres.map((animal) => {
+    // Edad
+    const fechaNac = animal.fechaNacimiento
+      ? new Date(animal.fechaNacimiento + "T00:00:00")
+      : null;
+    const edadMeses = fechaNac && !isNaN(fechaNac.getTime())
+      ? differenceInMonths(hoy, fechaNac)
+      : "--";
+
+    // Eventos de este animal
+    const eventosAnimal = eventos.filter((e) => e.animalId === animal.id);
+
+    // Partos
+    const partos = eventosAnimal.filter((e) => e.tipo === "Parto");
+    const numPartos = partos.length;
+    const ultimoParto = partos.length > 0
+      ? partos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha))[0].fecha
+      : "--";
+
+    // Último evento médico
+    const eventosMedicos = eventosAnimal.filter((e) =>
+      ["Desparasitante", "Garrapaticida", "Vacuna", "Mosquicida", "Antibióticos", "Vitamina"].includes(e.tipo)
+    );
+    const ultimoMedico = eventosMedicos.length > 0
+      ? eventosMedicos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha))[0]
+      : null;
+
+    // Costos
+    let costoMantenimiento = 0;
+    let costoMedico = 0;
+    if (config) {
+      const fechaInicial = fechaNac || new Date(animal.fechaRegistro || hoy);
+      const dias = Math.ceil(Math.abs(hoy - fechaInicial) / (1000 * 60 * 60 * 24)) || 1;
+      const tarifa = config.costoDiario?.[animal.tipo] || 30;
+      costoMantenimiento = dias * tarifa;
+      costoMedico = eventosAnimal.reduce((sum, e) => sum + (Number(e.costo) || 0), 0);
+    }
+
+    return {
+      arete: animal.arete || "--",
+      raza: animal.raza || "--",
+      tipo: animal.tipo,
+      edadMeses: edadMeses !== "--" ? `${edadMeses} m` : "--",
+      pesoActual: animal.pesoActual ? `${animal.pesoActual} kg` : (animal.peso ? `${animal.peso} kg` : "--"),
+      estado: animal.estado || "Sana",
+      numPartos,
+      ultimoParto,
+      ultimoEvento: ultimoMedico ? `${ultimoMedico.tipo}: ${ultimoMedico.resultado || ""} (${ultimoMedico.fecha})` : "--",
+      costoMantenimiento: Math.round(costoMantenimiento),
+      costoMedico: Math.round(costoMedico),
+      costoTotal: Math.round(costoMantenimiento + costoMedico),
+      madre: animal.madre || "--",
+      padre: animal.padre || "--",
+    };
+  });
+}
+
+// ======================== PDF ========================
+export function generarPDFVientres(animales, eventos, config) {
+  const datos = prepararDatosVientres(animales, eventos, config);
+  const doc = new jsPDF({ orientation: "landscape" });
+  const fechaHoy = format(new Date(), "dd 'de' MMMM yyyy", { locale: es });
+
+  // Header del reporte
+  doc.setFillColor(27, 94, 32);
+  doc.rect(0, 0, doc.internal.pageSize.width, 28, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("REPORTE DE VIENTRES", 14, 14);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Inventario actual al ${fechaHoy}`, 14, 22);
+  doc.text(`Total: ${datos.length} vientres activos`, doc.internal.pageSize.width - 14, 14, { align: "right" });
+
+  // Resumen rápido
+  const vacas = datos.filter((d) => d.tipo === "Vaca").length;
+  const novillonas = datos.filter((d) => d.tipo === "Novillona").length;
+  const alertas = datos.filter((d) => d.estado.includes("Alerta")).length;
+  const costoGlobal = datos.reduce((s, d) => s + d.costoTotal, 0);
+
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.text(`Vacas: ${vacas}  |  Novillonas: ${novillonas}  |  Alertas Fertilidad: ${alertas}  |  Inversión Acumulada: $${costoGlobal.toLocaleString()}`, 14, 36);
+
+  // Tabla principal
+  doc.autoTable({
+    startY: 42,
+    theme: "grid",
+    headStyles: {
+      fillColor: [46, 125, 50],
+      textColor: 255,
+      fontSize: 8,
+      fontStyle: "bold",
+      halign: "center",
+    },
+    bodyStyles: { fontSize: 7.5, cellPadding: 3 },
+    alternateRowStyles: { fillColor: [232, 245, 233] },
+    columnStyles: {
+      0: { fontStyle: "bold", halign: "center" },
+      6: { halign: "center" },
+      7: { halign: "center" },
+      9: { halign: "right" },
+      10: { halign: "right" },
+    },
+    head: [
+      [
+        "Arete",
+        "Raza",
+        "Categoría",
+        "Edad",
+        "Peso",
+        "Estado",
+        "# Partos",
+        "Último Parto",
+        "Último Evento Médico",
+        "Costo Mant.",
+        "Inversión Total",
+      ],
+    ],
+    body: datos.map((d) => [
+      d.arete,
+      d.raza,
+      d.tipo,
+      d.edadMeses,
+      d.pesoActual,
+      d.estado,
+      d.numPartos,
+      d.ultimoParto,
+      d.ultimoEvento,
+      `$${d.costoMantenimiento.toLocaleString()}`,
+      `$${d.costoTotal.toLocaleString()}`,
+    ]),
+    didDrawPage: (data) => {
+      // Footer en cada página
+      const pageCount = doc.internal.getNumberOfPages();
+      doc.setFontSize(7);
+      doc.setTextColor(150);
+      doc.text(
+        `Ganadero Ganador — Página ${data.pageNumber} de ${pageCount}`,
+        doc.internal.pageSize.width / 2,
+        doc.internal.pageSize.height - 8,
+        { align: "center" }
+      );
+    },
+  });
+
+  doc.save(`Reporte_Vientres_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+}
+
+// ======================== EXCEL ========================
+export function generarExcelVientres(animales, eventos, config) {
+  const datos = prepararDatosVientres(animales, eventos, config);
+  const fechaHoy = format(new Date(), "dd-MM-yyyy");
+
+  const datosExcel = datos.map((d) => ({
+    "Arete": d.arete,
+    "Raza": d.raza,
+    "Categoría": d.tipo,
+    "Edad": d.edadMeses,
+    "Peso Actual": d.pesoActual,
+    "Estado": d.estado,
+    "# Partos": d.numPartos,
+    "Último Parto": d.ultimoParto,
+    "Último Evento Médico": d.ultimoEvento,
+    "Madre": d.madre,
+    "Padre": d.padre,
+    "Costo Mantenimiento ($)": d.costoMantenimiento,
+    "Costo Médico ($)": d.costoMedico,
+    "Inversión Total ($)": d.costoTotal,
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(datosExcel);
+  
+  // Anchos de columna
+  ws["!cols"] = [
+    { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 12 },
+    { wch: 25 }, { wch: 10 }, { wch: 14 }, { wch: 35 },
+    { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 15 }, { wch: 16 },
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Vientres");
+  
+  const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  saveAs(blob, `Reporte_Vientres_${fechaHoy}.xlsx`);
+}
