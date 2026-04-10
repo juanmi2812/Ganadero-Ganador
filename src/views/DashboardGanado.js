@@ -11,6 +11,7 @@ export default function DashboardGanado() {
   const [inventario, setInventario] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [filtroActivo, setFiltroActivo] = useState("Todos");
+  const [filtroHectarea, setFiltroHectarea] = useState("Todas");
   const [config, setConfig] = useState(null); // Finanzas
   
   const [animalActivo, setAnimalActivo] = useState(null);
@@ -182,12 +183,17 @@ export default function DashboardGanado() {
     const cumpleBusqueda = animal.arete?.toLowerCase().includes(busqueda.toLowerCase());
     if (!cumpleBusqueda) return false;
 
+    const cumpleHectarea = filtroHectarea === "Todas" || animal.hectarea === filtroHectarea;
+    if (!cumpleHectarea) return false;
+
     if (filtroActivo === "Todos") return true;
     if (filtroActivo === "Bajas") return animal.estado?.includes('Baja');
     if (filtroActivo === "En Venta") return animal.estado === "Disponible para Venta" || animal.estado === "Desecho";
     
     return animal.tipo === filtroActivo && !animal.estado?.includes('Baja') && animal.estado !== "Disponible para Venta" && animal.estado !== "Desecho";
   });
+
+  const listaHectareas = ["Todas", ...new Set(inventario.map(a => a.hectarea).filter(Boolean))];
 
   // --- ACCIONES ---
   const guardarEvento = async (e) => {
@@ -338,9 +344,24 @@ export default function DashboardGanado() {
       </div>
 
       {/* BUSCADOR */}
-      <div className="search-bar">
-        <Search size={20} color="#9ca3af" />
-        <input type="text" placeholder="Buscar por número de arete..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+      <div className="search-bar" style={{ gap: "10px" }}>
+        <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "10px", backgroundColor: "#f9fafb", padding: "0 12px", borderRadius: "8px", border: "1px solid #d1d5db" }}>
+          <Search size={20} color="#9ca3af" />
+          <input 
+            type="text" 
+            placeholder="Buscar por número de arete..." 
+            value={busqueda} 
+            onChange={(e) => setBusqueda(e.target.value)} 
+            style={{ border: "none", width: "100%", padding: "10px 0", backgroundColor: "transparent", outline: "none" }}
+          />
+        </div>
+        <select 
+          value={filtroHectarea} 
+          onChange={(e) => setFiltroHectarea(e.target.value)}
+          style={{ padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db", backgroundColor: "white", color: "#374151", fontSize: "14px", cursor: "pointer" }}
+        >
+          {listaHectareas.map(h => <option key={h} value={h}>{h === "Todas" ? "🌍 Todas las Hectáreas" : `🚩 ${h}`}</option>)}
+        </select>
       </div>
 
       {/* LISTA DE ANIMALES */}
@@ -365,7 +386,10 @@ export default function DashboardGanado() {
             </div>
             <div className="animal-info">
               <div className="animal-arete">{animal.arete}</div>
-              <div className="animal-meta">{animal.raza} • {animal.tipo} • {animal.pesoActual ? `${animal.pesoActual} kg` : "--"}</div>
+              <div className="animal-meta">
+                {animal.raza} • {animal.tipo} <br/> 
+                <span style={{ color: "var(--verde-medio)", fontWeight: "600", fontSize: "11px" }}>📍 {animal.hectarea || "Sin Lote"}</span>
+              </div>
             </div>
             <span className={`animal-status ${getStatusClass(animal.estado)}`}>
               {animal.estado || "Sano"}

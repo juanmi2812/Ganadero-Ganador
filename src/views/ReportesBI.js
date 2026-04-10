@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { collection, onSnapshot, doc } from "firebase/firestore";
 import { db } from "../firebase";
-import { PieChart, Pie, Cell, Tooltip as RTTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, Cell, Tooltip as RTTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LabelList } from "recharts";
 import { AlertCircle, DollarSign, Activity, TrendingUp, Download, FileText, FileSpreadsheet } from "lucide-react";
 import Header from "../components/Header";
 import { 
@@ -99,7 +99,18 @@ export default function ReportesBI() {
      };
   };
 
-  const { datosCategoria, datosRazas } = procesarGraficaMetrica();
+    const { datosCategoria, datosRazas } = procesarGraficaMetrica();
+  
+  const datosHectarea = (() => {
+    const hMap = {};
+    animales.forEach(a => {
+        if (a.estado?.includes("Baja")) return;
+        const h = a.hectarea || "Sin Asignar";
+        hMap[h] = (hMap[h] || 0) + 1;
+    });
+    return Object.keys(hMap).map(k => ({ name: k, value: hMap[k] }));
+  })();
+
   const paletaActiva = vistaFinanciera ? COLORES_FINANZAS : COLORES_INVENTARIO;
 
   return (
@@ -175,7 +186,13 @@ export default function ReportesBI() {
           <div style={{ height: "300px", width: "100%", marginTop: "20px" }}>
             <ResponsiveContainer>
               <PieChart>
-                <Pie data={datosCategoria} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                <Pie 
+                  data={datosCategoria} 
+                  cx="50%" cy="50%" 
+                  innerRadius={60} outerRadius={80} 
+                  paddingAngle={5} dataKey="value"
+                  label={({ name, value }) => `${name}: ${value}`}
+                >
                   {datosCategoria.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={paletaActiva[index % paletaActiva.length]} />
                   ))}
@@ -195,7 +212,27 @@ export default function ReportesBI() {
                 <XAxis dataKey="name" />
                 <YAxis allowDecimals={false} hide={vistaFinanciera} />
                 <RTTooltip formatter={(value) => vistaFinanciera ? `$${value.toLocaleString()}` : `${value} ud.` } cursor={{fill: 'transparent'}} />
-                <Bar dataKey="value" fill={vistaFinanciera ? "#10b981" : "#3b82f6"} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="value" fill={vistaFinanciera ? "#10b981" : "#3b82f6"} radius={[4, 4, 0, 0]}>
+                   <LabelList dataKey="value" position="top" formatter={(val) => vistaFinanciera ? `$${val.toLocaleString()}` : val} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        
+        {/* NUEVO GRÁFICO: DISTRIBUCIÓN POR HECTÁREA */}
+        <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", gridColumn: "span 2", marginTop: "24px" }}>
+          <h3 style={{ marginTop: 0, color: "#374151" }}>Inventario por Hectárea (Carga Animal)</h3>
+          <div style={{ height: "300px", width: "100%", marginTop: "20px" }}>
+            <ResponsiveContainer>
+              <BarChart data={datosHectarea} margin={{ top: 30, right: 30, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" />
+                <YAxis allowDecimals={false} />
+                <RTTooltip cursor={{fill: 'transparent'}} />
+                <Bar dataKey="value" fill="#ec4899" radius={[4, 4, 0, 0]}>
+                   <LabelList dataKey="value" position="top" style={{ fill: "#be185d", fontWeight: "bold" }} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
