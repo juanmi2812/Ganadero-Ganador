@@ -12,7 +12,7 @@ export const CATALOGO_EVENTOS = {
   "Fertilizante": ["Urea", "DAP", "Sulfato de amonio", "Triple 17"],
   "Plaguicida": ["Cipermetrina"],
   "Repeso": [],
-  "Palpación": [],
+  "Palpación": ["Gestante", "Vacía - Fresca", "Vacía - Ciclando", "Vacía - Anestro", "Dudosa"],
   "Parto": [],
   "Inseminación": [],
   "Revisión General": [],

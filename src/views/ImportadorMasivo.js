@@ -171,6 +171,21 @@ export default function ImportadorMasivo() {
                 });
             }
 
+            // Para hembras (Vacas y Novillonas): Generar Palpaciones demo para el reporte de Reproducción
+            if (["Vaca", "Novillona"].includes(animal.tipo) && Math.random() > 0.3) {
+                const resultadosPalp = ["Gestante", "Vacía - Fresca", "Vacía - Ciclando", "Vacía - Anestro"];
+                const numPalp = getRandomInt(1, 3);
+                for(let k=0; k<numPalp; k++) {
+                    await addDoc(collection(db, "eventos"), {
+                        animalId: animalId,
+                        tipo: "Palpación",
+                        resultado: getRandom(resultadosPalp),
+                        fecha: generarFechaAleatoria(10),
+                        costo: getRandomInt(50, 150)
+                    });
+                }
+            }
+
             // Para vacas: 60% de probabilidad de tener un parto registrado
             if (animal.tipo === "Vaca" && Math.random() > 0.4) {
                 await addDoc(collection(db, "eventos"), {

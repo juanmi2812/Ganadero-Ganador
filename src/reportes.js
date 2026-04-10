@@ -218,3 +218,142 @@ export function generarExcelVientres(animales, eventos, config) {
     alert("Hubo un error al generar el Excel. Revisa la consola.");
   }
 }
+
+// ================================================
+// REPORTE 2: REPRODUCCIÓN (Últimos 12 Meses)
+// ================================================
+
+function prepararDatosReproduccion(eventos) {
+  const palpaciones = eventos.filter((e) => e.tipo === "Palpación");
+  const hoy = new Date();
+
+  // Crear mapa de los últimos 12 meses (incluyendo el actual)
+  const mesesRelativos = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+    const key = format(d, "yyyy-MM");
+    mesesRelativos.push({
+      key,
+      label: format(d, "MMM-yy", { locale: es }).toUpperCase(),
+      palpadas: 0,
+      gestantes: 0,
+      frescas: 0,
+      ciclando: 0,
+      anestro: 0,
+      otras: 0,
+    });
+  }
+
+  palpaciones.forEach((e) => {
+    const fechaE = new Date(e.fecha + "T00:00:00");
+    if (isNaN(fechaE.getTime())) return;
+
+    const key = format(fechaE, "yyyy-MM");
+    const mesData = mesesRelativos.find((m) => m.key === key);
+
+    if (mesData) {
+      mesData.palpadas++;
+      const res = (e.resultado || "").toLowerCase();
+      if (res.includes("gestante")) mesData.gestantes++;
+      else if (res.includes("fresca")) mesData.frescas++;
+      else if (res.includes("ciclando")) mesData.ciclando++;
+      else if (res.includes("anestro")) mesData.anestro++;
+      else mesData.otras++;
+    }
+  });
+
+  return mesesRelativos.map((m) => ({
+    ...m,
+    porcentaje:
+      m.palpadas > 0
+        ? `${Math.round((m.gestantes / m.palpadas) * 100)}%`
+        : "0%",
+  }));
+}
+
+export function generarPDFReproduccion(eventos) {
+  try {
+    const datos = prepararDatosReproduccion(eventos);
+    const doc = new jsPDF();
+    const fechaHoy = format(new Date(), "dd 'de' MMMM yyyy", { locale: es });
+
+    doc.setFillColor(27, 94, 32);
+    doc.rect(0, 0, doc.internal.pageSize.width, 28, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("REPORTE DE REPRODUCCIÓN", 14, 14);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Análisis de palpaciones — Últimos 12 meses (${fechaHoy})`, 14, 22);
+
+    autoTable(doc, {
+      startY: 35,
+      theme: "grid",
+      headStyles: { fillColor: [46, 125, 50], textColor: 255, halign: "center" },
+      bodyStyles: { halign: "center" },
+      columnStyles: {
+        0: { fontStyle: "bold" },
+        7: { fontStyle: "bold", textColor: [27, 94, 32] },
+      },
+      head: [
+        [
+          "FECHA",
+          "PALPADAS",
+          "GESTANTES",
+          "FRESCAS",
+          "CICLANDO",
+          "ANESTRO",
+          "OTRAS",
+          "% PREÑEZ",
+        ],
+      ],
+      body: datos.map((d) => [
+        d.label,
+        d.palpadas,
+        d.gestantes,
+        d.frescas,
+        d.ciclando,
+        d.anestro,
+        d.otras,
+        d.porcentaje,
+      ]),
+    });
+
+    doc.save(`Reporte_Reproduccion_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+  } catch (error) {
+    console.error(error);
+    alert("Error al generar PDF de Reproducción");
+  }
+}
+
+export function generarExcelReproduccion(eventos) {
+  try {
+    const datos = prepararDatosReproduccion(eventos);
+    const fechaHoy = format(new Date(), "yyyy-MM-dd");
+
+    const datosExcel = datos.map((d) => ({
+      FECHA: d.label,
+      PALPADAS: d.palpadas,
+      GESTANTES: d.gestantes,
+      FRESCAS: d.frescas,
+      CICLANDO: d.ciclando,
+      ANESTRO: d.anestro,
+      OTRAS: d.otras,
+      "% PREÑEZ": d.porcentaje,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(datosExcel);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Reproduccion");
+
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    saveAs(blob, `Reporte_Reproduccion_${fechaHoy}.xlsx`);
+  } catch (error) {
+    console.error(error);
+    alert("Error al generar Excel de Reproducción");
+  }
+}
