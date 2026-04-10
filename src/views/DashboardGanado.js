@@ -399,6 +399,21 @@ export default function DashboardGanado() {
               </div>
             </div>
 
+            {/* GENEALOGÍA PADRES */}
+            <div style={{ backgroundColor: "#f9fafb", padding: "12px", borderRadius: "8px", border: "1px solid #e5e7eb", marginBottom: "20px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <div style={{ color: "#6b7280", fontSize: "11px", fontWeight: "bold" }}>MADRE</div>
+                  <div style={{ fontSize: "14px", fontWeight: "700", color: "#111827" }}>{animalActivo.madre || "--"}</div>
+                </div>
+                <div>
+                  <div style={{ color: "#6b7280", fontSize: "11px", fontWeight: "bold" }}>PADRE</div>
+                  <div style={{ fontSize: "14px", fontWeight: "700", color: "#111827" }}>{animalActivo.padre || "--"}</div>
+                </div>
+              </div>
+            </div>
+
+
             {/* PANEL FINANCIERO */}
             {finanzas && (
               <div style={{ backgroundColor: "#f9fafb", padding: "12px", borderRadius: "8px", border: "1px solid #e5e7eb", marginBottom: "20px" }}>

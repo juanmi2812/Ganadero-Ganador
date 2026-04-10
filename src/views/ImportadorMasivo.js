@@ -79,6 +79,8 @@ export default function ImportadorMasivo() {
             fechaNacimiento: restarMesesAFecha(meses), 
             pesoActual: getRandomInt(280, 420),
             estado: meses >= 48 ? "Alerta: Revisión de Fertilidad" : "Sano",
+            madre: `VC-${getRandomInt(1000, 9999)}`,
+            padre: `SM-${getRandomInt(100, 999)}`,
             fechaRegistro: new Date().toISOString().split('T')[0]
         });
     }
@@ -104,6 +106,8 @@ export default function ImportadorMasivo() {
             fechaNacimiento: restarMesesAFecha(getRandomInt(2, 11)), 
             pesoActual: getRandomInt(80, 220),
             estado: "Sano",
+            madre: `VC-${getRandomInt(1000, 9999)}`,
+            padre: `SM-${getRandomInt(100, 999)}`,
             fechaRegistro: new Date().toISOString().split('T')[0]
         });
     }

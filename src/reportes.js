@@ -1,5 +1,5 @@
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { differenceInMonths, format } from "date-fns";
@@ -40,7 +40,7 @@ function prepararDatosVientres(animales, eventos, config) {
 
     // Último evento médico
     const eventosMedicos = eventosAnimal.filter((e) =>
-      ["Desparasitante", "Garrapaticida", "Vacuna", "Mosquicida", "Antibióticos", "Vitamina"].includes(e.tipo)
+      ["Desparasitante", "Garrapaticida", "Vacuna", "Mosquicida", "Antibióticos", "Vitamina", "Vacunación", "Tratamiento"].includes(e.tipo)
     );
     const ultimoMedico = eventosMedicos.length > 0
       ? eventosMedicos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha))[0]
@@ -78,133 +78,143 @@ function prepararDatosVientres(animales, eventos, config) {
 
 // ======================== PDF ========================
 export function generarPDFVientres(animales, eventos, config) {
-  const datos = prepararDatosVientres(animales, eventos, config);
-  const doc = new jsPDF({ orientation: "landscape" });
-  const fechaHoy = format(new Date(), "dd 'de' MMMM yyyy", { locale: es });
+  try {
+    const datos = prepararDatosVientres(animales, eventos, config);
+    const doc = new jsPDF({ orientation: "landscape" });
+    const fechaHoy = format(new Date(), "dd 'de' MMMM yyyy", { locale: es });
 
-  // Header del reporte
-  doc.setFillColor(27, 94, 32);
-  doc.rect(0, 0, doc.internal.pageSize.width, 28, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(18);
-  doc.setFont("helvetica", "bold");
-  doc.text("REPORTE DE VIENTRES", 14, 14);
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.text(`Inventario actual al ${fechaHoy}`, 14, 22);
-  doc.text(`Total: ${datos.length} vientres activos`, doc.internal.pageSize.width - 14, 14, { align: "right" });
+    // Header del reporte
+    doc.setFillColor(27, 94, 32);
+    doc.rect(0, 0, doc.internal.pageSize.width, 28, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("REPORTE DE VIENTRES", 14, 14);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Inventario actual al ${fechaHoy}`, 14, 22);
+    doc.text(`Total: ${datos.length} vientres activos`, doc.internal.pageSize.width - 14, 14, { align: "right" });
 
-  // Resumen rápido
-  const vacas = datos.filter((d) => d.tipo === "Vaca").length;
-  const novillonas = datos.filter((d) => d.tipo === "Novillona").length;
-  const alertas = datos.filter((d) => d.estado.includes("Alerta")).length;
-  const costoGlobal = datos.reduce((s, d) => s + d.costoTotal, 0);
+    // Resumen rápido
+    const vacas = datos.filter((d) => d.tipo === "Vaca").length;
+    const novillonas = datos.filter((d) => d.tipo === "Novillona").length;
+    const alertas = datos.filter((d) => d.estado.includes("Alerta")).length;
+    const costoGlobal = datos.reduce((s, d) => s + (d.costoTotal || 0), 0);
 
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
-  doc.text(`Vacas: ${vacas}  |  Novillonas: ${novillonas}  |  Alertas Fertilidad: ${alertas}  |  Inversión Acumulada: $${costoGlobal.toLocaleString()}`, 14, 36);
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Vacas: ${vacas}  |  Novillonas: ${novillonas}  |  Alertas Fertilidad: ${alertas}  |  Inversión Acumulada: $${(costoGlobal || 0).toLocaleString()}`, 14, 36);
 
-  // Tabla principal
-  doc.autoTable({
-    startY: 42,
-    theme: "grid",
-    headStyles: {
-      fillColor: [46, 125, 50],
-      textColor: 255,
-      fontSize: 8,
-      fontStyle: "bold",
-      halign: "center",
-    },
-    bodyStyles: { fontSize: 7.5, cellPadding: 3 },
-    alternateRowStyles: { fillColor: [232, 245, 233] },
-    columnStyles: {
-      0: { fontStyle: "bold", halign: "center" },
-      6: { halign: "center" },
-      7: { halign: "center" },
-      9: { halign: "right" },
-      10: { halign: "right" },
-    },
-    head: [
-      [
-        "Arete",
-        "Raza",
-        "Categoría",
-        "Edad",
-        "Peso",
-        "Estado",
-        "# Partos",
-        "Último Parto",
-        "Último Evento Médico",
-        "Costo Mant.",
-        "Inversión Total",
+    // Tabla principal usando autoTable directamente como función para mayor robustez
+    autoTable(doc, {
+      startY: 42,
+      theme: "grid",
+      headStyles: {
+        fillColor: [46, 125, 50],
+        textColor: 255,
+        fontSize: 8,
+        fontStyle: "bold",
+        halign: "center",
+      },
+      bodyStyles: { fontSize: 7.5, cellPadding: 3 },
+      alternateRowStyles: { fillColor: [232, 245, 233] },
+      columnStyles: {
+        0: { fontStyle: "bold", halign: "center" },
+        6: { halign: "center" },
+        7: { halign: "center" },
+        9: { halign: "right" },
+        10: { halign: "right" },
+      },
+      head: [
+        [
+          "Arete",
+          "Raza",
+          "Categoría",
+          "Edad",
+          "Peso",
+          "Estado",
+          "# Partos",
+          "Último Parto",
+          "Último Evento Médico",
+          "Costo Mant.",
+          "Inversión Total",
+        ],
       ],
-    ],
-    body: datos.map((d) => [
-      d.arete,
-      d.raza,
-      d.tipo,
-      d.edadMeses,
-      d.pesoActual,
-      d.estado,
-      d.numPartos,
-      d.ultimoParto,
-      d.ultimoEvento,
-      `$${d.costoMantenimiento.toLocaleString()}`,
-      `$${d.costoTotal.toLocaleString()}`,
-    ]),
-    didDrawPage: (data) => {
-      // Footer en cada página
-      const pageCount = doc.internal.getNumberOfPages();
-      doc.setFontSize(7);
-      doc.setTextColor(150);
-      doc.text(
-        `Ganadero Ganador — Página ${data.pageNumber} de ${pageCount}`,
-        doc.internal.pageSize.width / 2,
-        doc.internal.pageSize.height - 8,
-        { align: "center" }
-      );
-    },
-  });
+      body: datos.map((d) => [
+        String(d.arete || ""),
+        String(d.raza || ""),
+        String(d.tipo || ""),
+        String(d.edadMeses || ""),
+        String(d.pesoActual || ""),
+        String(d.estado || ""),
+        String(d.numPartos || "0"),
+        String(d.ultimoParto || ""),
+        String(d.ultimoEvento || ""),
+        `$${(d.costoMantenimiento || 0).toLocaleString()}`,
+        `$${(d.costoTotal || 0).toLocaleString()}`,
+      ]),
+      didDrawPage: (data) => {
+        // Footer en cada página
+        const pageCount = doc.internal.getNumberOfPages();
+        doc.setFontSize(7);
+        doc.setTextColor(150);
+        doc.text(
+          `Ganadero Ganador — Página ${data.pageNumber} de ${pageCount}`,
+          doc.internal.pageSize.width / 2,
+          doc.internal.pageSize.height - 8,
+          { align: "center" }
+        );
+      },
+    });
 
-  doc.save(`Reporte_Vientres_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+    doc.save(`Reporte_Vientres_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+  } catch (error) {
+    console.error("Error al generar PDF:", error);
+    alert("Hubo un error al generar el PDF. Revisa la consola.");
+  }
 }
 
 // ======================== EXCEL ========================
 export function generarExcelVientres(animales, eventos, config) {
-  const datos = prepararDatosVientres(animales, eventos, config);
-  const fechaHoy = format(new Date(), "dd-MM-yyyy");
+  try {
+    const datos = prepararDatosVientres(animales, eventos, config);
+    const fechaHoy = format(new Date(), "dd-MM-yyyy");
 
-  const datosExcel = datos.map((d) => ({
-    "Arete": d.arete,
-    "Raza": d.raza,
-    "Categoría": d.tipo,
-    "Edad": d.edadMeses,
-    "Peso Actual": d.pesoActual,
-    "Estado": d.estado,
-    "# Partos": d.numPartos,
-    "Último Parto": d.ultimoParto,
-    "Último Evento Médico": d.ultimoEvento,
-    "Madre": d.madre,
-    "Padre": d.padre,
-    "Costo Mantenimiento ($)": d.costoMantenimiento,
-    "Costo Médico ($)": d.costoMedico,
-    "Inversión Total ($)": d.costoTotal,
-  }));
+    const datosExcel = datos.map((d) => ({
+      "Arete": d.arete,
+      "Raza": d.raza,
+      "Categoría": d.tipo,
+      "Edad": d.edadMeses,
+      "Peso Actual": d.pesoActual,
+      "Estado": d.estado,
+      "# Partos": d.numPartos,
+      "Último Parto": d.ultimoParto,
+      "Último Evento Médico": d.ultimoEvento,
+      "Madre": d.madre,
+      "Padre": d.padre,
+      "Costo Mantenimiento ($)": d.costoMantenimiento,
+      "Costo Médico ($)": d.costoMedico,
+      "Inversión Total ($)": d.costoTotal,
+    }));
 
-  const ws = XLSX.utils.json_to_sheet(datosExcel);
-  
-  // Anchos de columna
-  ws["!cols"] = [
-    { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 12 },
-    { wch: 25 }, { wch: 10 }, { wch: 14 }, { wch: 35 },
-    { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 15 }, { wch: 16 },
-  ];
+    const ws = XLSX.utils.json_to_sheet(datosExcel);
+    
+    // Anchos de columna
+    ws["!cols"] = [
+      { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 12 },
+      { wch: 25 }, { wch: 10 }, { wch: 14 }, { wch: 35 },
+      { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 15 }, { wch: 16 },
+    ];
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Vientres");
-  
-  const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-  const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-  saveAs(blob, `Reporte_Vientres_${fechaHoy}.xlsx`);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Vientres");
+    
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    saveAs(blob, `Reporte_Vientres_${fechaHoy}.xlsx`);
+  } catch (error) {
+    console.error("Error al generar Excel:", error);
+    alert("Hubo un error al generar el Excel. Revisa la consola.");
+  }
 }
