@@ -17,6 +17,7 @@ export default function NuevoAnimal() {
     fechaNacimiento: "",
     madre: "",
     padre: "",
+    hectarea: "",
   });
 
   // Cargamos las listas de madres y padres existentes
@@ -59,6 +60,7 @@ export default function NuevoAnimal() {
       fechaNacimiento: datosFormulario.fechaNacimiento,
       madre: datosFormulario.madre, // Guardamos el arete o ID de la madre
       padre: datosFormulario.padre, // Guardamos el arete o ID del padre
+      hectarea: datosFormulario.hectarea || "Sin Asignar",
       estado: "Sano",
       fechaRegistro: new Date().toISOString(),
     };
@@ -77,6 +79,7 @@ export default function NuevoAnimal() {
           fechaNacimiento: "",
           madre: "",
           padre: "",
+          hectarea: "",
         });
       }, 3000);
     } catch (error) {
@@ -220,7 +223,18 @@ export default function NuevoAnimal() {
               </select>
             </div>
 
-            <div className="input-group" style={{ gridColumn: "span 2" }}>
+            <div className="input-group">
+              <label>Hectárea / Lote (Ubicación)</label>
+              <input
+                type="text"
+                name="hectarea"
+                placeholder="Ej: Hectárea 1, Lote Norte..."
+                value={datosFormulario.hectarea}
+                onChange={manejarCambio}
+              />
+            </div>
+
+            <div className="input-group">
               <label>Fecha de Nacimiento (Calcula automáticamente la categoría)</label>
               <input
                 type="date"

@@ -537,3 +537,89 @@ export function generarExcelProyeccionPartos(animales, eventos) {
     alert("Error al generar Excel de Proyección de Partos");
   }
 }
+
+// ================================================
+// REPORTE 4: PRODUCCIÓN POR HECTÁREA
+// ================================================
+
+function prepararDatosHectareas(animales) {
+  const grupos = {};
+
+  animales.forEach((a) => {
+    if (a.estado?.includes("Baja")) return;
+    const h = a.hectarea || "Sin Asignar";
+    if (!grupos[h]) {
+      grupos[h] = { nombre: h, cabezas: 0, pesoTotal: 0 };
+    }
+    grupos[h].cabezas++;
+    // Usamos pesoActual si existe, si no, intentamos parsear peso (inicial)
+    const p = parseFloat(a.pesoActual) || parseFloat(a.peso?.toString().replace(/[^0-9.]/g, "")) || 0;
+    grupos[h].pesoTotal += p;
+  });
+
+  return Object.values(grupos).map((g) => ({
+    ...g,
+    pesoPromedio: g.cabezas > 0 ? Math.round(g.pesoTotal / g.cabezas) : 0,
+    pesoTotal: Math.round(g.pesoTotal),
+  }));
+}
+
+export function generarPDFHectareas(animales) {
+  try {
+    const datos = prepararDatosHectareas(animales);
+    const doc = new jsPDF();
+    const fechaHoy = format(new Date(), "dd 'de' MMMM yyyy", { locale: es });
+
+    doc.setFillColor(46, 125, 50);
+    doc.rect(0, 0, doc.internal.pageSize.width, 28, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("REPORTE DE PRODUCCIÓN POR HECTÁREA", 14, 14);
+    doc.setFontSize(10);
+    doc.text(`Carga animal y rendimiento de biomasa por ubicación (${fechaHoy})`, 14, 22);
+
+    autoTable(doc, {
+      startY: 35,
+      theme: "grid",
+      headStyles: { fillColor: [27, 94, 32], textColor: 255, halign: "center" },
+      bodyStyles: { halign: "center" },
+      head: [["HECTÁREA / LOTE", "CABEZAS (STOCK)", "PESO TOTAL (KG)", "PROMEDIO POR CABEZA"]],
+      body: datos.map((d) => [
+        d.nombre.toUpperCase(),
+        d.cabezas,
+        `${d.pesoTotal.toLocaleString()} kg`,
+        `${d.pesoPromedio} kg`,
+      ]),
+    });
+
+    doc.save(`Reporte_Hectareas_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+  } catch (error) {
+    console.error(error);
+    alert("Error al generar PDF de Hectáreas");
+  }
+}
+
+export function generarExcelHectareas(animales) {
+  try {
+    const datos = prepararDatosHectareas(animales);
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(
+      datos.map((d) => ({
+        HECTAREA: d.nombre,
+        CABEZAS: d.cabezas,
+        "PESO TOTAL (KG)": d.pesoTotal,
+        "PESO PROMEDIO (KG)": d.pesoPromedio,
+      }))
+    );
+    XLSX.utils.book_append_sheet(wb, ws, "Produccion_Hectareas");
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    saveAs(blob, `Reporte_Hectareas_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+  } catch (error) {
+    console.error(error);
+    alert("Error al generar Excel de Hectáreas");
+  }
+}

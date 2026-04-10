@@ -56,6 +56,7 @@ export default function ImportadorMasivo() {
         d.setMonth(d.getMonth() - meses);
         return d.toISOString().split('T')[0];
     };
+    const hectareas = ["Hectárea 1", "Hectárea 2", "Hectárea 3", "Hectárea 4", "Hectárea 5"];
 
     const animalesAGenerar = [];
 
@@ -67,6 +68,7 @@ export default function ImportadorMasivo() {
             fechaNacimiento: restarMesesAFecha(getRandomInt(50, 120)), // 4 a 10 años
             pesoActual: getRandomInt(400, 650),
             estado: Math.random() > 0.05 ? "Sano" : "Desecho",
+            hectarea: getRandom(hectareas),
             fechaRegistro: new Date().toISOString().split('T')[0]
         });
     }
@@ -80,6 +82,7 @@ export default function ImportadorMasivo() {
             fechaNacimiento: restarMesesAFecha(meses), 
             pesoActual: getRandomInt(280, 420),
             estado: meses >= 48 ? "Alerta: Revisión de Fertilidad" : "Sano",
+            hectarea: getRandom(hectareas),
             madre: `VC-${getRandomInt(1000, 9999)}`,
             padre: `SM-${getRandomInt(100, 999)}`,
             fechaRegistro: new Date().toISOString().split('T')[0]
@@ -94,6 +97,7 @@ export default function ImportadorMasivo() {
             fechaNacimiento: restarMesesAFecha(getRandomInt(12, 30)), 
             pesoActual: getRandomInt(350, 500),
             estado: Math.random() > 0.2 ? "Disponible para Venta" : "Sano",
+            hectarea: getRandom(hectareas),
             fechaRegistro: new Date().toISOString().split('T')[0]
         });
     }
@@ -107,6 +111,7 @@ export default function ImportadorMasivo() {
             fechaNacimiento: restarMesesAFecha(getRandomInt(2, 11)), 
             pesoActual: getRandomInt(80, 220),
             estado: "Sano",
+            hectarea: getRandom(hectareas),
             madre: `VC-${getRandomInt(1000, 9999)}`,
             padre: `SM-${getRandomInt(100, 999)}`,
             fechaRegistro: new Date().toISOString().split('T')[0]
@@ -121,6 +126,7 @@ export default function ImportadorMasivo() {
             fechaNacimiento: restarMesesAFecha(getRandomInt(60, 100)), 
             pesoActual: getRandomInt(800, 1100),
             estado: "Sano",
+            hectarea: getRandom(hectareas),
             fechaRegistro: new Date().toISOString().split('T')[0]
         });
     }
