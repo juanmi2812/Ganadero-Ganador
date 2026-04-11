@@ -144,6 +144,13 @@ export default function ReportesBI() {
 
   const hectareasUnicas = [...new Set(animales.map(a => a.hectarea || "Sin Asignar"))].sort();
 
+  const formatoMonedaCorta = (num) => {
+    if (!num) return "$0";
+    if (num >= 1000000) return `$${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `$${(num / 1000).toFixed(1)}k`;
+    return `$${num}`;
+  };
+
   return (
     <div className="dashboard-container" style={{ padding: "0 16px", maxWidth: "1200px", margin: "0 auto", paddingBottom: "50px" }}>
       <Header subtitle="Filtra visualizaciones de conteo de inventario cruzadas con algoritmos financieros." />
@@ -222,7 +229,7 @@ export default function ReportesBI() {
                   cx="50%" cy="50%" 
                   innerRadius={60} outerRadius={80} 
                   paddingAngle={5} dataKey="value"
-                  label={({ name, value }) => `${name}: ${value}`}
+                  label={({ name, value }) => vistaFinanciera ? `${name}: ${formatoMonedaCorta(value)}` : `${name}: ${value}`}
                 >
                   {datosCategoria.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={paletaActiva[index % paletaActiva.length]} />
@@ -244,7 +251,7 @@ export default function ReportesBI() {
                 <YAxis allowDecimals={false} hide={vistaFinanciera} />
                 <RTTooltip formatter={(value) => vistaFinanciera ? `$${value.toLocaleString()}` : `${value} ud.` } cursor={{fill: 'transparent'}} />
                 <Bar dataKey="value" fill={vistaFinanciera ? "#10b981" : "#3b82f6"} radius={[4, 4, 0, 0]}>
-                   <LabelList dataKey="value" position="top" formatter={(val) => vistaFinanciera ? `$${val.toLocaleString()}` : val} />
+                   <LabelList dataKey="value" position="top" formatter={(val) => vistaFinanciera ? formatoMonedaCorta(val) : val} style={{ fontSize: "11px", fontWeight: "bold" }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
