@@ -9,7 +9,8 @@ import {
   generarPDFReproduccion, generarExcelReproduccion, 
   generarPDFProyeccionPartos, generarExcelProyeccionPartos,
   generarPDFHectareas, generarExcelHectareas,
-  generarPDFDesarrollo, generarExcelDesarrollo
+  generarPDFDesarrollo, generarExcelDesarrollo,
+  generarPDFCalendario, generarExcelCalendario
 } from "../reportes";
 
 // Paletas de Colores Dinámicas
@@ -19,6 +20,7 @@ const COLORES_FINANZAS = ["#059669", "#111827", "#34d399", "#fbbf24", "#d97706",
 export default function ReportesBI() {
   const [animales, setAnimales] = useState([]);
   const [eventos, setEventos] = useState([]);
+  const [alertas, setAlertas] = useState([]);
   const [config, setConfig] = useState(null);
 
   // Slicers
@@ -43,7 +45,11 @@ export default function ReportesBI() {
       if(snap.exists()) setConfig(snap.data());
     });
 
-    return () => { unsubAnimales(); unsubEventos(); unsubConfig(); };
+    const unsubAlertas = onSnapshot(collection(db, "alertas"), snap => {
+      setAlertas(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+
+    return () => { unsubAnimales(); unsubEventos(); unsubConfig(); unsubAlertas(); };
   }, []);
 
   // --- MATEMÁTICA Y EXTRACCIÓN DE DATOS ---
@@ -408,6 +414,45 @@ export default function ReportesBI() {
                 className="btn-outline"
                 style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", borderColor: "var(--verde-claro)", color: "var(--verde-medio)" }}
                 onClick={() => generarExcelDesarrollo(animales, eventos)}
+              >
+                <FileSpreadsheet size={16} /> Excel
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* REPORTE: CALENDARIO DE MANEJO */}
+        <div style={{
+          padding: "16px", borderRadius: "var(--radio)", border: "1px solid var(--gris-200)",
+          background: "var(--gris-100)", marginBottom: "12px"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--gris-900)", display: "flex", alignItems: "center", gap: "6px" }}>
+                📅 Reporte de Calendario de Manejo
+              </div>
+              <div style={{ fontSize: "12px", color: "var(--gris-400)", marginTop: "2px" }}>
+                Plan sanitario: Mezcla de manejos realizados vs. sugeridos por temporada.
+              </div>
+              {/* LEYENDA UI */}
+              <div style={{ display: "flex", gap: "10px", marginTop: "8px", fontSize: "10px", color: "#6b7280" }}>
+                 <span>(✓) Realizado</span>
+                 <span>(🔔) Programado</span>
+                 <span>(📋) Sugerido</span>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                className="btn-outline"
+                style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px" }}
+                onClick={() => generarPDFCalendario(animales, eventos, alertas)}
+              >
+                <FileText size={16} /> PDF
+              </button>
+              <button
+                className="btn-outline"
+                style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", borderColor: "var(--verde-claro)", color: "var(--verde-medio)" }}
+                onClick={() => generarExcelCalendario(animales, eventos, alertas)}
               >
                 <FileSpreadsheet size={16} /> Excel
               </button>

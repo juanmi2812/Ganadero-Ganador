@@ -783,3 +783,157 @@ export function generarExcelDesarrollo(animales, eventos) {
     alert("Error al generar Excel de Desarrollo");
   }
 }
+
+// ================================================
+// REPORTE 6: CALENDARIO DE MANEJO (SOP + REAL)
+// ================================================
+import { PROTOCOLO_SANITARIO } from "./protocoloSanitario";
+
+function prepararDatosCalendario(animales, eventos, alertas) {
+    const hoy = new Date();
+    const mesActualIdx = hoy.getMonth();
+    const mesSiguienteIdx = (mesActualIdx + 1) % 12;
+
+    const nombresMeses = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
+    
+    const mesActualNombre = nombresMeses[mesActualIdx];
+    const mesSiguienteNombre = nombresMeses[mesSiguienteIdx];
+
+    const categoriasSolicitadas = [
+        { label: "VACAS", tipos: ["Vaca"] },
+        { label: "VAQUILLAS", tipos: ["Novillona"] },
+        { label: "BECERRAS", tipos: ["Becerra"] },
+        { label: "BECERROS", tipos: ["Becerro"] },
+        { label: "TORETES", tipos: ["Torete"] },
+        { label: "CRIAS HEMBRAS", tipos: ["Becerra", "Lactante"], sexo: "hembra" }, // Mapeo flexible
+        { label: "CRIAS MACHOS", tipos: ["Becerro", "Lactante"], sexo: "macho" }
+    ];
+
+    const formatActividades = (lista) => {
+        const result = ["", "", ""];
+        lista.slice(0, 3).forEach((item, i) => result[i] = item);
+        return result;
+    };
+
+    return categoriasSolicitadas.map(cat => {
+        // En el reporte el cliente usa CRIAS pero en mi DB son Lactantes o Becerros muy jóvenes
+        const animalesDeCat = animales.filter(a => {
+            if (a.estado?.includes("Baja")) return false;
+            
+            // Especial para CRÍAS (basado en edad < 4 meses)
+            const edadM = a.fechaNacimiento ? differenceInMonths(hoy, new Date(a.fechaNacimiento + "T00:00:00")) : 99;
+            if (cat.label.includes("CRIAS")) {
+                if (edadM > 4) return false;
+                return (a.sexo || "").toLowerCase() === cat.sexo;
+            }
+
+            const cumpleTipo = cat.tipos.includes(a.tipo);
+            if (!cumpleTipo) return false;
+            return true;
+        });
+
+        const idsAnimales = animalesDeCat.map(a => a.id);
+        const aretesAnimales = animalesDeCat.map(a => a.arete);
+
+        // --- REAL / ALERTAS ---
+        const evMesActual = eventos.filter(e => {
+            const f = new Date(e.fecha + "T00:00:00");
+            return idsAnimales.includes(e.animalId) && f.getMonth() === mesActualIdx;
+        });
+        const alMesActual = alertas.filter(al => {
+            const f = new Date(al.fechaProgramada + "T00:00:00");
+            return aretesAnimales.includes(al.areteAnimal) && f.getMonth() === mesActualIdx;
+        });
+        const alMesSig = alertas.filter(al => {
+            const f = new Date(al.fechaProgramada + "T00:00:00");
+            return aretesAnimales.includes(al.areteAnimal) && f.getMonth() === mesSiguienteIdx;
+        });
+
+        // --- SUGERIDO (SOP) ---
+        let keySOP = cat.label.includes("CRIAS") ? "Crias" : 
+                     (cat.label === "VACAS" ? "Vacas" : 
+                     (cat.label === "VAQUILLAS" ? "Vaquillas" : 
+                     (cat.label === "TORETES" ? "Toretes" : 
+                     (cat.label === "BECERROS" ? "Becerros" : "Becerras"))));
+
+        const sopActual = PROTOCOLO_SANITARIO[mesActualIdx]?.[keySOP] || [];
+        const sopSig = PROTOCOLO_SANITARIO[mesSiguienteIdx]?.[keySOP] || [];
+
+        // Mezclar
+        const resActual = [
+            ...new Set(evMesActual.map(e => `(✓) ${e.tipo}`)),
+            ...new Set(alMesActual.map(al => `(🔔) ${al.titulo.split(" ")[0]}`))
+        ];
+        if (resActual.length === 0) resActual.push(...sopActual.map(s => `(📋) ${s}`));
+
+        const resSig = [
+            ...new Set(alMesSig.map(al => `(🔔) ${al.titulo.split(" ")[0]}`))
+        ];
+        if (resSig.length === 0) resSig.push(...sopSig.map(s => `(📋) ${s}`));
+
+        return {
+            categoria: cat.label,
+            mesActual: mesActualNombre,
+            actividadesActual: formatActividades(resActual),
+            mesSiguiente: mesSiguienteNombre,
+            actividadesSiguiente: formatActividades(resSig)
+        };
+    });
+}
+
+export function generarPDFCalendario(animales, eventos, alertas) {
+    try {
+        const datos = prepararDatosCalendario(animales, eventos, alertas);
+        const doc = new jsPDF({ orientation: "landscape" });
+        const hoy = new Date();
+        const mesStr = format(hoy, "MMMM", { locale: es }).toUpperCase();
+
+        doc.setFillColor(27, 94, 32);
+        doc.rect(0, 0, doc.internal.pageSize.width, 28, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(18);
+        doc.text("CALENDARIO DE MANEJO SANITARIO", 14, 14);
+        doc.setFontSize(10);
+        doc.text(`Planificación vs Ejecución — Mes: ${mesStr}`, 14, 22);
+
+        // LEYENDA
+        doc.setFillColor(245, 245, 245);
+        doc.rect(14, 32, 269, 10, "F");
+        doc.setTextColor(50, 50, 50);
+        doc.setFontSize(8);
+        doc.text("LEYENDA: (✓) Realizado | (🔔) Programado | (📋) Sugerencia Estándar por Temporada (Personalizable)", 20, 38);
+
+        autoTable(doc, {
+            startY: 45, theme: "grid",
+            headStyles: { fillColor: [46, 125, 50], textColor: 255, halign: "center" },
+            bodyStyles: { fontSize: 7, cellPadding: 2 },
+            head: [["CATEGORIA", `MES ACTUAL (${datos[0].mesActual})`, "ACT 1", "ACT 2", "ACT 3", `MES SIGUIENTE (${datos[0].mesSiguiente})`, "ACT 1", "ACT 2", "ACT 3"]],
+            body: datos.map(d => [
+                d.categoria, d.mesActual, ...d.actividadesActual, d.mesSiguiente, ...d.actividadesSiguiente
+            ])
+        });
+
+        doc.save(`Calendario_Manejo_${format(new Date(), "yyyy-MM")}.pdf`);
+    } catch (e) { console.error(e); }
+}
+
+export function generarExcelCalendario(animales, eventos, alertas) {
+    try {
+        const datos = prepararDatosCalendario(animales, eventos, alertas);
+        const wb = XLSX.utils.book_new();
+        const wsData = datos.map(d => ({
+            "CATEGORIA": d.categoria,
+            "MES ACTUAL": d.mesActual,
+            "ACT 1": d.actividadesActual[0],
+            "ACT 2": d.actividadesActual[1],
+            "ACT 3": d.actividadesActual[2],
+            "MES SIGUIENTE": d.mesSiguiente,
+            "S_ACT 1": d.actividadesSiguiente[0],
+            "S_ACT 2": d.actividadesSiguiente[1],
+            "S_ACT 3": d.actividadesSiguiente[2]
+        }));
+        const ws = XLSX.utils.json_to_sheet(wsData);
+        XLSX.utils.book_append_sheet(wb, ws, "Calendario");
+        XLSX.writeFile(wb, `Calendario_Manejo_${format(new Date(), "yyyy-MM")}.xlsx`);
+    } catch (e) { console.error(e); }
+}

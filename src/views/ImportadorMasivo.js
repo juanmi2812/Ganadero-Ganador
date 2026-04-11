@@ -204,14 +204,14 @@ export default function ImportadorMasivo() {
             await Promise.all(misPromesas);
 
             // Generar algunas alertas futuras (vacunaciones próximas)
-            if (Math.random() > 0.7) {
-                const diasFuturo = getRandomInt(3, 30);
+            if (Math.random() > 0.4) {
+                const diasFuturo = getRandomInt(15, 45); // Aseguramos que caigan en mes actual o siguiente
                 let fechaAlerta = new Date();
                 fechaAlerta.setDate(fechaAlerta.getDate() + diasFuturo);
 
                 await addDoc(collection(db, "alertas"), {
                     fechaProgramada: fechaAlerta.toISOString().split('T')[0],
-                    titulo: `${getRandom(tiposEvento)} programada`,
+                    titulo: `${getRandom(tiposEvento)} Planificado`,
                     areteAnimal: animal.arete,
                     completada: false
                 });
