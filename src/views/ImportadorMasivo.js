@@ -131,6 +131,18 @@ export default function ImportadorMasivo() {
         });
     }
 
+    // APLICAR ALGUNAS BAJAS ALEATORIAS PARA PROBAR REPORTES DE MORTANDAD/DESECHO
+    animalesAGenerar.forEach(a => {
+        const rand = Math.random();
+        if (rand < 0.03) {
+            a.estado = "Baja - Muerte";
+            a.fechaBaja = new Date().toISOString().split('T')[0];
+        } else if (rand < 0.06 && a.tipo === "Vaca") {
+            a.estado = "Baja - Venta (Desecho)";
+            a.fechaBaja = new Date().toISOString().split('T')[0];
+        }
+    });
+
     const tiposEvento = ["Vacunación", "Repeso", "Tratamiento", "Desparasitación"];
     const vacunas = ["Brucella", "Clostridial", "IBR", "DVB", "Leptospira", "Rabia Bovina"];
     const tratamientos = ["Antibiótico Oxitetraciclina", "Antiinflamatorio Flunixin", "Vitaminas ADE", "Suero Oral"];

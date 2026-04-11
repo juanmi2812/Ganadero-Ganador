@@ -952,3 +952,177 @@ export function generarExcelCalendario(animales, eventos, alertas) {
         XLSX.writeFile(wb, `Calendario_Manejo_${format(new Date(), "yyyy-MM")}.xlsx`);
     } catch (e) { console.error(e); }
 }
+
+// ================================================
+// REPORTE 7: MÉTRICAS DE PRODUCTIVIDAD
+// ================================================
+
+export function calcularMetricasProductividad(animales, eventos) {
+    const hoy = new Date();
+    const unAnioAtras = new Date(hoy.getFullYear() - 1, hoy.getMonth(), hoy.getDate());
+    const tresMesesAtras = new Date(hoy.getFullYear(), hoy.getMonth() - 3, hoy.getDate());
+
+    // 1. Edad al primer parto
+    const vacasConParto = animales.filter(a => a.tipo === "Vaca" || a.tipo === "Novillona");
+    let sumaEdadMeses = 0;
+    let conteoPartosValidos = 0;
+
+    vacasConParto.forEach(v => {
+        const primerParto = eventos
+            .filter(e => e.animalId === v.id && e.tipo === "Parto")
+            .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))[0];
+        
+        if (primerParto && v.fechaNacimiento) {
+            const fNac = new Date(v.fechaNacimiento + "T00:00:00");
+            const fParto = new Date(primerParto.fecha + "T00:00:00");
+            const meses = differenceInMonths(fParto, fNac);
+            if (meses > 18 && meses < 60) { // Filtro biológico
+                sumaEdadMeses += meses;
+                conteoPartosValidos++;
+            }
+        }
+    });
+
+    const avgEdadPrimerParto = conteoPartosValidos > 0 ? (sumaEdadMeses / conteoPartosValidos).toFixed(1) : "--";
+
+    // 2. GDP 3m y 12m (M/H)
+    const calcularGDPPeriodo = (sexo, fechaLimite) => {
+        let sumaTotalGDP = 0;
+        let conteoTotal = 0;
+
+        const animalesDesarrollo = animales.filter(a => 
+            (a.sexo || "").toLowerCase() === sexo.toLowerCase() &&
+            ["Becerro", "Becerra", "Torete", "Novillona"].includes(a.tipo)
+        );
+
+        animalesDesarrollo.forEach(a => {
+            // "Cuando la novillona pare sale del esquema"
+            if (a.tipo === "Novillona") {
+                const tieneParto = eventos.some(e => e.animalId === a.id && e.tipo === "Parto");
+                if (tieneParto) return;
+            }
+
+            const repesosPeriodo = eventos
+                .filter(e => e.animalId === a.id && e.tipo === "Repeso" && new Date(e.fecha) >= fechaLimite)
+                .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+            if (repesosPeriodo.length >= 2) {
+                const f1 = new Date(repesosPeriodo[1].fecha + "T00:00:00");
+                const f2 = new Date(repesosPeriodo[0].fecha + "T00:00:00");
+                const p1 = parseFloat(repesosPeriodo[1].resultado) || 0;
+                const p2 = parseFloat(repesosPeriodo[0].resultado) || 0;
+                const dias = Math.ceil(Math.abs(f2 - f1) / (1000 * 60 * 60 * 24)) || 1;
+                if (p2 > p1) {
+                    sumaTotalGDP += (p2 - p1) / dias;
+                    conteoTotal++;
+                }
+            }
+        });
+        return conteoTotal > 0 ? (sumaTotalGDP / conteoTotal).toFixed(3) : "0.000";
+    };
+
+    // 3 & 4. Mortalidad
+    const totalDesarrollo = animales.filter(a => ["Becerro", "Becerra", "Torete", "Novillona"].includes(a.tipo)).length;
+    const muertesDesarrollo = animales.filter(a => ["Becerro", "Becerra", "Torete", "Novillona"].includes(a.tipo) && a.estado?.includes("Baja - Muerte")).length;
+    
+    const totalVacas = animales.filter(a => a.tipo === "Vaca").length;
+    const muertesVacas = animales.filter(a => a.tipo === "Vaca" && a.estado?.includes("Baja - Muerte")).length;
+
+    const tasaMortDesarrollo = totalDesarrollo > 0 ? ((muertesDesarrollo / totalDesarrollo) * 100).toFixed(2) : "0.00";
+    const tasaMortVacas = totalVacas > 0 ? ((muertesVacas / totalVacas) * 100).toFixed(2) : "0.00";
+
+    // 6. % Desechos (Venta Desecho / Total Vacas)
+    const ventasDesecho = animales.filter(a => a.tipo === "Vaca" && a.estado?.includes("Desecho")).length;
+    const tasaDesecho = totalVacas > 0 ? ((ventasDesecho / totalVacas) * 100).toFixed(2) : "0.00";
+
+    // 9. Peso de Venta Promedio
+    const calcularPesoVenta = (tipos) => {
+        const bajasVenta = animales.filter(a => tipos.includes(a.tipo) && a.estado?.includes("Baja - Venta"));
+        if (bajasVenta.length === 0) return "--";
+        const sum = bajasVenta.reduce((s, a) => s + (parseFloat(a.pesoActual) || 0), 0);
+        return (sum / bajasVenta.length).toFixed(1);
+    };
+
+    return {
+        edadPrimerParto: avgEdadPrimerParto,
+        gdp: {
+            m_3m: calcularGDPPeriodo("macho", tresMesesAtras),
+            m_12m: calcularGDPPeriodo("macho", unAnioAtras),
+            h_3m: calcularGDPPeriodo("hembra", tresMesesAtras),
+            h_12m: calcularGDPPeriodo("hembra", unAnioAtras)
+        },
+        mortalidad: {
+            desarrollo: tasaMortDesarrollo,
+            vacas: tasaMortVacas,
+            conteoM_D: muertesDesarrollo,
+            conteoM_V: muertesVacas
+        },
+        desecho: tasaDesecho,
+        conteoDesecho: ventasDesecho,
+        pesosVenta: {
+            vacas: calcularPesoVenta(["Vaca"]),
+            becerros: calcularPesoVenta(["Becerro", "Becerra"]),
+            novillonas: calcularPesoVenta(["Novillona"]),
+            toretes: calcularPesoVenta(["Torete"])
+        }
+    };
+}
+
+// Ficha Técnica Individual en PDF
+export function generarPDFFichaIndividual(animal, eventos) {
+    try {
+        const doc = new jsPDF();
+        const hoy = format(new Date(), "dd/MM/yyyy");
+
+        // UI Header
+        doc.setFillColor(27, 94, 32);
+        doc.rect(0, 0, 210, 40, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22);
+        doc.text(`FICHA TÉCNICA: ${animal.arete}`, 14, 20);
+        doc.setFontSize(10);
+        doc.text(`Sistema de Trazabilidad Ganadera — Generado el ${hoy}`, 14, 28);
+
+        // Sidebar con info básica
+        doc.setTextColor(0,0,0);
+        doc.setFillColor(245, 245, 245);
+        doc.rect(14, 45, 182, 45, "F");
+        
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.text("DATOS DEL ANIMAL", 20, 55);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Tipo: ${animal.tipo}`, 20, 62);
+        doc.text(`Raza: ${animal.raza || "No especificada"}`, 20, 69);
+        doc.text(`Sexo: ${animal.sexo}`, 20, 76);
+        doc.text(`Nacimiento: ${animal.fechaNacimiento || "No reg."}`, 100, 62);
+        doc.text(`Hectárea: ${animal.hectarea || "Sin asignar"}`, 100, 69);
+        doc.text(`Estado: ${animal.estado}`, 100, 76);
+
+        // Historial Completo
+        doc.setFont("helvetica", "bold");
+        doc.text("HISTORIAL CRONOLÓGICO DE MANEJOS", 14, 105);
+
+        const listaEventos = eventos
+            .filter(e => e.animalId === animal.id)
+            .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+        autoTable(doc, {
+            startY: 110,
+            theme: "striped",
+            headStyles: { fillColor: [46, 125, 50] },
+            head: [["Fecha", "Evento", "Resultado / Insumo", "Costo ($)"]],
+            body: listaEventos.map(e => [
+                e.fecha,
+                e.tipo,
+                e.resultado || "--",
+                `$${(e.costo || 0).toLocaleString()}`
+            ])
+        });
+
+        doc.save(`Ficha_${animal.arete}.pdf`);
+    } catch (e) {
+        console.error(e);
+        alert("Error al generar Ficha Técnica");
+    }
+}

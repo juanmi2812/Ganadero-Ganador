@@ -10,7 +10,8 @@ import {
   generarPDFProyeccionPartos, generarExcelProyeccionPartos,
   generarPDFHectareas, generarExcelHectareas,
   generarPDFDesarrollo, generarExcelDesarrollo,
-  generarPDFCalendario, generarExcelCalendario
+  generarPDFCalendario, generarExcelCalendario,
+  calcularMetricasProductividad, generarPDFFichaIndividual
 } from "../reportes";
 
 // Paletas de Colores Dinámicas
@@ -30,10 +31,15 @@ export default function ReportesBI() {
   
   // Toggle Financiero
   const [vistaFinanciera, setVistaFinanciera] = useState(false);
+  
+  // Módulo Productividad
+  const [reporteProd, setReporteProd] = useState("");
+  const [areteBusqueda, setAreteBusqueda] = useState("");
+  const [animalIndividual, setAnimalIndividual] = useState(null);
 
   useEffect(() => {
     const unsubAnimales = onSnapshot(collection(db, "animales"), snap => {
-      setAnimales(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(a => !a.estado?.includes('Baja - Venta') && !a.estado?.includes('Baja - Muerte')));
+      setAnimales(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
     
     // Optimizacion MVP: Cargar médicos directos.
@@ -119,6 +125,14 @@ export default function ReportesBI() {
   })();
 
   const paletaActiva = vistaFinanciera ? COLORES_FINANZAS : COLORES_INVENTARIO;
+
+  const metricas = calcularMetricasProductividad(animales, eventos);
+
+  const manejarBusquedaIndividual = (e) => {
+    e.preventDefault();
+    const a = animales.find(a => a.arete?.toLowerCase() === areteBusqueda.toLowerCase());
+    setAnimalIndividual(a || "error");
+  };
 
   return (
     <div className="dashboard-container" style={{ padding: "0 16px", maxWidth: "1200px", margin: "0 auto", paddingBottom: "50px" }}>
@@ -461,6 +475,177 @@ export default function ReportesBI() {
         </div>
 
       </div>
+
+      {/* ===================== MÓDULO DE PRODUCTIVIDAD ===================== */}
+      <div className="card" style={{ marginTop: "24px", borderTop: "4px solid #3b82f6" }}>
+        <div className="card-header">
+          <div className="card-icon azul"><Activity size={22} /></div>
+          <div>
+            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700 }}>Análisis de Productividad y Trazabilidad</h3>
+            <p style={{ margin: "2px 0 0", fontSize: "13px", color: "var(--gris-400)" }}>Métricas avanzadas de eficiencia y consulta individual por arete.</p>
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px", marginTop: "10px" }}>
+            
+            {/* SELECTOR DE REPORTES */}
+            <div style={{ padding: "16px", backgroundColor: "#f9fafb", borderRadius: "12px", border: "1px solid #e5e7eb" }}>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: "bold", color: "#374151", marginBottom: "10px" }}>Selecciona un Indicador:</label>
+                <select 
+                    value={reporteProd} 
+                    onChange={(e) => setReporteProd(e.target.value)}
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db", fontSize: "14px" }}
+                >
+                    <option value="">-- Elige un reporte --</option>
+                    <option value="parto">1. Meses de edad al primer parto</option>
+                    <option value="gdp">2. GDP Histórico (3m vs 12m)</option>
+                    <option value="mort_dev">3. % Mortalidad Desarrollo</option>
+                    <option value="mort_vac">4. % Mortalidad Vacas</option>
+                    <option value="desecho">6. % Desechos (Culling Rate)</option>
+                    <option value="venta">9. Promedio Peso de Venta</option>
+                </select>
+
+                <div style={{ marginTop: "20px", padding: "15px", backgroundColor: "white", borderRadius: "8px", minHeight: "100px", border: "1px dashed #3b82f6" }}>
+                    {!reporteProd && <p style={{ color: "#9ca3af", textAlign: "center", fontSize: "13px" }}>Selecciona un reporte para ver los resultados calculados.</p>}
+                    
+                    {reporteProd === "parto" && (
+                        <div>
+                            <h4 style={{ margin: 0, color: "#1e40af" }}>Edad Promedio al Primer Parto</h4>
+                            <div style={{ fontSize: "32px", fontWeight: "bold", marginTop: "10px" }}>{metricas.edadPrimerParto} <span style={{ fontSize: "14px" }}>meses</span></div>
+                            <p style={{ fontSize: "11px", color: "#6b7280", marginTop: "5px" }}>Meta ideal: 24 - 28 meses.</p>
+                        </div>
+                    )}
+
+                    {reporteProd === "gdp" && (
+                        <div>
+                            <h4 style={{ margin: "0 0 10px 0", color: "#1e40af" }}>Ganancia Diaria de Peso (Promedio)</h4>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                                <div style={{ padding: "8px", backgroundColor: "#eff6ff", borderRadius: "6px" }}>
+                                    <div style={{ fontSize: "10px", color: "#3b82f6" }}>MACHOS (12m)</div>
+                                    <div style={{ fontWeight: "bold" }}>{metricas.gdp.m_12m} kg</div>
+                                </div>
+                                <div style={{ padding: "8px", backgroundColor: "#eff6ff", borderRadius: "6px" }}>
+                                    <div style={{ fontSize: "10px", color: "#3b82f6" }}>HEMBRAS (12m)</div>
+                                    <div style={{ fontWeight: "bold" }}>{metricas.gdp.h_12m} kg</div>
+                                </div>
+                                <div style={{ padding: "8px", backgroundColor: "#f0fdf4", borderRadius: "6px" }}>
+                                    <div style={{ fontSize: "10px", color: "#10b981" }}>MACHOS (3m)</div>
+                                    <div style={{ fontWeight: "bold" }}>{metricas.gdp.m_3m} kg</div>
+                                </div>
+                                <div style={{ padding: "8px", backgroundColor: "#f0fdf4", borderRadius: "6px" }}>
+                                    <div style={{ fontSize: "10px", color: "#10b981" }}>HEMBRAS (3m)</div>
+                                    <div style={{ fontWeight: "bold" }}>{metricas.gdp.h_3m} kg</div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {reporteProd === "mort_dev" && (
+                        <div>
+                            <h4 style={{ margin: 0, color: "#991b1b" }}>% Mortalidad en Desarrollo</h4>
+                            <div style={{ fontSize: "32px", fontWeight: "bold", marginTop: "10px", color: "#dc2626" }}>{metricas.mortalidad.desarrollo}%</div>
+                            <p style={{ fontSize: "11px", color: "#6b7280", marginTop: "5px" }}>{metricas.mortalidad.conteoM_D} bajas registradas por muerte.</p>
+                        </div>
+                    )}
+
+                    {reporteProd === "mort_vac" && (
+                        <div>
+                            <h4 style={{ margin: 0, color: "#991b1b" }}>% Mortalidad en Vacas</h4>
+                            <div style={{ fontSize: "32px", fontWeight: "bold", marginTop: "10px", color: "#dc2626" }}>{metricas.mortalidad.vacas}%</div>
+                            <p style={{ fontSize: "11px", color: "#6b7280", marginTop: "5px" }}>{metricas.mortalidad.conteoM_V} bajas registradas por muerte.</p>
+                        </div>
+                    )}
+
+                    {reporteProd === "desecho" && (
+                        <div>
+                            <h4 style={{ margin: 0, color: "#854d0e" }}>% Desechos (Culling Rate)</h4>
+                            <div style={{ fontSize: "32px", fontWeight: "bold", marginTop: "10px", color: "#ca8a04" }}>{metricas.desecho}%</div>
+                            <p style={{ fontSize: "11px", color: "#6b7280", marginTop: "5px" }}>{metricas.conteoDesecho} vacas vendidas por desecho este año.</p>
+                        </div>
+                    )}
+
+                    {reporteProd === "venta" && (
+                        <div>
+                            <h4 style={{ margin: "0 0 10px 0", color: "#1e40af" }}>Pesos de Venta (Promedio)</h4>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                                <div style={{ padding: "6px", borderBottom: "1px solid #eee" }}>
+                                    <div style={{ fontSize: "10px", color: "#6b7280" }}>VACAS</div>
+                                    <div style={{ fontWeight: "bold" }}>{metricas.pesosVenta.vacas} kg</div>
+                                </div>
+                                <div style={{ padding: "6px", borderBottom: "1px solid #eee" }}>
+                                    <div style={{ fontSize: "10px", color: "#6b7280" }}>BECERROS</div>
+                                    <div style={{ fontWeight: "bold" }}>{metricas.pesosVenta.becerros} kg</div>
+                                </div>
+                                <div style={{ padding: "6px" }}>
+                                    <div style={{ fontSize: "10px", color: "#6b7280" }}>NOVILLONAS</div>
+                                    <div style={{ fontWeight: "bold" }}>{metricas.pesosVenta.novillonas} kg</div>
+                                </div>
+                                <div style={{ padding: "6px" }}>
+                                    <div style={{ fontSize: "10px", color: "#6b7280" }}>TORETES</div>
+                                    <div style={{ fontWeight: "bold" }}>{metricas.pesosVenta.toretes} kg</div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* TARJETA INDIVIDUAL */}
+            <div style={{ padding: "16px", backgroundColor: "#f0fdf4", borderRadius: "12px", border: "1px solid #bbf7d0" }}>
+                 <label style={{ display: "block", fontSize: "13px", fontWeight: "bold", color: "#166534", marginBottom: "10px" }}>5. Tarjeta Individual por Arete:</label>
+                 <form onSubmit={manejarBusquedaIndividual} style={{ display: "flex", gap: "8px", marginBottom: "15px" }}>
+                    <input 
+                        type="text" 
+                        placeholder="Ingresa Arete (Ej: VC-1234)" 
+                        value={areteBusqueda}
+                        onChange={(e) => setAreteBusqueda(e.target.value)}
+                        style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #86efac", fontSize: "14px" }}
+                    />
+                    <button type="submit" className="btn-primary" style={{ margin: 0, padding: "10px" }}>🔍 Ver</button>
+                 </form>
+
+                 <div style={{ minHeight: "180px", backgroundColor: "white", borderRadius: "8px", padding: "15px", border: "1px solid #86efac" }}>
+                    {!animalIndividual && <p style={{ color: "#9ca3af", textAlign: "center", fontSize: "13px", marginTop: "50px" }}>Busca un arete para ver su historia completa.</p>}
+                    {animalIndividual === "error" && <p style={{ color: "#ef4444", textAlign: "center", fontSize: "13px" }}>⚠️ No se encontró ningún animal con ese arete.</p>}
+                    
+                    {animalIndividual && animalIndividual !== "error" && (
+                        <div>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                <div>
+                                    <h4 style={{ margin: 0, color: "#166534" }}>{animalIndividual.arete}</h4>
+                                    <p style={{ margin: 0, fontSize: "11px", color: "#6b7280" }}>{animalIndividual.tipo} — {animalIndividual.raza}</p>
+                                </div>
+                                <button 
+                                    className="btn-outline" 
+                                    style={{ padding: "4px 8px", fontSize: "11px", borderColor: "#166534", color: "#166534" }}
+                                    onClick={() => generarPDFFichaIndividual(animalIndividual, eventos.filter(e => e.animalId === animalIndividual.id))}
+                                >
+                                    💾 Descargar Ficha
+                                </button>
+                            </div>
+
+                            <div style={{ marginTop: "15px", fontSize: "12px", color: "#374151" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                                    <span>Nacimiento:</span> <span style={{ fontWeight: "bold" }}>{animalIndividual.fechaNacimiento || "No reg."}</span>
+                                </div>
+                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                                    <span>Manejos reg.:</span> <span style={{ fontWeight: "bold" }}>{eventos.filter(e => e.animalId === animalIndividual.id).length}</span>
+                                </div>
+                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                                    <span>Estado actual:</span> <span style={{ fontWeight: "bold", padding: "2px 6px", borderRadius: "4px", backgroundColor: "#f0fdf4" }}>{animalIndividual.estado}</span>
+                                </div>
+                                <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid #eee", fontSize: "11px", fontStyle: "italic", color: "#6b7280" }}>
+                                    * El PDF descargable incluye el historial cronológico completo de este animal.
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                 </div>
+            </div>
+
+        </div>
+      </div>
+
     </div>
   );
 }
