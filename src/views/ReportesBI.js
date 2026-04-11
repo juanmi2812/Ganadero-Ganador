@@ -8,7 +8,8 @@ import {
   generarPDFVientres, generarExcelVientres, 
   generarPDFReproduccion, generarExcelReproduccion, 
   generarPDFProyeccionPartos, generarExcelProyeccionPartos,
-  generarPDFHectareas, generarExcelHectareas
+  generarPDFHectareas, generarExcelHectareas,
+  generarPDFDesarrollo, generarExcelDesarrollo
 } from "../reportes";
 
 // Paletas de Colores Dinámicas
@@ -374,6 +375,39 @@ export default function ReportesBI() {
                 className="btn-outline"
                 style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", borderColor: "var(--verde-claro)", color: "var(--verde-medio)" }}
                 onClick={() => generarExcelHectareas(animales)}
+              >
+                <FileSpreadsheet size={16} /> Excel
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        {/* REPORTE: DESARROLLO (GDP) */}
+        <div style={{
+          padding: "16px", borderRadius: "var(--radio)", border: "1px solid var(--gris-200)",
+          background: "var(--gris-100)", marginBottom: "12px"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--gris-900)", display: "flex", alignItems: "center", gap: "6px" }}>
+                📈 Reporte de Desarrollo (GDP)
+              </div>
+              <div style={{ fontSize: "12px", color: "var(--gris-400)", marginTop: "2px" }}>
+                Resultados del último pesaje, Ganancia Diaria de Peso promedio y periodos por categoría.
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                className="btn-outline"
+                style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px" }}
+                onClick={() => generarPDFDesarrollo(animales, eventos)}
+              >
+                <FileText size={16} /> PDF
+              </button>
+              <button
+                className="btn-outline"
+                style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", borderColor: "var(--verde-claro)", color: "var(--verde-medio)" }}
+                onClick={() => generarExcelDesarrollo(animales, eventos)}
               >
                 <FileSpreadsheet size={16} /> Excel
               </button>

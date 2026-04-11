@@ -623,3 +623,163 @@ export function generarExcelHectareas(animales) {
     alert("Error al generar Excel de Hectáreas");
   }
 }
+
+// ================================================
+// REPORTE 5: DESARROLLO (PESAJES Y GDP)
+// ================================================
+
+function prepararDatosDesarrollo(animales, eventos) {
+  const hoy = new Date();
+  
+  // Categorías base según el ejemplo del cliente
+  const resumen = {
+    "VAQUILLAS": { cantidad: 0, sumaGDP: 0, sumaDias: 0, ultimaFecha: null, conteoValidos: 0 },
+    "BECERRAS": { cantidad: 0, sumaGDP: 0, sumaDias: 0, ultimaFecha: null, conteoValidos: 0 },
+    "BECERROS": { cantidad: 0, sumaGDP: 0, sumaDias: 0, ultimaFecha: null, conteoValidos: 0 },
+    "CRIAS HEMBRAS": { cantidad: 0, sumaGDP: 0, sumaDias: 0, ultimaFecha: null, conteoValidos: 0 },
+    "CRIAS MACHOS": { cantidad: 0, sumaGDP: 0, sumaDias: 0, ultimaFecha: null, conteoValidos: 0 },
+    "TORETES/OTROS": { cantidad: 0, sumaGDP: 0, sumaDias: 0, ultimaFecha: null, conteoValidos: 0 }
+  };
+
+  animales.forEach(a => {
+    if (a.estado?.includes("Baja")) return;
+
+    // 1. Clasificación específica para este reporte
+    const fechaNac = a.fechaNacimiento ? new Date(a.fechaNacimiento + "T00:00:00") : null;
+    const meses = fechaNac && !isNaN(fechaNac.getTime()) ? differenceInMonths(hoy, fechaNac) : 99;
+    const sexo = (a.sexo || "").toLowerCase();
+    
+    let cat = "TORETES/OTROS";
+    if (meses < 2) {
+      cat = sexo === "hembra" ? "CRIAS HEMBRAS" : "CRIAS MACHOS";
+    } else if (meses < 12) {
+      cat = sexo === "hembra" ? "BECERRAS" : "BECERROS";
+    } else if (sexo === "hembra" && a.tipo === "Novillona") {
+      cat = "VAQUILLAS";
+    } else if (sexo === "macho" && a.tipo === "Torete") {
+      cat = "BECERROS"; // En muchas zonas, toretes jóvenes se siguen reportando como becerros pesados
+    } else {
+        return; // No entra en reporte de desarrollo (ej: Vacas adultas, Sementales)
+    }
+
+    resumen[cat].cantidad++;
+
+    // 2. Cálculo de GDP (Ganancia Diaria de Peso)
+    // Buscamos los eventos de repeso
+    const misRepesos = eventos
+      .filter(e => e.animalId === a.id && e.tipo === "Repeso")
+      .sort((a, b) => new Date(b.fecha) - new Date(a.fecha)); // De más reciente a más viejo
+
+    if (misRepesos.length > 0) {
+      const elUltimo = misRepesos[0];
+      const pesoFinal = parseFloat(elUltimo.resultado) || 0;
+      const fechaFinal = new Date(elUltimo.fecha + "T00:00:00");
+
+      // Actualizar última fecha del grupo
+      if (!resumen[cat].ultimaFecha || fechaFinal > resumen[cat].ultimaFecha) {
+        resumen[cat].ultimaFecha = fechaFinal;
+      }
+
+      let pesoInicial = 0;
+      let fechaInicial = null;
+
+      if (misRepesos.length >= 2) {
+        // Caso A: Tenemos dos repesos
+        pesoInicial = parseFloat(misRepesos[1].resultado) || 0;
+        fechaInicial = new Date(misRepesos[1].fecha + "T00:00:00");
+      } else {
+        // Caso B: Solo un repeso, comparamos contra el peso de registro
+        pesoInicial = parseFloat(a.peso?.toString().replace(/[^0-9.]/g, "")) || 0;
+        fechaInicial = new Date(a.fechaRegistro || a.fechaNacimiento || elUltimo.fecha);
+      }
+
+      const diffMs = Math.abs(fechaFinal - fechaInicial);
+      const dias = Math.ceil(diffMs / (1000 * 60 * 60 * 24)) || 1;
+
+      if (pesoFinal > pesoInicial && dias > 0) {
+        const gdp = (pesoFinal - pesoInicial) / dias;
+        resumen[cat].sumaGDP += gdp;
+        resumen[cat].sumaDias += dias;
+        resumen[cat].conteoValidos++;
+      }
+    }
+  });
+
+  // Formatear para la tabla
+  return Object.keys(resumen)
+    .filter(k => resumen[k].cantidad > 0)
+    .map(k => {
+      const r = resumen[k];
+      return {
+        categoria: k,
+        cantidad: r.cantidad,
+        ultimaFecha: r.ultimaFecha ? format(r.ultimaFecha, "dd-MMM-yy", { locale: es }).toLowerCase() : "--",
+        gdp: r.conteoValidos > 0 ? (r.sumaGDP / r.conteoValidos).toFixed(3) : "0.000",
+        dias: r.conteoValidos > 0 ? Math.round(r.sumaDias / r.conteoValidos) : "--"
+      };
+    });
+}
+
+export function generarPDFDesarrollo(animales, eventos) {
+  try {
+    const datos = prepararDatosDesarrollo(animales, eventos);
+    const doc = new jsPDF();
+    const fechaHoy = format(new Date(), "dd 'de' MMMM yyyy", { locale: es });
+
+    doc.setFillColor(27, 94, 32);
+    doc.rect(0, 0, doc.internal.pageSize.width, 28, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("REPORTE DE DESARROLLO (GDP)", 14, 14);
+    doc.setFontSize(10);
+    doc.text(`Monitoreo de crecimiento y ganancia de peso por categoría (${fechaHoy})`, 14, 22);
+
+    autoTable(doc, {
+      startY: 35,
+      theme: "grid",
+      headStyles: { fillColor: [46, 125, 50], textColor: 255, halign: "center" },
+      bodyStyles: { halign: "center" },
+      columnStyles: {
+          0: { halign: "left", fontStyle: "bold" },
+          3: { fontStyle: "bold", textColor: [27, 94, 32] }
+      },
+      head: [["CATEGORÍA", "CANTIDAD", "ÚLTIMA FECHA", "GDP (PROM. KG/DÍAS)", "DÍAS (PERIODO)"]],
+      body: datos.map((d) => [
+        d.categoria,
+        d.cantidad,
+        d.ultimaFecha,
+        d.gdp,
+        d.dias
+      ]),
+    });
+
+    doc.save(`Reporte_Desarrollo_GDP_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+  } catch (error) {
+    console.error(error);
+    alert("Error al generar PDF de Desarrollo");
+  }
+}
+
+export function generarExcelDesarrollo(animales, eventos) {
+  try {
+    const datos = prepararDatosDesarrollo(animales, eventos);
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(
+      datos.map((d) => ({
+        CATEGORIA: d.categoria,
+        CANTIDAD: d.cantidad,
+        "ULTIMA FECHA": d.ultimaFecha,
+        "GDP (PROM)": d.gdp,
+        "DIAS PROMEDIO": d.dias
+      }))
+    );
+    XLSX.utils.book_append_sheet(wb, ws, "Desarrollo_GDP");
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    saveAs(blob, `Reporte_Desarrollo_GDP_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+  } catch (error) {
+    console.error(error);
+    alert("Error al generar Excel de Desarrollo");
+  }
+}

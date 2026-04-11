@@ -151,14 +151,24 @@ export default function ImportadorMasivo() {
 
             // Generar entre 2 y 5 eventos por animal
             const numEventos = getRandomInt(2, 5);
+            // Aseguramos al menos un repeso para categorías de desarrollo
+            if (["Becerro", "Becerra", "Novillona", "Torete"].includes(animal.tipo)) {
+                 misPromesas.push(addDoc(collection(db, "eventos"), {
+                    animalId, tipo: "Repeso", 
+                    resultado: `${getRandomInt(animal.pesoActual - 40, animal.pesoActual - 10)} kg`, 
+                    fecha: restarMesesAFecha(getRandomInt(2, 4)), 
+                    costo: 0
+                }));
+            }
+
             for(let j=0; j<numEventos; j++) {
                 const tipoEv = getRandom(tiposEvento);
                 let resultado = (tipoEv === "Vacunación") ? getRandom(vacunas) : 
-                                (tipoEv === "Repeso") ? `${getRandomInt(animal.pesoActual - 50, animal.pesoActual + 30)} kg` :
+                                (tipoEv === "Repeso") ? `${getRandomInt(animal.pesoActual - 10, animal.pesoActual + 15)} kg` :
                                 (tipoEv === "Tratamiento") ? getRandom(tratamientos) : "Ivermectina 1%";
                 
                 misPromesas.push(addDoc(collection(db, "eventos"), {
-                    animalId, tipo: tipoEv, resultado, fecha: generarFechaAleatoria(10), costo: getRandomInt(50, 400)
+                    animalId, tipo: tipoEv, resultado, fecha: generarFechaAleatoria(j === 0 ? 1 : 10), costo: getRandomInt(50, 400)
                 }));
             }
 
