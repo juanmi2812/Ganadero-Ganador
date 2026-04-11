@@ -36,6 +36,8 @@ export default function ReportesBI() {
   const [reporteProd, setReporteProd] = useState("");
   const [areteBusqueda, setAreteBusqueda] = useState("");
   const [animalIndividual, setAnimalIndividual] = useState(null);
+  const [fCatTarjeta, setfCatTarjeta] = useState("Todas");
+  const [fHecTarjeta, setfHecTarjeta] = useState("Todas");
 
   useEffect(() => {
     const unsubAnimales = onSnapshot(collection(db, "animales"), snap => {
@@ -129,10 +131,18 @@ export default function ReportesBI() {
   const metricas = calcularMetricasProductividad(animales, eventos);
 
   const manejarBusquedaIndividual = (e) => {
-    e.preventDefault();
+    if(e) e.preventDefault();
     const a = animales.find(a => a.arete?.toLowerCase() === areteBusqueda.toLowerCase());
     setAnimalIndividual(a || "error");
   };
+
+  const listaAretesFiltrados = animales.filter(a => {
+    const cumpleCat = fCatTarjeta === "Todas" || a.tipo === fCatTarjeta;
+    const cumpleHec = fHecTarjeta === "Todas" || a.hectarea === fHecTarjeta;
+    return cumpleCat && cumpleHec;
+  }).sort((a,b) => (a.arete || "").localeCompare(b.arete || ""));
+
+  const hectareasUnicas = [...new Set(animales.map(a => a.hectarea || "Sin Asignar"))].sort();
 
   return (
     <div className="dashboard-container" style={{ padding: "0 16px", maxWidth: "1200px", margin: "0 auto", paddingBottom: "50px" }}>
@@ -593,14 +603,45 @@ export default function ReportesBI() {
             {/* TARJETA INDIVIDUAL */}
             <div style={{ padding: "16px", backgroundColor: "#f0fdf4", borderRadius: "12px", border: "1px solid #bbf7d0" }}>
                  <label style={{ display: "block", fontSize: "13px", fontWeight: "bold", color: "#166534", marginBottom: "10px" }}>5. Tarjeta Individual por Arete:</label>
-                 <form onSubmit={manejarBusquedaIndividual} style={{ display: "flex", gap: "8px", marginBottom: "15px" }}>
-                    <input 
-                        type="text" 
-                        placeholder="Ingresa Arete (Ej: VC-1234)" 
+                 
+                 {/* FILTROS DE BÚSQUEDA */}
+                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "8px" }}>
+                    <select 
+                        value={fCatTarjeta} 
+                        onChange={(e) => setfCatTarjeta(e.target.value)}
+                        style={{ padding: "6px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "12px" }}
+                    >
+                        <option value="Todas">Toda Categoría</option>
+                        <option value="Vaca">Vacas</option>
+                        <option value="Novillona">Novillonas</option>
+                        <option value="Becerro">Becerros</option>
+                        <option value="Becerra">Becerras</option>
+                        <option value="Torete">Toretes</option>
+                        <option value="Semental">Sementales</option>
+                    </select>
+                    <select 
+                        value={fHecTarjeta} 
+                        onChange={(e) => setfHecTarjeta(e.target.value)}
+                        style={{ padding: "6px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "12px" }}
+                    >
+                        <option value="Todas">Toda Hectárea</option>
+                        {hectareasUnicas.map(h => <option key={h} value={h}>{h}</option>)}
+                    </select>
+                 </div>
+
+                 <form onSubmit={manejarBusquedaIndividual} style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "15px" }}>
+                    <select
                         value={areteBusqueda}
-                        onChange={(e) => setAreteBusqueda(e.target.value)}
+                        onChange={(e) => {
+                            setAreteBusqueda(e.target.value);
+                        }}
                         style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #86efac", fontSize: "14px" }}
-                    />
+                    >
+                        <option value="">-- Seleccionar Arete --</option>
+                        {listaAretesFiltrados.map(a => (
+                            <option key={a.id} value={a.arete}>{a.arete} ({a.tipo})</option>
+                        ))}
+                    </select>
                     <button type="submit" className="btn-primary" style={{ margin: 0, padding: "10px" }}>🔍 Ver</button>
                  </form>
 
