@@ -859,17 +859,17 @@ function prepararDatosCalendario(animales, eventos, alertas) {
         const sopActual = PROTOCOLO_SANITARIO[mesActualIdx]?.[keySOP] || [];
         const sopSig = PROTOCOLO_SANITARIO[mesSiguienteIdx]?.[keySOP] || [];
 
-        // Mezclar
+        // Mezclar usando etiquetas de texto seguras para PDF
         const resActual = [
-            ...new Set(evMesActual.map(e => `(✓) ${e.tipo}`)),
-            ...new Set(alMesActual.map(al => `(🔔) ${al.titulo.split(" ")[0]}`))
+            ...new Set(evMesActual.map(e => `[HECHO] ${e.tipo}`)),
+            ...new Set(alMesActual.map(al => `[PLAN] ${al.titulo.split(" ")[0]}`))
         ];
-        if (resActual.length === 0) resActual.push(...sopActual.map(s => `(📋) ${s}`));
+        if (resActual.length === 0) resActual.push(...sopActual.map(s => `[SUG] ${s}`));
 
         const resSig = [
-            ...new Set(alMesSig.map(al => `(🔔) ${al.titulo.split(" ")[0]}`))
+            ...new Set(alMesSig.map(al => `[PLAN] ${al.titulo.split(" ")[0]}`))
         ];
-        if (resSig.length === 0) resSig.push(...sopSig.map(s => `(📋) ${s}`));
+        if (resSig.length === 0) resSig.push(...sopSig.map(s => `[SUG] ${s}`));
 
         return {
             categoria: cat.label,
@@ -896,25 +896,40 @@ export function generarPDFCalendario(animales, eventos, alertas) {
         doc.setFontSize(10);
         doc.text(`Planificación vs Ejecución — Mes: ${mesStr}`, 14, 22);
 
-        // LEYENDA
+        // LEYENDA (Sin iconos especiales para evitar errores de fuente)
         doc.setFillColor(245, 245, 245);
         doc.rect(14, 32, 269, 10, "F");
         doc.setTextColor(50, 50, 50);
-        doc.setFontSize(8);
-        doc.text("LEYENDA: (✓) Realizado | (🔔) Programado | (📋) Sugerencia Estándar por Temporada (Personalizable)", 20, 38);
+        doc.setFontSize(9);
+        doc.text("LEYENDA: [HECHO] Realizado | [PLAN] Programado en Calendario | [SUG] Sugerencia Técnica por Temporada", 20, 38);
 
         autoTable(doc, {
-            startY: 45, theme: "grid",
-            headStyles: { fillColor: [46, 125, 50], textColor: 255, halign: "center" },
-            bodyStyles: { fontSize: 7, cellPadding: 2 },
-            head: [["CATEGORIA", `MES ACTUAL (${datos[0].mesActual})`, "ACT 1", "ACT 2", "ACT 3", `MES SIGUIENTE (${datos[0].mesSiguiente})`, "ACT 1", "ACT 2", "ACT 3"]],
+            startY: 45,
+            theme: "grid",
+            headStyles: { fillColor: [46, 125, 50], textColor: 255, halign: "center", fontSize: 8 },
+            bodyStyles: { fontSize: 7, cellPadding: 2, overflow: 'linebreak' }, // overflow linebreak es clave
+            columnStyles: {
+                0: { fontStyle: 'bold', cellWidth: 35 },
+                1: { cellWidth: 20 },
+                2: { cellWidth: 'auto' },
+                3: { cellWidth: 'auto' },
+                4: { cellWidth: 'auto' },
+                5: { cellWidth: 20 },
+                6: { cellWidth: 'auto' },
+                7: { cellWidth: 'auto' },
+                8: { cellWidth: 'auto' }
+            },
+            head: [["CATEGORIA", "MES", "ACT 1", "ACT 2", "ACT 3", "SIG.", "ACT 1", "ACT 2", "ACT 3"]],
             body: datos.map(d => [
                 d.categoria, d.mesActual, ...d.actividadesActual, d.mesSiguiente, ...d.actividadesSiguiente
             ])
         });
 
         doc.save(`Calendario_Manejo_${format(new Date(), "yyyy-MM")}.pdf`);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+        console.error(e);
+        alert("Error al generar PDF de Calendario");
+    }
 }
 
 export function generarExcelCalendario(animales, eventos, alertas) {

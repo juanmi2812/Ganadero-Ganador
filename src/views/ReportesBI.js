@@ -436,9 +436,9 @@ export default function ReportesBI() {
               </div>
               {/* LEYENDA UI */}
               <div style={{ display: "flex", gap: "10px", marginTop: "8px", fontSize: "10px", color: "#6b7280" }}>
-                 <span>(✓) Realizado</span>
-                 <span>(🔔) Programado</span>
-                 <span>(📋) Sugerido</span>
+                 <span>[HECHO] Realizado</span>
+                 <span>[PLAN] Programado</span>
+                 <span>[SUG] Sugerido</span>
               </div>
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
