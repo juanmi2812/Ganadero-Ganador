@@ -563,34 +563,46 @@ export function generarExcelProyeccionPartos(animales, eventos, filtros = null) 
 }
 
 // ================================================
-// REPORTE 4: PRODUCCIÓN POR HECTÁREA
+// REPORTE 4: PRODUCCIÓN POR POTRERO (CARGA ANIMAL)
 // ================================================
 
-export function prepararDatosHectareas(animales, filtros = null) {
+export function prepararDatosPotreros(animales, potreros = [], filtros = null) {
   const grupos = {};
+
+  const mapCapacidad = {};
+  potreros.forEach(p => {
+    mapCapacidad[p.nombre] = p.hectareas || 1;
+  });
 
   animales.forEach((a) => {
     if (a.estado?.includes("Baja")) return;
-    const h = a.hectarea || "Sin Asignar";
-    if (!grupos[h]) {
-      grupos[h] = { nombre: h, cabezas: 0, pesoTotal: 0 };
+    const pNombre = a.potrero || a.hectarea || "Sin Asignar";
+    if (!grupos[pNombre]) {
+      grupos[pNombre] = { nombre: pNombre, cabezas: 0, pesoTotal: 0 };
     }
-    grupos[h].cabezas++;
+    grupos[pNombre].cabezas++;
     // Usamos pesoActual si existe, si no, intentamos parsear peso (inicial)
     const p = parseFloat(a.pesoActual) || parseFloat(a.peso?.toString().replace(/[^0-9.]/g, "")) || 0;
-    grupos[h].pesoTotal += p;
+    grupos[pNombre].pesoTotal += p;
   });
 
-  return Object.values(grupos).map((g) => ({
-    ...g,
-    pesoPromedio: g.cabezas > 0 ? Math.round(g.pesoTotal / g.cabezas) : 0,
-    pesoTotal: Math.round(g.pesoTotal),
-  }));
+  return Object.values(grupos).map((g) => {
+    const has = mapCapacidad[g.nombre] ? mapCapacidad[g.nombre] : (g.nombre === "Sin Asignar" ? 0 : 1);
+    
+    return {
+      ...g,
+      hectareasOficiales: has,
+      pesoPromedio: g.cabezas > 0 ? Math.round(g.pesoTotal / g.cabezas) : 0,
+      pesoTotal: Math.round(g.pesoTotal),
+      cargaAnimalCabezasXHa: has > 0 ? +(g.cabezas / has).toFixed(2) : 0,
+      cargaAnimalKilosXHa: has > 0 ? Math.round(g.pesoTotal / has) : 0
+    };
+  });
 }
 
-export function generarPDFHectareas(animales, filtros = null) {
+export function generarPDFPotreros(animales, potreros, filtros = null) {
   try {
-    const datos = prepararDatosHectareas(animales, filtros);
+    const datos = prepararDatosPotreros(animales, potreros, filtros);
     const doc = new jsPDF();
     const fechaHoy = format(new Date(), "dd 'de' MMMM yyyy", { locale: es });
 
@@ -599,49 +611,54 @@ export function generarPDFHectareas(animales, filtros = null) {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
-    doc.text("REPORTE DE PRODUCCIÓN POR HECTÁREA", 14, 14);
+    doc.text("REPORTE DE PRODUCCIÓN POR POTRERO", 14, 14);
     doc.setFontSize(10);
-    doc.text(`Carga animal y rendimiento de biomasa por ubicación (${fechaHoy})`, 14, 22);
+    doc.text(`Análisis de carga animal y biomasa producida por hectárea (${fechaHoy})`, 14, 22);
 
     autoTable(doc, {
       startY: 35,
       theme: "grid",
-      headStyles: { fillColor: [27, 94, 32], textColor: 255, halign: "center" },
-      bodyStyles: { halign: "center" },
-      head: [["HECTÁREA / LOTE", "CABEZAS (STOCK)", "PESO TOTAL (KG)", "PROMEDIO POR CABEZA"]],
+      headStyles: { fillColor: [27, 94, 32], textColor: 255, halign: "center", fontSize: 9 },
+      bodyStyles: { halign: "center", fontSize: 9 },
+      head: [["POTRERO", "EXTENSIÓN", "STOCK", "CARGA (Cab/ha)", "BIOMASA TOTAL", "BIOMASA/ha"]],
       body: datos.map((d) => [
         d.nombre.toUpperCase(),
+        d.hectareasOficiales > 0 ? `${d.hectareasOficiales} has` : '---',
         d.cabezas,
+        d.cargaAnimalCabezasXHa,
         `${d.pesoTotal.toLocaleString()} kg`,
-        `${d.pesoPromedio} kg`,
+        `${d.cargaAnimalKilosXHa.toLocaleString()} kg/ha`,
       ]),
     });
 
-    doc.save(`Reporte_Hectareas_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+    doc.save(`Reporte_Potreros_${format(new Date(), "yyyy-MM-dd")}.pdf`);
   } catch (error) {
     console.error(error);
-    alert("Error al generar PDF de Hectáreas");
+    alert("Error al generar PDF de Potreros");
   }
 }
 
-export function generarExcelHectareas(animales, filtros = null) {
+export function generarExcelPotreros(animales, potreros, filtros = null) {
   try {
-    const datos = prepararDatosHectareas(animales, filtros);
+    const datos = prepararDatosPotreros(animales, potreros, filtros);
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(
       datos.map((d) => ({
-        HECTAREA: d.nombre,
-        CABEZAS: d.cabezas,
-        "PESO TOTAL (KG)": d.pesoTotal,
-        "PESO PROMEDIO (KG)": d.pesoPromedio,
+        POTRERO: d.nombre,
+        "EXTENSIÓN (HECTÁREAS)": d.hectareasOficiales,
+        "CABEZAS (STOCK)": d.cabezas,
+        "CARGA (Cab/ha)": d.cargaAnimalCabezasXHa,
+        "BIOMASA TOTAL (KG)": d.pesoTotal,
+        "BIOMASA PRODUCIDA (KG/ha)": d.cargaAnimalKilosXHa,
+        "PROMEDIO ANIMAL (KG)": d.pesoPromedio,
       }))
     );
-    XLSX.utils.book_append_sheet(wb, ws, "Produccion_Hectareas");
+    XLSX.utils.book_append_sheet(wb, ws, "Produccion_Potreros");
     const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
     const blob = new Blob([excelBuffer], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
-    saveAs(blob, `Reporte_Hectareas_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+    saveAs(blob, `Reporte_Potreros_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
   } catch (error) {
     console.error(error);
     alert("Error al generar Excel de Hectáreas");

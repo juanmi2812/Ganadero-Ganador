@@ -11,7 +11,7 @@ export default function DashboardGanado() {
   const [inventario, setInventario] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [filtroActivo, setFiltroActivo] = useState("Todos");
-  const [filtroHectarea, setFiltroHectarea] = useState("Todas");
+  const [filtroPotrero, setFiltroPotrero] = useState("Todos");
   const [config, setConfig] = useState(null); // Finanzas
   
   const [animalActivo, setAnimalActivo] = useState(null);
@@ -183,8 +183,8 @@ export default function DashboardGanado() {
     const cumpleBusqueda = animal.arete?.toLowerCase().includes(busqueda.toLowerCase());
     if (!cumpleBusqueda) return false;
 
-    const cumpleHectarea = filtroHectarea === "Todas" || animal.hectarea === filtroHectarea;
-    if (!cumpleHectarea) return false;
+    const cumplePotrero = filtroPotrero === "Todos" || (animal.potrero || animal.hectarea) === filtroPotrero;
+    if (!cumplePotrero) return false;
 
     if (filtroActivo === "Todos") return true;
     if (filtroActivo === "Bajas") return animal.estado?.includes('Baja');
@@ -193,7 +193,7 @@ export default function DashboardGanado() {
     return animal.tipo === filtroActivo && !animal.estado?.includes('Baja') && animal.estado !== "Disponible para Venta" && animal.estado !== "Desecho";
   });
 
-  const listaHectareas = ["Todas", ...new Set(inventario.map(a => a.hectarea).filter(Boolean))];
+  const listaPotreros = ["Todos", ...new Set(inventario.map(a => a.potrero || a.hectarea).filter(Boolean))].sort();
 
   // --- ACCIONES ---
   const guardarEvento = async (e) => {
@@ -356,11 +356,11 @@ export default function DashboardGanado() {
           />
         </div>
         <select 
-          value={filtroHectarea} 
-          onChange={(e) => setFiltroHectarea(e.target.value)}
+          value={filtroPotrero} 
+          onChange={(e) => setFiltroPotrero(e.target.value)}
           style={{ padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db", backgroundColor: "white", color: "#374151", fontSize: "14px", cursor: "pointer" }}
         >
-          {listaHectareas.map(h => <option key={h} value={h}>{h === "Todas" ? "🌍 Todas las Hectáreas" : `🚩 ${h}`}</option>)}
+          {listaPotreros.map(h => <option key={h} value={h}>{h === "Todos" ? "🏞️ Todos los Potreros" : `🚩 ${h}`}</option>)}
         </select>
       </div>
 
@@ -388,7 +388,7 @@ export default function DashboardGanado() {
               <div className="animal-arete">{animal.arete}</div>
               <div className="animal-meta">
                 {animal.raza} • {animal.tipo} <br/> 
-                <span style={{ color: "var(--verde-medio)", fontWeight: "600", fontSize: "11px" }}>📍 {animal.hectarea || "Sin Lote"}</span>
+                <span style={{ color: "var(--verde-medio)", fontWeight: "600", fontSize: "11px" }}>📍 {animal.potrero || animal.hectarea || "Sin Lote"}</span>
               </div>
             </div>
             <span className={`animal-status ${getStatusClass(animal.estado)}`}>
@@ -489,7 +489,7 @@ export default function DashboardGanado() {
             )}
 
             <div style={{ backgroundColor: "#f3f4f6", padding: "12px", borderRadius: "8px", marginBottom: "16px", fontSize: "13px" }}>
-              <strong>Ubicación:</strong> <span style={{ color: "var(--verde-medio)", fontWeight: "bold" }}>{animalActivo.hectarea || "Sin Asignar"}</span> <br/>
+              <strong>Ubicación:</strong> <span style={{ color: "var(--verde-medio)", fontWeight: "bold" }}>{animalActivo.potrero || animalActivo.hectarea || "Sin Asignar"}</span> <br/>
               <strong>Info:</strong> {animalActivo.raza} | <strong>Peso Inicial:</strong> {animalActivo.peso} <br/>
               <strong>Estado Actual:</strong> <span style={{ color: animalActivo.estado?.includes("Alerta") ? "red" : (animalActivo.estado === "Disponible para Venta" ? "orange" : "green") }}>{animalActivo.estado || "Sano"}</span> <br/>
               {animalActivo.madre && <span><strong>Madre:</strong> {animalActivo.madre} | <strong>Padre:</strong> {animalActivo.padre}</span>}

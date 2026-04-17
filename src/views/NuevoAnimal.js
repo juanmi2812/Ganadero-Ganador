@@ -17,8 +17,10 @@ export default function NuevoAnimal() {
     fechaNacimiento: "",
     madre: "",
     padre: "",
-    hectarea: "",
+    potrero: "",
   });
+
+  const [potreros, setPotreros] = useState([]);
 
   // Cargamos las listas de madres y padres existentes
   useEffect(() => {
@@ -41,7 +43,16 @@ export default function NuevoAnimal() {
         );
       }
     );
-    return () => cancelarSuscripcion();
+    
+    // Cargar potreros
+    const unsubPotreros = onSnapshot(collection(db, "potreros"), (snap) => {
+      setPotreros(snap.docs.map(doc => doc.data()));
+    });
+
+    return () => {
+      cancelarSuscripcion();
+      unsubPotreros();
+    };
   }, []);
 
   const manejarCambio = (e) => {
@@ -60,7 +71,7 @@ export default function NuevoAnimal() {
       fechaNacimiento: datosFormulario.fechaNacimiento,
       madre: datosFormulario.madre, // Guardamos el arete o ID de la madre
       padre: datosFormulario.padre, // Guardamos el arete o ID del padre
-      hectarea: datosFormulario.hectarea || "Sin Asignar",
+      potrero: datosFormulario.potrero || "Sin Asignar",
       estado: "Sano",
       fechaRegistro: new Date().toISOString(),
     };
@@ -79,7 +90,7 @@ export default function NuevoAnimal() {
           fechaNacimiento: "",
           madre: "",
           padre: "",
-          hectarea: "",
+          potrero: "",
         });
       }, 3000);
     } catch (error) {
@@ -224,14 +235,18 @@ export default function NuevoAnimal() {
             </div>
 
             <div className="input-group">
-              <label>Hectárea / Lote (Ubicación)</label>
-              <input
-                type="text"
-                name="hectarea"
-                placeholder="Ej: Hectárea 1, Lote Norte..."
-                value={datosFormulario.hectarea}
+              <label>Potrero de Ubicación</label>
+              <select
+                name="potrero"
+                value={datosFormulario.potrero}
                 onChange={manejarCambio}
-              />
+                style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #d1d5db" }}
+              >
+                <option value="">Sin Asignar</option>
+                {potreros.map(pot => (
+                  <option key={pot.nombre} value={pot.nombre}>{pot.nombre}</option>
+                ))}
+              </select>
             </div>
 
             <div className="input-group">

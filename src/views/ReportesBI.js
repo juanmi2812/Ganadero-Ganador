@@ -8,11 +8,11 @@ import {
   generarPDFVientres, generarExcelVientres, 
   generarPDFReproduccion, generarExcelReproduccion, 
   generarPDFProyeccionPartos, generarExcelProyeccionPartos,
-  generarPDFHectareas, generarExcelHectareas,
+  generarPDFPotreros, generarExcelPotreros,
   generarPDFDesarrollo, generarExcelDesarrollo, prepararDatosDesarrollo,
   generarPDFCalendario, generarExcelCalendario, prepararDatosCalendario,
   calcularMetricasProductividad, generarPDFFichaIndividual,
-  prepararDatosVientres, prepararDatosReproduccion, prepararDatosProyeccionPartos, prepararDatosHectareas
+  prepararDatosVientres, prepararDatosReproduccion, prepararDatosProyeccionPartos, prepararDatosPotreros
 } from "../reportes";
 
 // Paletas de Colores Dinámicas
@@ -24,6 +24,7 @@ export default function ReportesBI() {
   const [eventos, setEventos] = useState([]);
   const [alertas, setAlertas] = useState([]);
   const [config, setConfig] = useState(null);
+  const [potreros, setPotreros] = useState([]);
 
   // Slicers
   const [filtroCategoria, setFiltroCategoria] = useState("Todas");
@@ -38,7 +39,7 @@ export default function ReportesBI() {
   const [areteBusqueda, setAreteBusqueda] = useState("");
   const [animalIndividual, setAnimalIndividual] = useState(null);
   const [fCatTarjeta, setfCatTarjeta] = useState("Todas");
-  const [fHecTarjeta, setfHecTarjeta] = useState("Todas");
+  const [fPotTarjeta, setfPotTarjeta] = useState("Todas");
 
   // Módulo de Reportes Avanzados (Interactivo)
   const [reporteAvanzado, setReporteAvanzado] = useState("");
@@ -71,7 +72,11 @@ export default function ReportesBI() {
       setAlertas(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
 
-    return () => { unsubAnimales(); unsubEventos(); unsubConfig(); unsubAlertas(); };
+    const unsubPotreros = onSnapshot(collection(db, "potreros"), snap => {
+      setPotreros(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+
+    return () => { unsubAnimales(); unsubEventos(); unsubConfig(); unsubAlertas(); unsubPotreros(); };
   }, []);
 
   // --- MATEMÁTICA Y EXTRACCIÓN DE DATOS ---
@@ -130,11 +135,11 @@ export default function ReportesBI() {
 
     const { datosCategoria, datosRazas } = procesarGraficaMetrica();
   
-  const datosHectarea = (() => {
+  const datosPotrero = (() => {
     const hMap = {};
     animales.forEach(a => {
         if (a.estado?.includes("Baja")) return;
-        const h = a.hectarea || "Sin Asignar";
+        const h = a.potrero || a.hectarea || "Sin Asignar";
         hMap[h] = (hMap[h] || 0) + 1;
     });
     return Object.keys(hMap).map(k => ({ name: k, value: hMap[k] }));
@@ -152,11 +157,11 @@ export default function ReportesBI() {
 
   const listaAretesFiltrados = animales.filter(a => {
     const cumpleCat = fCatTarjeta === "Todas" || a.tipo === fCatTarjeta;
-    const cumpleHec = fHecTarjeta === "Todas" || a.hectarea === fHecTarjeta;
-    return cumpleCat && cumpleHec;
+    const cumplePot = fPotTarjeta === "Todas" || (a.potrero || a.hectarea) === fPotTarjeta;
+    return cumpleCat && cumplePot;
   }).sort((a,b) => (a.arete || "").localeCompare(b.arete || ""));
 
-  const hectareasUnicas = [...new Set(animales.map(a => a.hectarea || "Sin Asignar"))].sort();
+  const potrerosUnicos = [...new Set(animales.map(a => a.potrero || a.hectarea || "Sin Asignar"))].sort();
 
   const formatoMonedaCorta = (num) => {
     if (!num) return "$0";
@@ -272,12 +277,12 @@ export default function ReportesBI() {
           </div>
         </div>
         
-        {/* NUEVO GRÁFICO: DISTRIBUCIÓN POR HECTÁREA */}
+        {/* NUEVO GRÁFICO: DISTRIBUCIÓN POR POTRERO */}
         <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", gridColumn: "span 2", marginTop: "24px" }}>
-          <h3 style={{ marginTop: 0, color: "#374151" }}>Inventario por Hectárea (Carga Animal)</h3>
+          <h3 style={{ marginTop: 0, color: "#374151" }}>Inventario por Potrero (Carga Animal)</h3>
           <div style={{ height: "300px", width: "100%", marginTop: "20px" }}>
             <ResponsiveContainer>
-              <BarChart data={datosHectarea} margin={{ top: 30, right: 30, left: 0, bottom: 5 }}>
+              <BarChart data={datosPotrero} margin={{ top: 30, right: 30, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" />
                 <YAxis allowDecimals={false} />
@@ -342,7 +347,7 @@ export default function ReportesBI() {
                                 if (reporteAvanzado === "vientres") generarPDFVientres(animales, eventos, config, filtrosActuales);
                                 else if (reporteAvanzado === "reproduccion") generarPDFReproduccion(eventos, filtrosActuales);
                                 else if (reporteAvanzado === "proyeccion") generarPDFProyeccionPartos(animales, eventos, filtrosActuales);
-                                else if (reporteAvanzado === "hectareas") generarPDFHectareas(animales, filtrosActuales);
+                                else if (reporteAvanzado === "potreros") generarPDFPotreros(animales, potreros, filtrosActuales);
                                 else if (reporteAvanzado === "desarrollo") generarPDFDesarrollo(animales, eventos, filtrosActuales);
                                 else if (reporteAvanzado === "calendario") generarPDFCalendario(animales, eventos, alertas, filtrosActuales);
                             }}
@@ -354,7 +359,7 @@ export default function ReportesBI() {
                                 if (reporteAvanzado === "vientres") generarExcelVientres(animales, eventos, config, filtrosActuales);
                                 else if (reporteAvanzado === "reproduccion") generarExcelReproduccion(eventos, filtrosActuales);
                                 else if (reporteAvanzado === "proyeccion") generarExcelProyeccionPartos(animales, eventos, filtrosActuales);
-                                else if (reporteAvanzado === "hectareas") generarExcelHectareas(animales, filtrosActuales);
+                                else if (reporteAvanzado === "potreros") generarExcelPotreros(animales, potreros, filtrosActuales);
                                 else if (reporteAvanzado === "desarrollo") generarExcelDesarrollo(animales, eventos, filtrosActuales);
                                 else if (reporteAvanzado === "calendario") generarExcelCalendario(animales, eventos, alertas, filtrosActuales);
                             }}
@@ -371,7 +376,7 @@ export default function ReportesBI() {
                             {reporteAvanzado === "vientres" && <tr><th style={{padding:"8px"}}>Arete</th><th style={{padding:"8px"}}>Categoría</th><th style={{padding:"8px"}}>Partos</th><th style={{padding:"8px"}}>Último Evento</th><th style={{padding:"8px"}}>Inversión</th></tr>}
                             {reporteAvanzado === "reproduccion" && <tr><th style={{padding:"8px"}}>Mes</th><th style={{padding:"8px"}}>Palpadas</th><th style={{padding:"8px"}}>Gestantes</th><th style={{padding:"8px"}}>Anestro</th><th style={{padding:"8px"}}>% Preñez</th></tr>}
                             {reporteAvanzado === "proyeccion" && <tr><th style={{padding:"8px"}}>Mes Proyectado</th><th style={{padding:"8px"}}>Partos Esperados</th><th style={{padding:"8px"}}>Aretes</th></tr>}
-                            {reporteAvanzado === "hectareas" && <tr><th style={{padding:"8px"}}>Hectárea</th><th style={{padding:"8px"}}>Cabezas</th><th style={{padding:"8px"}}>Peso Total</th><th style={{padding:"8px"}}>Promedio/Cab</th></tr>}
+                            {reporteAvanzado === "potreros" && <tr><th style={{padding:"8px"}}>Potrero</th><th style={{padding:"8px"}}>Carga (Cab/Ha)</th><th style={{padding:"8px"}}>Biomasa Total</th><th style={{padding:"8px"}}>Prod (Kg/Ha)</th></tr>}
                             {reporteAvanzado === "desarrollo" && <tr><th style={{padding:"8px"}}>Categoría</th><th style={{padding:"8px"}}>Cantidad</th><th style={{padding:"8px"}}>GDP Promedio</th><th style={{padding:"8px"}}>Días Período</th></tr>}
                             {reporteAvanzado === "calendario" && <tr><th style={{padding:"8px"}}>Categoría</th><th style={{padding:"8px"}}>Mes Actual</th><th style={{padding:"8px"}}>Actividades Realizadas</th></tr>}
                         </thead>
@@ -385,8 +390,8 @@ export default function ReportesBI() {
                             {reporteAvanzado === "proyeccion" && prepararDatosProyeccionPartos(animales, eventos, filtrosActuales).proyeccion.slice(0, 8).map((d, i) => (
                                 <tr key={i} style={{ borderBottom: "1px solid #e5e7eb" }}><td style={{padding:"8px"}}>{d.label}</td><td style={{padding:"8px",fontWeight:"bold",color:d.conteo>0?"#166534":"#9ca3af"}}>{d.conteo}</td><td style={{padding:"8px"}}>{d.detalles.join(", ")||"---"}</td></tr>
                             ))}
-                            {reporteAvanzado === "hectareas" && prepararDatosHectareas(animales, filtrosActuales).slice(0, 10).map((d, i) => (
-                                <tr key={i} style={{ borderBottom: "1px solid #e5e7eb" }}><td style={{padding:"8px"}}>{d.nombre}</td><td style={{padding:"8px"}}>{d.cabezas}</td><td style={{padding:"8px"}}>{d.pesoTotal} kg</td><td style={{padding:"8px"}}>{d.pesoPromedio} kg</td></tr>
+                            {reporteAvanzado === "potreros" && prepararDatosPotreros(animales, potreros, filtrosActuales).slice(0, 10).map((d, i) => (
+                                <tr key={i} style={{ borderBottom: "1px solid #e5e7eb" }}><td style={{padding:"8px"}}>{d.nombre} ({d.hectareasOficiales} has)</td><td style={{padding:"8px"}}>{d.cargaAnimalCabezasXHa}</td><td style={{padding:"8px"}}>{d.pesoTotal} kg</td><td style={{padding:"8px"}}>{d.cargaAnimalKilosXHa}</td></tr>
                             ))}
                             {reporteAvanzado === "desarrollo" && prepararDatosDesarrollo(animales, eventos, filtrosActuales).slice(0, 10).map((d, i) => (
                                 <tr key={i} style={{ borderBottom: "1px solid #e5e7eb" }}><td style={{padding:"8px"}}>{d.categoria}</td><td style={{padding:"8px"}}>{d.cantidad}</td><td style={{padding:"8px",fontWeight:"bold"}}>{d.gdp} kg/día</td><td style={{padding:"8px"}}>{d.dias}</td></tr>
@@ -538,12 +543,12 @@ export default function ReportesBI() {
                         <option value="Semental">Sementales</option>
                     </select>
                     <select 
-                        value={fHecTarjeta} 
-                        onChange={(e) => setfHecTarjeta(e.target.value)}
+                        value={fPotTarjeta} 
+                        onChange={(e) => setfPotTarjeta(e.target.value)}
                         style={{ padding: "6px", borderRadius: "6px", border: "1px solid #86efac", fontSize: "12px" }}
                     >
-                        <option value="Todas">Toda Hectárea</option>
-                        {hectareasUnicas.map(h => <option key={h} value={h}>{h}</option>)}
+                        <option value="Todas">Todos los Potreros</option>
+                        {potrerosUnicos.map(h => <option key={h} value={h}>{h}</option>)}
                     </select>
                  </div>
 

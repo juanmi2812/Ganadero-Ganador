@@ -40,7 +40,7 @@ export default function ImportadorMasivo() {
 
     // Paso 0: Limpiar datos previos en paralelo
     try {
-      const colecciones = ["animales", "eventos", "alertas"];
+      const colecciones = ["animales", "eventos", "alertas", "potreros"];
       for (const col of colecciones) {
         const snap = await getDocs(collection(db, col));
         await Promise.all(snap.docs.map(d => deleteDoc(doc(db, col, d.id))));
@@ -56,7 +56,17 @@ export default function ImportadorMasivo() {
         d.setMonth(d.getMonth() - meses);
         return d.toISOString().split('T')[0];
     };
-    const hectareas = ["Hectárea 1", "Hectárea 2", "Hectárea 3", "Hectárea 4", "Hectárea 5"];
+    
+    // Generar Potreros Base
+    const potrerosDemo = [
+      { nombre: "Potrero Norte", hectareas: 50 },
+      { nombre: "Potrero Sur", hectareas: 100 },
+      { castrar: false, nombre: "Potrero Maternidad", hectareas: 20 },
+      { nombre: "Corral Engorda", hectareas: 5 },
+      { nombre: "Pradera Abierta", hectareas: 200 }
+    ];
+    // Se insertarán después de borrar. Por eficiencia los predefinimos.
+    const potrerosNombres = potrerosDemo.map(p => p.nombre);
 
     const animalesAGenerar = [];
 
@@ -68,7 +78,7 @@ export default function ImportadorMasivo() {
             fechaNacimiento: restarMesesAFecha(getRandomInt(50, 120)), // 4 a 10 años
             pesoActual: getRandomInt(400, 650),
             estado: Math.random() > 0.05 ? "Sano" : "Desecho",
-            hectarea: getRandom(hectareas),
+            hectarea: getRandom(potrerosNombres),
             fechaRegistro: new Date().toISOString().split('T')[0]
         });
     }
@@ -82,7 +92,7 @@ export default function ImportadorMasivo() {
             fechaNacimiento: restarMesesAFecha(meses), 
             pesoActual: getRandomInt(280, 420),
             estado: meses >= 48 ? "Alerta: Revisión de Fertilidad" : "Sano",
-            hectarea: getRandom(hectareas),
+            hectarea: getRandom(potrerosNombres),
             madre: `VC-${getRandomInt(1000, 9999)}`,
             padre: `SM-${getRandomInt(100, 999)}`,
             fechaRegistro: new Date().toISOString().split('T')[0]
@@ -97,7 +107,7 @@ export default function ImportadorMasivo() {
             fechaNacimiento: restarMesesAFecha(getRandomInt(12, 30)), 
             pesoActual: getRandomInt(350, 500),
             estado: Math.random() > 0.2 ? "Disponible para Venta" : "Sano",
-            hectarea: getRandom(hectareas),
+            hectarea: getRandom(potrerosNombres),
             fechaRegistro: new Date().toISOString().split('T')[0]
         });
     }
@@ -111,7 +121,7 @@ export default function ImportadorMasivo() {
             fechaNacimiento: restarMesesAFecha(getRandomInt(2, 11)), 
             pesoActual: getRandomInt(80, 220),
             estado: "Sano",
-            hectarea: getRandom(hectareas),
+            hectarea: getRandom(potrerosNombres),
             madre: `VC-${getRandomInt(1000, 9999)}`,
             padre: `SM-${getRandomInt(100, 999)}`,
             fechaRegistro: new Date().toISOString().split('T')[0]
@@ -126,7 +136,7 @@ export default function ImportadorMasivo() {
             fechaNacimiento: restarMesesAFecha(getRandomInt(60, 100)), 
             pesoActual: getRandomInt(800, 1100),
             estado: "Sano",
-            hectarea: getRandom(hectareas),
+            hectarea: getRandom(potrerosNombres),
             fechaRegistro: new Date().toISOString().split('T')[0]
         });
     }
@@ -154,6 +164,11 @@ export default function ImportadorMasivo() {
     };
 
     try {
+        // Insertar Potreros simulados
+        for(let p of potrerosDemo) {
+          await addDoc(collection(db, "potreros"), p);
+        }
+
         const batchSize = animalesAGenerar.length;
         for(let i=0; i<batchSize; i++) {
             const docRef = await addDoc(collection(db, "animales"), animalesAGenerar[i]);
@@ -350,7 +365,7 @@ export default function ImportadorMasivo() {
                     if (!window.confirm("⚠️ Esto borrará TODOS los animales, eventos y alertas de la base de datos y te permitirá regenerarlos. ¿Continuar?")) return;
                     setCargandoDemo(true);
                     try {
-                        const colecciones = ["animales", "eventos", "alertas"];
+                        const colecciones = ["animales", "eventos", "alertas", "potreros"];
                         for (const col of colecciones) {
                             const snap = await getDocs(collection(db, col));
                             await Promise.all(snap.docs.map(d => deleteDoc(doc(db, col, d.id))));

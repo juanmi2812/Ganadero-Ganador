@@ -1,0 +1,5 @@
+3. Cómo retomar rápidamente (Sin errores)
+Si al abrir la aplicación ves que empiezas de cero, haz lo siguiente:
+
+Busca el historial de conversaciones y selecciona la que tiene el ID arriba mencionado.
+Si por alguna razón empiezas un chat nuevo, puedes escribirme: "Retoma desde la conversación 429959ad" y yo buscaré automáticamente estos archivos en tu computadora para "ponerme al día" en segundos.

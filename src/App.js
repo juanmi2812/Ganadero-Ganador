@@ -6,7 +6,8 @@ import NuevoAnimal from "./views/NuevoAnimal";
 import CalendarioAlertas from "./views/CalendarioAlertas";
 import ReportesBI from "./views/ReportesBI";
 import ConfiguracionFinanciera from "./views/ConfiguracionFinanciera";
-import { Home, CalendarDays, BarChart3, Settings, LogOut, Plus } from "lucide-react";
+import ConfiguracionPotreros from "./views/ConfiguracionPotreros";
+import { Home, CalendarDays, BarChart3, Settings, LogOut, Plus, Map } from "lucide-react";
 import logoConvivet from "./assets/logo_convivet.jpg";
 import "./styles.css";
 
@@ -27,6 +28,7 @@ export default function App() {
     { id: "dashboard", label: "Mi Ganado", icon: Home },
     { id: "calendario", label: "Calendario", icon: CalendarDays },
     { id: "reportes", label: "Reportes", icon: BarChart3 },
+    { id: "rancho", label: "Rancho", icon: Map },
     { id: "finanzas", label: "Ajustes", icon: Settings },
   ];
 
@@ -54,8 +56,9 @@ export default function App() {
         {vistaActiva === "nuevo" && <NuevoAnimal onTerminar={() => setVistaActiva("dashboard")} />}
         {vistaActiva === "calendario" && <CalendarioAlertas />}
         {vistaActiva === "reportes" && <ReportesBI />}
-        {vistaActiva === "importar" && <ImportadorMasivo />}
-        {vistaActiva === "finanzas" && <ConfiguracionFinanciera />}
+        { vistaActiva === "importar" && <ImportadorMasivo /> }
+        { vistaActiva === "finanzas" && <ConfiguracionFinanciera /> }
+        { vistaActiva === "rancho" && <ConfiguracionPotreros /> }
       </div>
 
       {/* === FAB — Registrar Animal === */}
