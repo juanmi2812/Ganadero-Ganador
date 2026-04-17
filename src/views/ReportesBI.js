@@ -9,9 +9,10 @@ import {
   generarPDFReproduccion, generarExcelReproduccion, 
   generarPDFProyeccionPartos, generarExcelProyeccionPartos,
   generarPDFHectareas, generarExcelHectareas,
-  generarPDFDesarrollo, generarExcelDesarrollo,
-  generarPDFCalendario, generarExcelCalendario,
-  calcularMetricasProductividad, generarPDFFichaIndividual
+  generarPDFDesarrollo, generarExcelDesarrollo, prepararDatosDesarrollo,
+  generarPDFCalendario, generarExcelCalendario, prepararDatosCalendario,
+  calcularMetricasProductividad, generarPDFFichaIndividual,
+  prepararDatosVientres, prepararDatosReproduccion, prepararDatosProyeccionPartos, prepararDatosHectareas
 } from "../reportes";
 
 // Paletas de Colores Dinámicas
@@ -38,6 +39,19 @@ export default function ReportesBI() {
   const [animalIndividual, setAnimalIndividual] = useState(null);
   const [fCatTarjeta, setfCatTarjeta] = useState("Todas");
   const [fHecTarjeta, setfHecTarjeta] = useState("Todas");
+
+  // Módulo de Reportes Avanzados (Interactivo)
+  const [reporteAvanzado, setReporteAvanzado] = useState("");
+  const [fechaInicioReporte, setFechaInicioReporte] = useState(() => {
+     const d = new Date();
+     d.setMonth(0);
+     d.setDate(1);
+     return d.toISOString().split("T")[0]; // Enero 1 de este año
+  });
+  const [fechaFinReporte, setFechaFinReporte] = useState(() => new Date().toISOString().split("T")[0]);
+
+  // Caché de datos para previsualización
+  const filtrosActuales = { fechaInicio: fechaInicioReporte, fechaFin: fechaFinReporte };
 
   useEffect(() => {
     const unsubAnimales = onSnapshot(collection(db, "animales"), snap => {
@@ -277,220 +291,117 @@ export default function ReportesBI() {
         </div>
       </div>
 
-      {/* ===================== REPORTES DESCARGABLES ===================== */}
+      {/* ===================== VISUALIZADOR INTERACTIVO DE REPORTES ===================== */}
       <div className="card" style={{ marginTop: "24px" }}>
         <div className="card-header">
-          <div className="card-icon verde"><Download size={22} /></div>
+          <div className="card-icon verde"><FileText size={22} /></div>
           <div>
-            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700 }}>Reportes Descargables</h3>
-            <p style={{ margin: "2px 0 0", fontSize: "13px", color: "var(--gris-400)" }}>Genera reportes profesionales para compartir con tu equipo.</p>
+            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700 }}>Visor de Reportes (PDF / Excel)</h3>
+            <p style={{ margin: "2px 0 0", fontSize: "13px", color: "var(--gris-400)" }}>Visualiza datos por fecha antes de exportar.</p>
           </div>
         </div>
 
-        {/* REPORTE: VIENTRES */}
-        <div style={{
-          padding: "16px", borderRadius: "var(--radio)", border: "1px solid var(--gris-200)",
-          background: "var(--gris-100)", marginBottom: "12px"
-        }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--gris-900)", display: "flex", alignItems: "center", gap: "6px" }}>
-                🐄 Reporte de Vientres
-              </div>
-              <div style={{ fontSize: "12px", color: "var(--gris-400)", marginTop: "2px" }}>
-                Inventario de Vacas y Novillonas — Partos, estado reproductivo, costos e historial médico.
-              </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "10px", marginTop: "15px", padding: "0 16px" }}>
+            <div className="input-group" style={{ margin: 0 }}>
+                <label style={{ fontSize: "11px" }}>Seleccionar Reporte</label>
+                <select 
+                    value={reporteAvanzado} 
+                    onChange={(e) => setReporteAvanzado(e.target.value)}
+                    style={{ padding: "8px", borderRadius: "6px", border: "1px solid #d1d5db", width: "100%" }}
+                >
+                    <option value="">-- Elige un reporte --</option>
+                    <option value="vientres">🐄 Reporte de Vientres</option>
+                    <option value="reproduccion">📈 Reporte de Reproducción</option>
+                    <option value="proyeccion">📅 Proyección de Partos</option>
+                    <option value="hectareas">🚩 Producción por Hectárea</option>
+                    <option value="desarrollo">📈 Desarrollo (GDP)</option>
+                    <option value="calendario">📅 Calendario de Manejo</option>
+                </select>
             </div>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                className="btn-outline"
-                style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px" }}
-                onClick={() => generarPDFVientres(animales, eventos, config)}
-              >
-                <FileText size={16} /> PDF
-              </button>
-              <button
-                className="btn-outline"
-                style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", borderColor: "var(--verde-claro)", color: "var(--verde-medio)" }}
-                onClick={() => generarExcelVientres(animales, eventos, config)}
-              >
-                <FileSpreadsheet size={16} /> Excel
-              </button>
-            </div>
-          </div>
+            {reporteAvanzado && (
+                <>
+                    <div className="input-group" style={{ margin: 0 }}>
+                        <label style={{ fontSize: "11px" }}>Desde</label>
+                        <input type="date" value={fechaInicioReporte} onChange={(e) => setFechaInicioReporte(e.target.value)} style={{ padding: "7px" }}/>
+                    </div>
+                    <div className="input-group" style={{ margin: 0 }}>
+                        <label style={{ fontSize: "11px" }}>Hasta</label>
+                        <input type="date" value={fechaFinReporte} onChange={(e) => setFechaFinReporte(e.target.value)} style={{ padding: "7px" }}/>
+                    </div>
+                </>
+            )}
         </div>
 
-        {/* REPORTE: REPRODUCCIÓN */}
-        <div style={{
-          padding: "16px", borderRadius: "var(--radio)", border: "1px solid var(--gris-200)",
-          background: "var(--gris-100)", marginBottom: "12px"
-        }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--gris-900)", display: "flex", alignItems: "center", gap: "6px" }}>
-                📈 Reporte de Reproducción
-              </div>
-              <div style={{ fontSize: "12px", color: "var(--gris-400)", marginTop: "2px" }}>
-                Análisis mensual de palpaciones (12 meses) — Gestantes, vacías, anestro y % de preñez.
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                className="btn-outline"
-                style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px" }}
-                onClick={() => generarPDFReproduccion(eventos)}
-              >
-                <FileText size={16} /> PDF
-              </button>
-              <button
-                className="btn-outline"
-                style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", borderColor: "var(--verde-claro)", color: "var(--verde-medio)" }}
-                onClick={() => generarExcelReproduccion(eventos)}
-              >
-                <FileSpreadsheet size={16} /> Excel
-              </button>
-            </div>
-          </div>
-        </div>
+        {reporteAvanzado && (
+            <div style={{ marginTop: "20px", padding: "16px", borderTop: "1px solid #f3f4f6" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px", flexWrap: "wrap", gap: "10px" }}>
+                    <h4 style={{ margin: 0, color: "#166534" }}>Vista Previa de Datos</h4>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                        <button className="btn-outline" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px" }}
+                            onClick={() => {
+                                if (reporteAvanzado === "vientres") generarPDFVientres(animales, eventos, config, filtrosActuales);
+                                else if (reporteAvanzado === "reproduccion") generarPDFReproduccion(eventos, filtrosActuales);
+                                else if (reporteAvanzado === "proyeccion") generarPDFProyeccionPartos(animales, eventos, filtrosActuales);
+                                else if (reporteAvanzado === "hectareas") generarPDFHectareas(animales, filtrosActuales);
+                                else if (reporteAvanzado === "desarrollo") generarPDFDesarrollo(animales, eventos, filtrosActuales);
+                                else if (reporteAvanzado === "calendario") generarPDFCalendario(animales, eventos, alertas, filtrosActuales);
+                            }}
+                        >
+                            <Download size={16} /> PDF
+                        </button>
+                        <button className="btn-outline" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", borderColor: "var(--verde-claro)", color: "var(--verde-medio)" }}
+                            onClick={() => {
+                                if (reporteAvanzado === "vientres") generarExcelVientres(animales, eventos, config, filtrosActuales);
+                                else if (reporteAvanzado === "reproduccion") generarExcelReproduccion(eventos, filtrosActuales);
+                                else if (reporteAvanzado === "proyeccion") generarExcelProyeccionPartos(animales, eventos, filtrosActuales);
+                                else if (reporteAvanzado === "hectareas") generarExcelHectareas(animales, filtrosActuales);
+                                else if (reporteAvanzado === "desarrollo") generarExcelDesarrollo(animales, eventos, filtrosActuales);
+                                else if (reporteAvanzado === "calendario") generarExcelCalendario(animales, eventos, alertas, filtrosActuales);
+                            }}
+                        >
+                            <FileSpreadsheet size={16} /> Excel
+                        </button>
+                    </div>
+                </div>
 
-        {/* REPORTE: PROYECCIÓN DE PARTOS */}
-        <div style={{
-          padding: "16px", borderRadius: "var(--radio)", border: "1px solid var(--gris-200)",
-          background: "var(--gris-100)", marginBottom: "12px"
-        }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--gris-900)", display: "flex", alignItems: "center", gap: "6px" }}>
-                📅 Proyección de Partos
-              </div>
-              <div style={{ fontSize: "12px", color: "var(--gris-400)", marginTop: "2px" }}>
-                Nacimientos esperados por mes, Intervalo Entre Partos (IEP) y Días Abiertos.
-              </div>
+                {/* TABLA DE VISTA PREVIA (MÁXIMO 10 FILAS) */}
+                <div style={{ overflowX: "auto", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", textAlign: "left", whiteSpace: "nowrap" }}>
+                        <thead style={{ backgroundColor: "#f9fafb", borderBottom: "2px solid #e5e7eb" }}>
+                            {reporteAvanzado === "vientres" && <tr><th style={{padding:"8px"}}>Arete</th><th style={{padding:"8px"}}>Categoría</th><th style={{padding:"8px"}}>Partos</th><th style={{padding:"8px"}}>Último Evento</th><th style={{padding:"8px"}}>Inversión</th></tr>}
+                            {reporteAvanzado === "reproduccion" && <tr><th style={{padding:"8px"}}>Mes</th><th style={{padding:"8px"}}>Palpadas</th><th style={{padding:"8px"}}>Gestantes</th><th style={{padding:"8px"}}>Anestro</th><th style={{padding:"8px"}}>% Preñez</th></tr>}
+                            {reporteAvanzado === "proyeccion" && <tr><th style={{padding:"8px"}}>Mes Proyectado</th><th style={{padding:"8px"}}>Partos Esperados</th><th style={{padding:"8px"}}>Aretes</th></tr>}
+                            {reporteAvanzado === "hectareas" && <tr><th style={{padding:"8px"}}>Hectárea</th><th style={{padding:"8px"}}>Cabezas</th><th style={{padding:"8px"}}>Peso Total</th><th style={{padding:"8px"}}>Promedio/Cab</th></tr>}
+                            {reporteAvanzado === "desarrollo" && <tr><th style={{padding:"8px"}}>Categoría</th><th style={{padding:"8px"}}>Cantidad</th><th style={{padding:"8px"}}>GDP Promedio</th><th style={{padding:"8px"}}>Días Período</th></tr>}
+                            {reporteAvanzado === "calendario" && <tr><th style={{padding:"8px"}}>Categoría</th><th style={{padding:"8px"}}>Mes Actual</th><th style={{padding:"8px"}}>Actividades Realizadas</th></tr>}
+                        </thead>
+                        <tbody>
+                            {reporteAvanzado === "vientres" && prepararDatosVientres(animales, eventos, config, filtrosActuales).slice(0, 10).map((d, i) => (
+                                <tr key={i} style={{ borderBottom: "1px solid #e5e7eb" }}><td style={{padding:"8px"}}>{d.arete}</td><td style={{padding:"8px"}}>{d.tipo}</td><td style={{padding:"8px"}}>{d.numPartos}</td><td style={{padding:"8px"}}>{d.ultimoEvento.substring(0, 25)}</td><td style={{padding:"8px"}}>${d.costoTotal}</td></tr>
+                            ))}
+                            {reporteAvanzado === "reproduccion" && prepararDatosReproduccion(eventos, filtrosActuales).slice(0, 10).map((d, i) => (
+                                <tr key={i} style={{ borderBottom: "1px solid #e5e7eb" }}><td style={{padding:"8px",fontWeight:"bold"}}>{d.label}</td><td style={{padding:"8px"}}>{d.palpadas}</td><td style={{padding:"8px"}}>{d.gestantes}</td><td style={{padding:"8px"}}>{d.anestro}</td><td style={{padding:"8px",color:"#166534"}}>{d.porcentaje}</td></tr>
+                            ))}
+                            {reporteAvanzado === "proyeccion" && prepararDatosProyeccionPartos(animales, eventos, filtrosActuales).proyeccion.slice(0, 8).map((d, i) => (
+                                <tr key={i} style={{ borderBottom: "1px solid #e5e7eb" }}><td style={{padding:"8px"}}>{d.label}</td><td style={{padding:"8px",fontWeight:"bold",color:d.conteo>0?"#166534":"#9ca3af"}}>{d.conteo}</td><td style={{padding:"8px"}}>{d.detalles.join(", ")||"---"}</td></tr>
+                            ))}
+                            {reporteAvanzado === "hectareas" && prepararDatosHectareas(animales, filtrosActuales).slice(0, 10).map((d, i) => (
+                                <tr key={i} style={{ borderBottom: "1px solid #e5e7eb" }}><td style={{padding:"8px"}}>{d.nombre}</td><td style={{padding:"8px"}}>{d.cabezas}</td><td style={{padding:"8px"}}>{d.pesoTotal} kg</td><td style={{padding:"8px"}}>{d.pesoPromedio} kg</td></tr>
+                            ))}
+                            {reporteAvanzado === "desarrollo" && prepararDatosDesarrollo(animales, eventos, filtrosActuales).slice(0, 10).map((d, i) => (
+                                <tr key={i} style={{ borderBottom: "1px solid #e5e7eb" }}><td style={{padding:"8px"}}>{d.categoria}</td><td style={{padding:"8px"}}>{d.cantidad}</td><td style={{padding:"8px",fontWeight:"bold"}}>{d.gdp} kg/día</td><td style={{padding:"8px"}}>{d.dias}</td></tr>
+                            ))}
+                            {reporteAvanzado === "calendario" && prepararDatosCalendario(animales, eventos, alertas, filtrosActuales).slice(0, 10).map((d, i) => (
+                                <tr key={i} style={{ borderBottom: "1px solid #e5e7eb" }}><td style={{padding:"8px",fontWeight:"bold"}}>{d.categoria}</td><td style={{padding:"8px"}}>{d.mesActual}</td><td style={{padding:"8px"}}>{d.actividadesActual.filter(x=>x).join(" | ")}</td></tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+                <div style={{ textAlign: "center", padding: "10px", fontSize: "11px", color: "#6b7280" }}>
+                    Mostrando previsualización máxima de 10 filas. El PDF o Excel final contendrá la información completa.
+                </div>
             </div>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                className="btn-outline"
-                style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px" }}
-                onClick={() => generarPDFProyeccionPartos(animales, eventos)}
-              >
-                <FileText size={16} /> PDF
-              </button>
-              <button
-                className="btn-outline"
-                style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", borderColor: "var(--verde-claro)", color: "var(--verde-medio)" }}
-                onClick={() => generarExcelProyeccionPartos(animales, eventos)}
-              >
-                <FileSpreadsheet size={16} /> Excel
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* REPORTE: PRODUCCIÓN POR HECTÁREA */}
-        <div style={{
-          padding: "16px", borderRadius: "var(--radio)", border: "1px solid var(--gris-200)",
-          background: "var(--gris-100)", marginBottom: "12px"
-        }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--gris-900)", display: "flex", alignItems: "center", gap: "6px" }}>
-                🚩 Producción por Hectárea
-              </div>
-              <div style={{ fontSize: "12px", color: "var(--gris-400)", marginTop: "2px" }}>
-                Carga animal, peso total y eficiencia de biomasa por cada lote o hectárea.
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                className="btn-outline"
-                style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px" }}
-                onClick={() => generarPDFHectareas(animales)}
-              >
-                <FileText size={16} /> PDF
-              </button>
-              <button
-                className="btn-outline"
-                style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", borderColor: "var(--verde-claro)", color: "var(--verde-medio)" }}
-                onClick={() => generarExcelHectareas(animales)}
-              >
-                <FileSpreadsheet size={16} /> Excel
-              </button>
-            </div>
-          </div>
-        </div>
-        
-        {/* REPORTE: DESARROLLO (GDP) */}
-        <div style={{
-          padding: "16px", borderRadius: "var(--radio)", border: "1px solid var(--gris-200)",
-          background: "var(--gris-100)", marginBottom: "12px"
-        }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--gris-900)", display: "flex", alignItems: "center", gap: "6px" }}>
-                📈 Reporte de Desarrollo (GDP)
-              </div>
-              <div style={{ fontSize: "12px", color: "var(--gris-400)", marginTop: "2px" }}>
-                Resultados del último pesaje, Ganancia Diaria de Peso promedio y periodos por categoría.
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                className="btn-outline"
-                style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px" }}
-                onClick={() => generarPDFDesarrollo(animales, eventos)}
-              >
-                <FileText size={16} /> PDF
-              </button>
-              <button
-                className="btn-outline"
-                style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", borderColor: "var(--verde-claro)", color: "var(--verde-medio)" }}
-                onClick={() => generarExcelDesarrollo(animales, eventos)}
-              >
-                <FileSpreadsheet size={16} /> Excel
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* REPORTE: CALENDARIO DE MANEJO */}
-        <div style={{
-          padding: "16px", borderRadius: "var(--radio)", border: "1px solid var(--gris-200)",
-          background: "var(--gris-100)", marginBottom: "12px"
-        }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--gris-900)", display: "flex", alignItems: "center", gap: "6px" }}>
-                📅 Reporte de Calendario de Manejo
-              </div>
-              <div style={{ fontSize: "12px", color: "var(--gris-400)", marginTop: "2px" }}>
-                Plan sanitario: Mezcla de manejos realizados vs. sugeridos por temporada.
-              </div>
-              {/* LEYENDA UI */}
-              <div style={{ display: "flex", gap: "10px", marginTop: "8px", fontSize: "10px", color: "#6b7280" }}>
-                 <span>[HECHO] Realizado</span>
-                 <span>[PLAN] Programado</span>
-                 <span>[SUG] Sugerido</span>
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                className="btn-outline"
-                style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px" }}
-                onClick={() => generarPDFCalendario(animales, eventos, alertas)}
-              >
-                <FileText size={16} /> PDF
-              </button>
-              <button
-                className="btn-outline"
-                style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", borderColor: "var(--verde-claro)", color: "var(--verde-medio)" }}
-                onClick={() => generarExcelCalendario(animales, eventos, alertas)}
-              >
-                <FileSpreadsheet size={16} /> Excel
-              </button>
-            </div>
-          </div>
-        </div>
-
+        )}
       </div>
 
       {/* ===================== MÓDULO DE PRODUCTIVIDAD ===================== */}

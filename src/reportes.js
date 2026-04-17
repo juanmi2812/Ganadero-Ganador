@@ -9,7 +9,7 @@ import { es } from "date-fns/locale";
 // REPORTE 1: INVENTARIO DE VIENTRES
 // ================================================
 
-function prepararDatosVientres(animales, eventos, config) {
+export function prepararDatosVientres(animales, eventos, config, filtros = null) {
   // Filtramos solo vientres activos (Vacas + Novillonas que no estén de baja)
   const vientres = animales.filter(
     (a) =>
@@ -29,7 +29,13 @@ function prepararDatosVientres(animales, eventos, config) {
       : "--";
 
     // Eventos de este animal
-    const eventosAnimal = eventos.filter((e) => e.animalId === animal.id);
+    let eventosAnimal = eventos.filter((e) => e.animalId === animal.id);
+    if (filtros && filtros.fechaInicio && filtros.fechaFin) {
+        eventosAnimal = eventosAnimal.filter((e) => {
+             const f = new Date(e.fecha + "T00:00:00");
+             return f >= new Date(filtros.fechaInicio + "T00:00:00") && f <= new Date(filtros.fechaFin + "T23:59:59");
+        });
+    }
 
     // Partos
     const partos = eventosAnimal.filter((e) => e.tipo === "Parto");
@@ -77,9 +83,9 @@ function prepararDatosVientres(animales, eventos, config) {
 }
 
 // ======================== PDF ========================
-export function generarPDFVientres(animales, eventos, config) {
+export function generarPDFVientres(animales, eventos, config, filtros = null) {
   try {
-    const datos = prepararDatosVientres(animales, eventos, config);
+    const datos = prepararDatosVientres(animales, eventos, config, filtros);
     const doc = new jsPDF({ orientation: "landscape" });
     const fechaHoy = format(new Date(), "dd 'de' MMMM yyyy", { locale: es });
 
@@ -176,9 +182,9 @@ export function generarPDFVientres(animales, eventos, config) {
 }
 
 // ======================== EXCEL ========================
-export function generarExcelVientres(animales, eventos, config) {
+export function generarExcelVientres(animales, eventos, config, filtros = null) {
   try {
-    const datos = prepararDatosVientres(animales, eventos, config);
+    const datos = prepararDatosVientres(animales, eventos, config, filtros);
     const fechaHoy = format(new Date(), "dd-MM-yyyy");
 
     const datosExcel = datos.map((d) => ({
@@ -223,25 +229,37 @@ export function generarExcelVientres(animales, eventos, config) {
 // REPORTE 2: REPRODUCCIÓN (Últimos 12 Meses)
 // ================================================
 
-function prepararDatosReproduccion(eventos) {
+export function prepararDatosReproduccion(eventos, filtros = null) {
   const palpaciones = eventos.filter((e) => e.tipo === "Palpación");
   const hoy = new Date();
 
-  // Crear mapa de los últimos 12 meses (incluyendo el actual)
+  // Crear mapa de meses
   const mesesRelativos = [];
-  for (let i = 11; i >= 0; i--) {
-    const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
-    const key = format(d, "yyyy-MM");
-    mesesRelativos.push({
-      key,
-      label: format(d, "MMM-yy", { locale: es }).toUpperCase(),
-      palpadas: 0,
-      gestantes: 0,
-      frescas: 0,
-      ciclando: 0,
-      anestro: 0,
-      otras: 0,
-    });
+  
+  if (filtros && filtros.fechaInicio && filtros.fechaFin) {
+     const start = new Date(filtros.fechaInicio + "T00:00:00");
+     const end = new Date(filtros.fechaFin + "T23:59:59");
+     let current = new Date(start.getFullYear(), start.getMonth(), 1);
+     const limit = new Date(end.getFullYear(), end.getMonth(), 1);
+     
+     while (current <= limit && mesesRelativos.length < 60) {
+        const key = format(current, "yyyy-MM");
+        mesesRelativos.push({
+           key, label: format(current, "MMM-yy", { locale: es }).toUpperCase(),
+           palpadas: 0, gestantes: 0, frescas: 0, ciclando: 0, anestro: 0, otras: 0,
+        });
+        current = new Date(current.getFullYear(), current.getMonth() + 1, 1);
+     }
+  } else {
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+        const key = format(d, "yyyy-MM");
+        mesesRelativos.push({
+          key,
+          label: format(d, "MMM-yy", { locale: es }).toUpperCase(),
+          palpadas: 0, gestantes: 0, frescas: 0, ciclando: 0, anestro: 0, otras: 0,
+        });
+      }
   }
 
   palpaciones.forEach((e) => {
@@ -271,9 +289,9 @@ function prepararDatosReproduccion(eventos) {
   }));
 }
 
-export function generarPDFReproduccion(eventos) {
+export function generarPDFReproduccion(eventos, filtros = null) {
   try {
-    const datos = prepararDatosReproduccion(eventos);
+    const datos = prepararDatosReproduccion(eventos, filtros);
     const doc = new jsPDF();
     const fechaHoy = format(new Date(), "dd 'de' MMMM yyyy", { locale: es });
 
@@ -327,9 +345,9 @@ export function generarPDFReproduccion(eventos) {
   }
 }
 
-export function generarExcelReproduccion(eventos) {
+export function generarExcelReproduccion(eventos, filtros = null) {
   try {
-    const datos = prepararDatosReproduccion(eventos);
+    const datos = prepararDatosReproduccion(eventos, filtros);
     const fechaHoy = format(new Date(), "yyyy-MM-dd");
 
     const datosExcel = datos.map((d) => ({
@@ -362,13 +380,19 @@ export function generarExcelReproduccion(eventos) {
 // REPORTE 3: PROYECCIÓN DE PARTOS E INDICADORES
 // ================================================
 
-function prepararDatosProyeccionPartos(animales, eventos) {
+export function prepararDatosProyeccionPartos(animales, eventos, filtros = null) {
   const hoy = new Date();
   const unAnioAtras = new Date(hoy.getFullYear() - 1, hoy.getMonth(), hoy.getDate());
 
   // --- 1. INDICADORES HISTÓRICOS ---
   const vacas = animales.filter(a => ["Vaca", "Novillona"].includes(a.tipo));
-  const partosRecientes = eventos.filter(e => e.tipo === "Parto" && new Date(e.fecha) >= unAnioAtras).length;
+  
+  let fechaFiltroBase = unAnioAtras;
+  if (filtros && filtros.fechaInicio) {
+      fechaFiltroBase = new Date(filtros.fechaInicio + "T00:00:00");
+  }
+
+  const partosRecientes = eventos.filter(e => e.tipo === "Parto" && new Date(e.fecha) >= fechaFiltroBase && (!filtros || !filtros.fechaFin || new Date(e.fecha) <= new Date(filtros.fechaFin + "T23:59:59"))).length;
   
   // % Pariciones: (Partos en 12m / Total Vacas) * 100
   const tasaParicion = vacas.length > 0 ? Math.round((partosRecientes / vacas.length) * 100) : 0;
@@ -452,9 +476,9 @@ function prepararDatosProyeccionPartos(animales, eventos) {
   };
 }
 
-export function generarPDFProyeccionPartos(animales, eventos) {
+export function generarPDFProyeccionPartos(animales, eventos, filtros = null) {
   try {
-    const { stats, proyeccion } = prepararDatosProyeccionPartos(animales, eventos);
+    const { stats, proyeccion } = prepararDatosProyeccionPartos(animales, eventos, filtros);
     const doc = new jsPDF();
     const fechaHoy = format(new Date(), "dd 'de' MMMM yyyy", { locale: es });
 
@@ -507,9 +531,9 @@ export function generarPDFProyeccionPartos(animales, eventos) {
   }
 }
 
-export function generarExcelProyeccionPartos(animales, eventos) {
+export function generarExcelProyeccionPartos(animales, eventos, filtros = null) {
   try {
-    const { stats, proyeccion } = prepararDatosProyeccionPartos(animales, eventos);
+    const { stats, proyeccion } = prepararDatosProyeccionPartos(animales, eventos, filtros);
     const wb = XLSX.utils.book_new();
 
     // Hoja 1: Indicadores
@@ -542,7 +566,7 @@ export function generarExcelProyeccionPartos(animales, eventos) {
 // REPORTE 4: PRODUCCIÓN POR HECTÁREA
 // ================================================
 
-function prepararDatosHectareas(animales) {
+export function prepararDatosHectareas(animales, filtros = null) {
   const grupos = {};
 
   animales.forEach((a) => {
@@ -564,9 +588,9 @@ function prepararDatosHectareas(animales) {
   }));
 }
 
-export function generarPDFHectareas(animales) {
+export function generarPDFHectareas(animales, filtros = null) {
   try {
-    const datos = prepararDatosHectareas(animales);
+    const datos = prepararDatosHectareas(animales, filtros);
     const doc = new jsPDF();
     const fechaHoy = format(new Date(), "dd 'de' MMMM yyyy", { locale: es });
 
@@ -600,9 +624,9 @@ export function generarPDFHectareas(animales) {
   }
 }
 
-export function generarExcelHectareas(animales) {
+export function generarExcelHectareas(animales, filtros = null) {
   try {
-    const datos = prepararDatosHectareas(animales);
+    const datos = prepararDatosHectareas(animales, filtros);
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(
       datos.map((d) => ({
@@ -628,7 +652,7 @@ export function generarExcelHectareas(animales) {
 // REPORTE 5: DESARROLLO (PESAJES Y GDP)
 // ================================================
 
-function prepararDatosDesarrollo(animales, eventos) {
+export function prepararDatosDesarrollo(animales, eventos, filtros = null) {
   const hoy = new Date();
   
   // Categorías base según el ejemplo del cliente
@@ -667,7 +691,7 @@ function prepararDatosDesarrollo(animales, eventos) {
     // 2. Cálculo de GDP (Ganancia Diaria de Peso)
     // Buscamos los eventos de repeso
     const misRepesos = eventos
-      .filter(e => e.animalId === a.id && e.tipo === "Repeso")
+      .filter(e => e.animalId === a.id && e.tipo === "Repeso" && (!filtros || !filtros.fechaInicio || new Date(e.fecha) >= new Date(filtros.fechaInicio)) && (!filtros || !filtros.fechaFin || new Date(e.fecha) <= new Date(filtros.fechaFin)))
       .sort((a, b) => new Date(b.fecha) - new Date(a.fecha)); // De más reciente a más viejo
 
     if (misRepesos.length > 0) {
@@ -720,9 +744,9 @@ function prepararDatosDesarrollo(animales, eventos) {
     });
 }
 
-export function generarPDFDesarrollo(animales, eventos) {
+export function generarPDFDesarrollo(animales, eventos, filtros = null) {
   try {
-    const datos = prepararDatosDesarrollo(animales, eventos);
+    const datos = prepararDatosDesarrollo(animales, eventos, filtros);
     const doc = new jsPDF();
     const fechaHoy = format(new Date(), "dd 'de' MMMM yyyy", { locale: es });
 
@@ -761,9 +785,9 @@ export function generarPDFDesarrollo(animales, eventos) {
   }
 }
 
-export function generarExcelDesarrollo(animales, eventos) {
+export function generarExcelDesarrollo(animales, eventos, filtros = null) {
   try {
-    const datos = prepararDatosDesarrollo(animales, eventos);
+    const datos = prepararDatosDesarrollo(animales, eventos, filtros);
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(
       datos.map((d) => ({
@@ -789,7 +813,7 @@ export function generarExcelDesarrollo(animales, eventos) {
 // ================================================
 import { PROTOCOLO_SANITARIO } from "./protocoloSanitario";
 
-function prepararDatosCalendario(animales, eventos, alertas) {
+export function prepararDatosCalendario(animales, eventos, alertas, filtros = null) {
     const hoy = new Date();
     const mesActualIdx = hoy.getMonth();
     const mesSiguienteIdx = (mesActualIdx + 1) % 12;
@@ -881,9 +905,9 @@ function prepararDatosCalendario(animales, eventos, alertas) {
     });
 }
 
-export function generarPDFCalendario(animales, eventos, alertas) {
+export function generarPDFCalendario(animales, eventos, alertas, filtros = null) {
     try {
-        const datos = prepararDatosCalendario(animales, eventos, alertas);
+        const datos = prepararDatosCalendario(animales, eventos, alertas, filtros);
         const doc = new jsPDF({ orientation: "landscape" });
         const hoy = new Date();
         const mesStr = format(hoy, "MMMM", { locale: es }).toUpperCase();
@@ -932,9 +956,9 @@ export function generarPDFCalendario(animales, eventos, alertas) {
     }
 }
 
-export function generarExcelCalendario(animales, eventos, alertas) {
+export function generarExcelCalendario(animales, eventos, alertas, filtros = null) {
     try {
-        const datos = prepararDatosCalendario(animales, eventos, alertas);
+        const datos = prepararDatosCalendario(animales, eventos, alertas, filtros);
         const wb = XLSX.utils.book_new();
         const wsData = datos.map(d => ({
             "CATEGORIA": d.categoria,
