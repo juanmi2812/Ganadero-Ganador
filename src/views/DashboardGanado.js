@@ -498,15 +498,41 @@ export default function DashboardGanado() {
             {/* ACCIONES */}
             {!animalActivo.estado?.includes('Baja') && (
               <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-                <button className="btn-primary" style={{ flex: 1, margin: 0 }} onClick={() => setMostrandoFormulario(!mostrandoFormulario)}>+ Evento</button>
+                <button className="btn-primary" style={{ flex: 1, margin: 0 }} onClick={() => { setMostrandoFormulario(!mostrandoFormulario); setMostrandoBaja(false); }}>+ Evento</button>
                 {animalActivo.tipo === "Torete" && (
                   <button className="btn-outline" style={{ flex: 1, margin: 0, borderColor: "#3b82f6", color: "#3b82f6" }} onClick={hacerSemental}>🔥 Hacer Semental</button>
                 )}
                 {(["Vaca", "Semental", "Novillona"].includes(animalActivo.tipo)) && animalActivo.estado !== "Desecho" && (
                   <button className="btn-outline" style={{ flex: 1, margin: 0, borderColor: "#f59e0b", color: "#f59e0b" }} onClick={marcarDesecho}>🗑️ Descartar</button>
                 )}
-                <button className="btn-outline" style={{ color: "#ef4444", borderColor: "#ef4444" }} onClick={() => setMostrandoBaja(true)}><AlertTriangle size={18} /></button>
+                <button className="btn-outline" style={{ color: "#ef4444", borderColor: "#ef4444" }} onClick={() => { setMostrandoBaja(!mostrandoBaja); setMostrandoFormulario(false); }}><AlertTriangle size={18} /></button>
               </div>
+            )}
+
+            {/* FORMULARIO BAJA */}
+            {mostrandoBaja && (
+              <form onSubmit={guardarBaja} style={{ padding: "15px", background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "8px", marginBottom: "15px" }}>
+                <h4 style={{ margin: "0 0 10px 0", color: "#b91c1c", fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <AlertTriangle size={16} /> Dar de Baja
+                </h4>
+                <select value={datosBaja.motivo} onChange={(e) => setDatosBaja({...datosBaja, motivo: e.target.value})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #f87171", borderRadius: "4px", backgroundColor: "#fff" }} required>
+                  <option value="Venta">Venta a mercado</option>
+                  <option value="Venta (Desecho)">Venta (Desecho / Rastro)</option>
+                  <option value="Muerte">Muerte</option>
+                  <option value="Robo o Extravío">Robo o Extravío</option>
+                </select>
+
+                <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+                  <input type="date" value={datosBaja.fecha} onChange={(e) => setDatosBaja({...datosBaja, fecha: e.target.value})} style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} required />
+                </div>
+
+                <textarea placeholder="Notas adicionales (Ej: Causa de muerte, comprador, precio especial...)" value={datosBaja.notas} onChange={(e) => setDatosBaja({...datosBaja, notas: e.target.value})} style={{ width: "100%", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px", marginBottom: "10px", boxSizing: "border-box" }} rows="2" />
+
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button type="submit" style={{ flex: 1, backgroundColor: "#ef4444", color: "white", padding: "8px", borderRadius: "6px", border: "none", fontWeight: "bold", cursor: "pointer" }}>Confirmar Baja</button>
+                  <button type="button" onClick={() => setMostrandoBaja(false)} style={{ flex: 1, backgroundColor: "#fff", color: "#6b7280", padding: "8px", borderRadius: "6px", border: "1px solid #d1d5db", fontWeight: "bold", cursor: "pointer" }}>Cancelar</button>
+                </div>
+              </form>
             )}
 
             {/* FORMULARIO EVENTO */}
