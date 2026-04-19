@@ -137,12 +137,25 @@ export default function ReportesBI() {
   
   const datosPotrero = (() => {
     const hMap = {};
+    const capMap = {};
+    potreros.forEach(p => capMap[p.nombre] = p.hectareas || 1);
+
     animales.forEach(a => {
         if (a.estado?.includes("Baja")) return;
         const h = a.potrero || a.hectarea || "Sin Asignar";
         hMap[h] = (hMap[h] || 0) + 1;
     });
-    return Object.keys(hMap).map(k => ({ name: k, value: hMap[k] }));
+
+    return Object.keys(hMap).map(k => {
+      const cabezas = hMap[k];
+      const hectareas = capMap[k] || (k === "Sin Asignar" ? 0 : 1);
+      const cabPorHa = hectareas > 0 ? +(cabezas / hectareas).toFixed(2) : 0;
+      return { 
+        name: k, 
+        value: cabezas,
+        cabPorHa: cabPorHa
+      };
+    });
   })();
 
   const paletaActiva = vistaFinanciera ? COLORES_FINANZAS : COLORES_INVENTARIO;
@@ -278,8 +291,8 @@ export default function ReportesBI() {
         </div>
         
         {/* NUEVO GRÁFICO: DISTRIBUCIÓN POR POTRERO */}
-        <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", gridColumn: "span 2", marginTop: "24px" }}>
-          <h3 style={{ marginTop: 0, color: "#374151" }}>Inventario por Potrero (Carga Animal)</h3>
+        <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", marginTop: "24px" }}>
+          <h3 style={{ marginTop: 0, color: "#374151" }}>Inventario por Potrero (Cabezas Totales)</h3>
           <div style={{ height: "300px", width: "100%", marginTop: "20px" }}>
             <ResponsiveContainer>
               <BarChart data={datosPotrero} margin={{ top: 30, right: 30, left: 0, bottom: 5 }}>
@@ -289,6 +302,24 @@ export default function ReportesBI() {
                 <RTTooltip cursor={{fill: 'transparent'}} />
                 <Bar dataKey="value" fill="#ec4899" radius={[4, 4, 0, 0]}>
                    <LabelList dataKey="value" position="top" style={{ fill: "#be185d", fontWeight: "bold" }} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        
+        {/* NUEVO GRÁFICO: CARGA ANIMAL POR POTRERO */}
+        <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", marginTop: "24px" }}>
+          <h3 style={{ marginTop: 0, color: "#374151" }}>Carga Animal (cab/ha)</h3>
+          <div style={{ height: "300px", width: "100%", marginTop: "20px" }}>
+            <ResponsiveContainer>
+              <BarChart data={datosPotrero} margin={{ top: 30, right: 30, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" />
+                <YAxis allowDecimals={true} />
+                <RTTooltip cursor={{fill: 'transparent'}} formatter={(val) => `${val} cab/ha`} />
+                <Bar dataKey="cabPorHa" fill="#f59e0b" radius={[4, 4, 0, 0]}>
+                   <LabelList dataKey="cabPorHa" position="top" style={{ fill: "#b45309", fontWeight: "bold" }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
