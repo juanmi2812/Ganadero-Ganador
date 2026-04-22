@@ -67,35 +67,14 @@ export default function CalendarioAlertas() {
             const dateObj = new Date(year, month - 1, day);
             return {
               id: doc.id,
-              title: `🔔 Alerta: ${data.titulo} (${data.areteAnimal})`,
+              title: data.titulo, // Ya no necesitamos decir el arete obligatoriamente
               start: dateObj, end: dateObj, allDay: true,
               tipo: "alerta", completada: data.completada,
             };
           })
           .filter(Boolean);
 
-        const cancelarEventos = onSnapshot(
-          collection(db, "eventos"),
-          (snapEventos) => {
-            const eventosData = snapEventos.docs
-              .map((doc) => {
-                const data = doc.data();
-                if (!data.fecha) return null;
-                const [year, month, day] = data.fecha.split("-");
-                const dateObj = new Date(year, month - 1, day);
-                return {
-                  id: doc.id,
-                  title: `🐄 ${data.tipo}: ${data.resultado}`,
-                  start: dateObj, end: dateObj, allDay: true,
-                  tipo: "evento",
-                };
-              })
-              .filter(Boolean);
-
-            setEventosCalendario([...alertasData, ...eventosData]);
-          }
-        );
-        return () => cancelarEventos();
+        setEventosCalendario(alertasData);
       }
     );
     return () => cancelarAlertas();
@@ -142,20 +121,23 @@ export default function CalendarioAlertas() {
           fecha: datosEvento.fecha,
           costo: Number(datosEvento.costo) || 0,
         });
+      }
 
-        // Generar alerta/recordatorio si aplica
-        if (datosEvento.recordatorio && datosEvento.recordatorio !== "Ninguno") {
-          const eventDate = new Date(datosEvento.fecha + "T00:00:00");
-          if (datosEvento.recordatorio === "1 día antes") eventDate.setDate(eventDate.getDate() - 1);
-          else if (datosEvento.recordatorio === "1 semana antes") eventDate.setDate(eventDate.getDate() - 7);
+      // Generar una única alerta/planeación global si aplica (FUERA del ciclo)
+      if (datosEvento.recordatorio && datosEvento.recordatorio !== "Ninguno") {
+        const eventDate = new Date(datosEvento.fecha + "T00:00:00");
+        if (datosEvento.recordatorio === "1 día antes") eventDate.setDate(eventDate.getDate() - 1);
+        else if (datosEvento.recordatorio === "1 semana antes") eventDate.setDate(eventDate.getDate() - 7);
 
-          await addDoc(collection(db, "alertas"), {
-            fechaProgramada: eventDate.toISOString().split("T")[0],
-            titulo: `${datosEvento.tipo} - ${animal.arete}`,
-            areteAnimal: animal.arete,
-            completada: false,
-          });
-        }
+        const tituloGlobal = modoAplicacion === "individual" 
+          ? `📅 ${datosEvento.tipo} - ${animalesObjetivo[0]?.arete}` 
+          : `📅 ${datosEvento.tipo} (Grupo: ${animalesObjetivo.length} cabezas)`;
+
+        await addDoc(collection(db, "alertas"), {
+          fechaProgramada: eventDate.toISOString().split("T")[0],
+          titulo: tituloGlobal,
+          completada: false,
+        });
       }
 
       const msg = animalesObjetivo.length === 1
@@ -189,15 +171,15 @@ export default function CalendarioAlertas() {
     <div className="dashboard-container" style={{ padding: "0 16px" }}>
       <div className="header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h1>Calendario General</h1>
-          <p>Visualiza el historial de actividades y programa nuevos eventos.</p>
+          <h1>Calendario de Planeación</h1>
+          <p>Organiza las tareas del rancho y aplica tratamientos de forma rápida a los animales.</p>
         </div>
         <button
           className="btn-primary"
           style={{ margin: 0, width: "auto", display: "flex", alignItems: "center", gap: "6px", padding: "10px 20px" }}
           onClick={() => setMostrarModal(true)}
         >
-          <Plus size={18} /> Agregar Evento
+          <Plus size={18} /> Cargar Tratamientos
         </button>
       </div>
 
@@ -234,9 +216,9 @@ export default function CalendarioAlertas() {
             {/* Header del Modal */}
             <div className="modal-header">
               <div>
-                <h2 style={{ margin: 0, fontSize: "20px", color: "#111827" }}>📅 Nuevo Evento</h2>
+                <h2 style={{ margin: 0, fontSize: "20px", color: "#111827" }}>💉 Cargar Tratamiento</h2>
                 <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: "13px" }}>
-                  Registra una actividad para uno, un grupo o todos los animales.
+                  Aplica una actividad al historial de uno o varios animales y guárdalo en la planeación.
                 </p>
               </div>
               <button onClick={() => setMostrarModal(false)} style={{ background: "none", border: "none", cursor: "pointer" }}>
