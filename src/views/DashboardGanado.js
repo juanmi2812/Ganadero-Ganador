@@ -388,7 +388,7 @@ export default function DashboardGanado() {
               <div className="animal-arete">{animal.arete}</div>
               <div className="animal-meta">
                 {animal.raza} • {animal.tipo} <br/> 
-                <span style={{ color: "var(--verde-medio)", fontWeight: "600", fontSize: "11px" }}>📍 {animal.potrero || animal.hectarea || "Sin Lote"}</span>
+                <span style={{ color: "var(--verde-medio)", fontWeight: "600", fontSize: "11px" }}>📍 {animal.potrero || animal.hectarea || "Sin Lote"} {animal.grupo && ` • 🏷️ ${animal.grupo}`}</span>
               </div>
             </div>
             <span className={`animal-status ${getStatusClass(animal.estado)}`}>
@@ -423,8 +423,18 @@ export default function DashboardGanado() {
               </div>
             </div>
 
-            {/* GENEALOGÍA PADRES */}
+            {/* GENEALOGÍA PADRES Y UBICACIÓN */}
             <div style={{ backgroundColor: "#f9fafb", padding: "12px", borderRadius: "8px", border: "1px solid #e5e7eb", marginBottom: "20px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px", borderBottom: "1px solid #e5e7eb", paddingBottom: "12px" }}>
+                <div>
+                  <div style={{ color: "#6b7280", fontSize: "11px", fontWeight: "bold" }}>POTRERO / LOTE</div>
+                  <div style={{ fontSize: "14px", fontWeight: "700", color: "#111827" }}>{animalActivo.potrero || animalActivo.hectarea || "--"}</div>
+                </div>
+                <div>
+                  <div style={{ color: "#6b7280", fontSize: "11px", fontWeight: "bold" }}>GRUPO DE MANEJO</div>
+                  <div style={{ fontSize: "14px", fontWeight: "700", color: "#111827" }}>{animalActivo.grupo || "--"}</div>
+                </div>
+              </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
                   <div style={{ color: "#6b7280", fontSize: "11px", fontWeight: "bold" }}>MADRE</div>

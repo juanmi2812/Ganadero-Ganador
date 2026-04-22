@@ -18,9 +18,11 @@ export default function NuevoAnimal() {
     madre: "",
     padre: "",
     potrero: "",
+    grupo: "",
   });
 
   const [potreros, setPotreros] = useState([]);
+  const [grupos, setGrupos] = useState([]);
 
   // Cargamos las listas de madres y padres existentes
   useEffect(() => {
@@ -44,14 +46,18 @@ export default function NuevoAnimal() {
       }
     );
     
-    // Cargar potreros
+    // Cargar potreros y grupos
     const unsubPotreros = onSnapshot(collection(db, "potreros"), (snap) => {
       setPotreros(snap.docs.map(doc => doc.data()));
+    });
+    const unsubGrupos = onSnapshot(collection(db, "grupos"), (snap) => {
+      setGrupos(snap.docs.map(doc => doc.data()));
     });
 
     return () => {
       cancelarSuscripcion();
       unsubPotreros();
+      unsubGrupos();
     };
   }, []);
 
@@ -245,6 +251,21 @@ export default function NuevoAnimal() {
                 <option value="">Sin Asignar</option>
                 {potreros.map(pot => (
                   <option key={pot.nombre} value={pot.nombre}>{pot.nombre}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="input-group">
+              <label>Grupo de Manejo (Clasificación)</label>
+              <select
+                name="grupo"
+                value={datosFormulario.grupo}
+                onChange={manejarCambio}
+                style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #d1d5db" }}
+              >
+                <option value="">Sin Grupo</option>
+                {grupos.map(g => (
+                  <option key={g.nombre} value={g.nombre}>{g.nombre}</option>
                 ))}
               </select>
             </div>

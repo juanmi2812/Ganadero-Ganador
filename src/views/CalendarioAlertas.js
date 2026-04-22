@@ -30,9 +30,13 @@ export default function CalendarioAlertas() {
   const [guardando, setGuardando] = useState(false);
   const [exitoMsg, setExitoMsg] = useState("");
 
-  const [modoAplicacion, setModoAplicacion] = useState("individual"); // individual | grupo | todos
-  const [categoriaGrupo, setCategoriaGrupo] = useState("Vaca");
+  const [modoAplicacion, setModoAplicacion] = useState("individual"); // individual | masivo
   const [animalSeleccionado, setAnimalSeleccionado] = useState("");
+  const [filtroPotrero, setFiltroPotrero] = useState("Todos");
+  const [filtroGrupo, setFiltroGrupo] = useState("Todos");
+
+  const [potreros, setPotreros] = useState([]);
+  const [grupos, setGrupos] = useState([]);
 
   const [datosEvento, setDatosEvento] = useState({
     tipo: "Desparasitante",
@@ -42,16 +46,20 @@ export default function CalendarioAlertas() {
     recordatorio: "1 semana antes",
   });
 
-  // Cargar animales para el selector
+  // Cargar animales, potreros y grupos
   useEffect(() => {
-    const cancelar = onSnapshot(collection(db, "animales"), (snap) => {
+    const cancelarAnimales = onSnapshot(collection(db, "animales"), (snap) => {
       const lista = snap.docs
         .map((d) => ({ id: d.id, ...d.data() }))
         .filter((a) => !a.estado?.includes("Baja"))
         .sort((a, b) => (a.arete || "").localeCompare(b.arete || ""));
       setAnimales(lista);
     });
-    return () => cancelar();
+    
+    const cancelarPotreros = onSnapshot(collection(db, "potreros"), (snap) => setPotreros(snap.docs.map(d => d.data().nombre)));
+    const cancelarGrupos = onSnapshot(collection(db, "grupos"), (snap) => setGrupos(snap.docs.map(d => d.data().nombre)));
+
+    return () => { cancelarAnimales(); cancelarPotreros(); cancelarGrupos(); };
   }, []);
 
   // Cargar eventos y alertas del calendario
@@ -105,10 +113,12 @@ export default function CalendarioAlertas() {
       if (modoAplicacion === "individual") {
         if (!animalSeleccionado) { alert("Selecciona un animal."); setGuardando(false); return; }
         animalesObjetivo = animales.filter((a) => a.id === animalSeleccionado);
-      } else if (modoAplicacion === "grupo") {
-        animalesObjetivo = animales.filter((a) => a.tipo === categoriaGrupo);
-      } else {
-        animalesObjetivo = [...animales];
+      } else if (modoAplicacion === "masivo") {
+        animalesObjetivo = animales.filter((a) => {
+          const pasaPotrero = filtroPotrero === "Todos" || a.potrero === filtroPotrero || a.hectarea === filtroPotrero;
+          const pasaGrupo = filtroGrupo === "Todos" || a.grupo === filtroGrupo;
+          return pasaPotrero && pasaGrupo;
+        });
       }
 
       if (animalesObjetivo.length === 0) { alert("No hay animales que coincidan."); setGuardando(false); return; }
@@ -131,7 +141,7 @@ export default function CalendarioAlertas() {
 
         const tituloGlobal = modoAplicacion === "individual" 
           ? `📅 ${datosEvento.tipo} - ${animalesObjetivo[0]?.arete}` 
-          : `📅 ${datosEvento.tipo} (Grupo: ${animalesObjetivo.length} cabezas)`;
+          : `📅 ${datosEvento.tipo} (Masivo: ${animalesObjetivo.length} cabezas)`;
 
         await addDoc(collection(db, "alertas"), {
           fechaProgramada: eventDate.toISOString().split("T")[0],
@@ -237,10 +247,10 @@ export default function CalendarioAlertas() {
             <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
               {[
                 { id: "individual", label: "Un Animal", icon: <User size={16} /> },
-                { id: "grupo", label: "Por Grupo", icon: <Layers size={16} /> },
-                { id: "todos", label: "Todos", icon: <Users size={16} /> },
+                { id: "masivo", label: "Masivo (Filtros)", icon: <Layers size={16} /> },
               ].map((modo) => (
                 <button
+                  type="button"
                   key={modo.id}
                   onClick={() => setModoAplicacion(modo.id)}
                   style={{
@@ -285,25 +295,23 @@ export default function CalendarioAlertas() {
                 </div>
               )}
 
-              {/* --- Selector de Grupo --- */}
-              {modoAplicacion === "grupo" && (
-                <div style={{ marginBottom: "16px" }}>
-                  <label style={labelStyle}>Categoría del Grupo</label>
-                  <select value={categoriaGrupo} onChange={(e) => setCategoriaGrupo(e.target.value)} style={inputStyle}>
-                    {CATEGORIAS.map((cat) => (
-                      <option key={cat} value={cat}>{cat} ({animales.filter((a) => a.tipo === cat).length} animales)</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* --- Todos --- */}
-              {modoAplicacion === "todos" && (
-                <div style={{
-                  padding: "12px", backgroundColor: "#fef3c7", borderRadius: "8px",
-                  marginBottom: "16px", fontSize: "13px", color: "#92400e",
-                }}>
-                  ⚠️ Este evento se aplicará a <strong>{animales.length} animales</strong> activos en tu inventario.
+              {/* --- Selectores Filtro Masivo --- */}
+              {modoAplicacion === "masivo" && (
+                <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>Filtrar por Potrero</label>
+                    <select value={filtroPotrero} onChange={(e) => setFiltroPotrero(e.target.value)} style={inputStyle}>
+                      <option value="Todos">Todos los Potreros</option>
+                      {potreros.map((pot) => <option key={pot} value={pot}>{pot}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>Grupo de Manejo</label>
+                    <select value={filtroGrupo} onChange={(e) => setFiltroGrupo(e.target.value)} style={inputStyle}>
+                      <option value="Todos">Todos los Grupos</option>
+                      {grupos.map((g) => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                  </div>
                 </div>
               )}
 

@@ -40,7 +40,7 @@ export default function ImportadorMasivo() {
 
     // Paso 0: Limpiar datos previos en paralelo
     try {
-      const colecciones = ["animales", "eventos", "alertas", "potreros"];
+      const colecciones = ["animales", "eventos", "alertas", "potreros", "grupos"];
       for (const col of colecciones) {
         const snap = await getDocs(collection(db, col));
         await Promise.all(snap.docs.map(d => deleteDoc(doc(db, col, d.id))));
@@ -61,12 +61,20 @@ export default function ImportadorMasivo() {
     const potrerosDemo = [
       { nombre: "Potrero Norte", hectareas: 50 },
       { nombre: "Potrero Sur", hectareas: 100 },
-      { castrar: false, nombre: "Potrero Maternidad", hectareas: 20 },
+      { nombre: "Potrero Maternidad", hectareas: 20 },
       { nombre: "Corral Engorda", hectareas: 5 },
       { nombre: "Pradera Abierta", hectareas: 200 }
     ];
-    // Se insertarán después de borrar. Por eficiencia los predefinimos.
     const potrerosNombres = potrerosDemo.map(p => p.nombre);
+
+    // Generar Grupos Base
+    const gruposDemo = [
+      { nombre: "Vacas" },
+      { nombre: "Crías Lactantes" },
+      { nombre: "Desarrollo" },
+      { nombre: "Engorda" },
+      { nombre: "Sementales" }
+    ];
 
     const animalesAGenerar = [];
 
@@ -78,7 +86,8 @@ export default function ImportadorMasivo() {
             fechaNacimiento: restarMesesAFecha(getRandomInt(50, 120)), // 4 a 10 años
             pesoActual: getRandomInt(400, 650),
             estado: Math.random() > 0.05 ? "Sano" : "Desecho",
-            hectarea: getRandom(potrerosNombres),
+            potrero: getRandom(potrerosNombres),
+            grupo: "Vacas",
             fechaRegistro: new Date().toISOString().split('T')[0]
         });
     }
@@ -92,7 +101,8 @@ export default function ImportadorMasivo() {
             fechaNacimiento: restarMesesAFecha(meses), 
             pesoActual: getRandomInt(280, 420),
             estado: meses >= 48 ? "Alerta: Revisión de Fertilidad" : "Sano",
-            hectarea: getRandom(potrerosNombres),
+            potrero: getRandom(potrerosNombres),
+            grupo: "Desarrollo",
             madre: `VC-${getRandomInt(1000, 9999)}`,
             padre: `SM-${getRandomInt(100, 999)}`,
             fechaRegistro: new Date().toISOString().split('T')[0]
@@ -107,7 +117,8 @@ export default function ImportadorMasivo() {
             fechaNacimiento: restarMesesAFecha(getRandomInt(12, 30)), 
             pesoActual: getRandomInt(350, 500),
             estado: Math.random() > 0.2 ? "Disponible para Venta" : "Sano",
-            hectarea: getRandom(potrerosNombres),
+            potrero: getRandom(potrerosNombres),
+            grupo: "Engorda",
             fechaRegistro: new Date().toISOString().split('T')[0]
         });
     }
@@ -121,7 +132,8 @@ export default function ImportadorMasivo() {
             fechaNacimiento: restarMesesAFecha(getRandomInt(2, 11)), 
             pesoActual: getRandomInt(80, 220),
             estado: "Sano",
-            hectarea: getRandom(potrerosNombres),
+            potrero: getRandom(potrerosNombres),
+            grupo: "Crías Lactantes",
             madre: `VC-${getRandomInt(1000, 9999)}`,
             padre: `SM-${getRandomInt(100, 999)}`,
             fechaRegistro: new Date().toISOString().split('T')[0]
@@ -136,7 +148,8 @@ export default function ImportadorMasivo() {
             fechaNacimiento: restarMesesAFecha(getRandomInt(60, 100)), 
             pesoActual: getRandomInt(800, 1100),
             estado: "Sano",
-            hectarea: getRandom(potrerosNombres),
+            potrero: getRandom(potrerosNombres),
+            grupo: "Sementales",
             fechaRegistro: new Date().toISOString().split('T')[0]
         });
     }
@@ -164,9 +177,12 @@ export default function ImportadorMasivo() {
     };
 
     try {
-        // Insertar Potreros simulados
+        // Insertar Potreros y Grupos simulados
         for(let p of potrerosDemo) {
           await addDoc(collection(db, "potreros"), p);
+        }
+        for(let g of gruposDemo) {
+          await addDoc(collection(db, "grupos"), g);
         }
 
         const batchSize = animalesAGenerar.length;
@@ -365,7 +381,7 @@ export default function ImportadorMasivo() {
                     if (!window.confirm("⚠️ Esto borrará TODOS los animales, eventos y alertas de la base de datos y te permitirá regenerarlos. ¿Continuar?")) return;
                     setCargandoDemo(true);
                     try {
-                        const colecciones = ["animales", "eventos", "alertas", "potreros"];
+                        const colecciones = ["animales", "eventos", "alertas", "potreros", "grupos"];
                         for (const col of colecciones) {
                             const snap = await getDocs(collection(db, col));
                             await Promise.all(snap.docs.map(d => deleteDoc(doc(db, col, d.id))));

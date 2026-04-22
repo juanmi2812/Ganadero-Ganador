@@ -7,18 +7,22 @@ export default function ConfiguracionPotreros() {
   const [potreros, setPotreros] = useState([]);
   const [formActivo, setFormActivo] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
-  
-  const [datosForm, setDatosForm] = useState({
-    nombre: "",
-    hectareas: ""
-  });
+  const [datosForm, setDatosForm] = useState({ nombre: "", hectareas: "" });
 
-  // Leer potreros
+  const [grupos, setGrupos] = useState([]);
+  const [formGrupoActivo, setFormGrupoActivo] = useState(false);
+  const [editandoGrupoId, setEditandoGrupoId] = useState(null);
+  const [datosFormGrupo, setDatosFormGrupo] = useState({ nombre: "" });
+
+  // Leer potreros y grupos
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "potreros"), (snap) => {
+    const unsubP = onSnapshot(collection(db, "potreros"), (snap) => {
       setPotreros(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
-    return () => unsub();
+    const unsubG = onSnapshot(collection(db, "grupos"), (snap) => {
+      setGrupos(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => { unsubP(); unsubG(); };
   }, []);
 
   const guardarPotrero = async (e) => {
@@ -55,6 +59,39 @@ export default function ConfiguracionPotreros() {
         await deleteDoc(doc(db, "potreros", id));
       } catch (error) {
         console.error("Error borrando potrero:", error);
+      }
+    }
+  };
+
+  const guardarGrupo = async (e) => {
+    e.preventDefault();
+    try {
+      const grupoData = { nombre: datosFormGrupo.nombre };
+      if (editandoGrupoId) {
+        await updateDoc(doc(db, "grupos", editandoGrupoId), grupoData);
+      } else {
+        await addDoc(collection(db, "grupos"), grupoData);
+      }
+      setFormGrupoActivo(false);
+      setEditandoGrupoId(null);
+      setDatosFormGrupo({ nombre: "" });
+    } catch (error) {
+      console.error("Error guardando grupo:", error);
+    }
+  };
+
+  const editarGrupo = (g) => {
+    setDatosFormGrupo({ nombre: g.nombre });
+    setEditandoGrupoId(g.id);
+    setFormGrupoActivo(true);
+  };
+
+  const borrarGrupo = async (id) => {
+    if (window.confirm("¿Seguro que deseas eliminar este grupo de manejo?")) {
+      try {
+        await deleteDoc(doc(db, "grupos", id));
+      } catch (error) {
+        console.error("Error borrando grupo:", error);
       }
     }
   };
@@ -147,6 +184,80 @@ export default function ConfiguracionPotreros() {
                         <Edit2 size={18} />
                       </button>
                       <button onClick={() => borrarPotrero(pot.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444" }} title="Eliminar">
+                        <Trash2 size={18} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      {/* SECCIÓN GRUPOS DE MANEJO */}
+      <div className="card" style={{ padding: "20px", marginBottom: "20px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: "18px" }}>Grupos de Manejo</h2>
+            <div style={{ fontSize: "13px", color: "var(--gris-400)", marginTop: "4px" }}>
+              Categoriza el ganado dentro de tus potreros para aplicar tratamientos masivos rápido.
+            </div>
+          </div>
+          {!formGrupoActivo && (
+            <button className="btn-primary" onClick={() => { setFormGrupoActivo(true); setEditandoGrupoId(null); setDatosFormGrupo({ nombre: "" }); }}>
+              <Plus size={18} /> Nuevo Grupo
+            </button>
+          )}
+        </div>
+
+        {formGrupoActivo && (
+          <form onSubmit={guardarGrupo} style={{ backgroundColor: "#f9fafb", padding: "15px", borderRadius: "8px", border: "1px solid #e5e7eb", marginBottom: "20px" }}>
+            <h3 style={{ fontSize: "15px", marginTop: 0, marginBottom: "15px", color: "#374151" }}>
+              {editandoGrupoId ? "Editar Grupo" : "Crear Nuevo Grupo"}
+            </h3>
+            
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "15px" }}>
+              <div style={{ flex: "1 1 200px" }}>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", marginBottom: "4px", color: "#4b5563" }}>Nombre del Grupo / Lote</label>
+                <input 
+                  type="text" 
+                  placeholder="Ej: Crías Lactantes, Sementales Base..." 
+                  value={datosFormGrupo.nombre} 
+                  onChange={e => setDatosFormGrupo({ nombre: e.target.value })}
+                  required
+                  style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #d1d5db", boxSizing: "border-box" }}
+                />
+              </div>
+            </div>
+            
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button type="submit" className="btn-primary" style={{ margin: 0 }}>Guardar Grupo</button>
+              <button type="button" className="btn-outline" style={{ margin: 0 }} onClick={() => { setFormGrupoActivo(false); setEditandoGrupoId(null); }}>Cancelar</button>
+            </div>
+          </form>
+        )}
+
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px", textAlign: "left" }}>
+            <thead>
+              <tr style={{ borderBottom: "2px solid #e5e7eb", color: "#6b7280" }}>
+                <th style={{ padding: "12px 8px" }}>Nombre del Grupo</th>
+                <th style={{ padding: "12px 8px", width: "100px", textAlign: "center" }}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {grupos.length === 0 ? (
+                <tr><td colSpan="2" style={{ padding: "20px", textAlign: "center", color: "#9ca3af" }}>No hay grupos registrados.</td></tr>
+              ) : (
+                grupos.map(g => (
+                  <tr key={g.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                    <td style={{ padding: "12px 8px", fontWeight: "500", color: "#111827" }}>{g.nombre}</td>
+                    <td style={{ padding: "12px 8px", textAlign: "center", display: "flex", justifyContent: "center", gap: "8px" }}>
+                      <button onClick={() => editarGrupo(g)} style={{ background: "none", border: "none", cursor: "pointer", color: "#3b82f6" }} title="Editar">
+                        <Edit2 size={18} />
+                      </button>
+                      <button onClick={() => borrarGrupo(g.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444" }} title="Eliminar">
                         <Trash2 size={18} />
                       </button>
                     </td>
