@@ -12,12 +12,15 @@ export default function DashboardGanado() {
   const [busqueda, setBusqueda] = useState("");
   const [filtroActivo, setFiltroActivo] = useState("Todos");
   const [filtroPotrero, setFiltroPotrero] = useState("Todos");
+  const [filtroGrupo, setFiltroGrupo] = useState("Todos");
   const [config, setConfig] = useState(null); // Finanzas
   
   const [animalActivo, setAnimalActivo] = useState(null);
   const [historialEventos, setHistorialEventos] = useState([]);
   const [mostrandoFormulario, setMostrandoFormulario] = useState(false);
   const [mostrandoBaja, setMostrandoBaja] = useState(false);
+  const [editandoUbicacion, setEditandoUbicacion] = useState(false);
+  const [nuevaUbicacion, setNuevaUbicacion] = useState({ potrero: "", grupo: "" });
   
   const [datosEvento, setDatosEvento] = useState({ 
     tipo: "Desparasitante", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes", costo: ""
@@ -186,6 +189,9 @@ export default function DashboardGanado() {
     const cumplePotrero = filtroPotrero === "Todos" || (animal.potrero || animal.hectarea) === filtroPotrero;
     if (!cumplePotrero) return false;
 
+    const cumpleGrupo = filtroGrupo === "Todos" || animal.grupo === filtroGrupo;
+    if (!cumpleGrupo) return false;
+
     if (filtroActivo === "Todos") return true;
     if (filtroActivo === "Bajas") return animal.estado?.includes('Baja');
     if (filtroActivo === "En Venta") return animal.estado === "Disponible para Venta" || animal.estado === "Desecho";
@@ -194,6 +200,7 @@ export default function DashboardGanado() {
   });
 
   const listaPotreros = ["Todos", ...new Set(inventario.map(a => a.potrero || a.hectarea).filter(Boolean))].sort();
+  const listaGrupos = ["Todos", ...new Set(inventario.map(a => a.grupo).filter(Boolean))].sort();
 
   // --- ACCIONES ---
   const guardarEvento = async (e) => {
@@ -246,6 +253,17 @@ export default function DashboardGanado() {
       setMostrandoBaja(false);
       setAnimalActivo(null);
     } catch (error) { console.error(error); }
+  };
+
+  const guardarCambioUbicacion = async () => {
+    try {
+      await updateDoc(doc(db, "animales", animalActivo.id), {
+        potrero: nuevaUbicacion.potrero,
+        grupo: nuevaUbicacion.grupo
+      });
+      setAnimalActivo({...animalActivo, potrero: nuevaUbicacion.potrero, grupo: nuevaUbicacion.grupo});
+      setEditandoUbicacion(false);
+    } catch(e) { console.error(e); }
   };
 
   const hacerSemental = async () => {
@@ -358,9 +376,16 @@ export default function DashboardGanado() {
         <select 
           value={filtroPotrero} 
           onChange={(e) => setFiltroPotrero(e.target.value)}
-          style={{ padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db", backgroundColor: "white", color: "#374151", fontSize: "14px", cursor: "pointer" }}
+          style={{ padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db", backgroundColor: "white", color: "#374151", fontSize: "14px", cursor: "pointer", maxWidth: "200px" }}
         >
           {listaPotreros.map(h => <option key={h} value={h}>{h === "Todos" ? "🏞️ Todos los Potreros" : `🚩 ${h}`}</option>)}
+        </select>
+        <select 
+          value={filtroGrupo} 
+          onChange={(e) => setFiltroGrupo(e.target.value)}
+          style={{ padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db", backgroundColor: "white", color: "#374151", fontSize: "14px", cursor: "pointer", maxWidth: "200px" }}
+        >
+          {listaGrupos.map(g => <option key={g} value={g}>{g === "Todos" ? "🏷️ Todos los Grupos" : `🏷️ ${g}`}</option>)}
         </select>
       </div>
 
@@ -424,17 +449,44 @@ export default function DashboardGanado() {
             </div>
 
             {/* GENEALOGÍA PADRES Y UBICACIÓN */}
-            <div style={{ backgroundColor: "#f9fafb", padding: "12px", borderRadius: "8px", border: "1px solid #e5e7eb", marginBottom: "20px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px", borderBottom: "1px solid #e5e7eb", paddingBottom: "12px" }}>
-                <div>
-                  <div style={{ color: "#6b7280", fontSize: "11px", fontWeight: "bold" }}>POTRERO / LOTE</div>
-                  <div style={{ fontSize: "14px", fontWeight: "700", color: "#111827" }}>{animalActivo.potrero || animalActivo.hectarea || "--"}</div>
+            <div style={{ backgroundColor: "#f9fafb", padding: "12px", borderRadius: "8px", border: "1px solid #e5e7eb", marginBottom: "20px", position: "relative" }}>
+              {!editandoUbicacion ? (
+                <button onClick={() => { setEditandoUbicacion(true); setNuevaUbicacion({potrero: animalActivo.potrero || "", grupo: animalActivo.grupo || ""}); }} style={{position: "absolute", right: "12px", top: "12px", background: "none", border: "none", color: "#3b82f6", cursor: "pointer", fontSize: "12px", fontWeight: "bold"}}>✏️ Mover</button>
+              ) : null}
+
+              {editandoUbicacion ? (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px", borderBottom: "1px solid #e5e7eb", paddingBottom: "12px" }}>
+                  <div>
+                    <div style={{ color: "#6b7280", fontSize: "11px", fontWeight: "bold", marginBottom: "4px" }}>NUEVO POTRERO</div>
+                    <select value={nuevaUbicacion.potrero} onChange={e => setNuevaUbicacion({...nuevaUbicacion, potrero: e.target.value})} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #d1d5db", fontSize: "13px" }}>
+                      <option value="">Sin Potrero</option>
+                      {listaPotreros.filter(p => p !== "Todos").map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <div style={{ color: "#6b7280", fontSize: "11px", fontWeight: "bold", marginBottom: "4px" }}>NUEVO GRUPO</div>
+                    <select value={nuevaUbicacion.grupo} onChange={e => setNuevaUbicacion({...nuevaUbicacion, grupo: e.target.value})} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #d1d5db", fontSize: "13px" }}>
+                      <option value="">Sin Grupo</option>
+                      {listaGrupos.filter(g => g !== "Todos").map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ gridColumn: "1 / -1", display: "flex", gap: "8px", marginTop: "4px" }}>
+                    <button onClick={guardarCambioUbicacion} style={{flex: 1, padding: "6px", backgroundColor: "#3b82f6", color: "white", borderRadius: "4px", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: "bold"}}>Guardar Cambios</button>
+                    <button onClick={() => setEditandoUbicacion(false)} style={{padding: "6px 12px", backgroundColor: "#fff", color: "#6b7280", borderRadius: "4px", border: "1px solid #d1d5db", cursor: "pointer", fontSize: "12px"}}>Cancelar</button>
+                  </div>
                 </div>
-                <div>
-                  <div style={{ color: "#6b7280", fontSize: "11px", fontWeight: "bold" }}>GRUPO DE MANEJO</div>
-                  <div style={{ fontSize: "14px", fontWeight: "700", color: "#111827" }}>{animalActivo.grupo || "--"}</div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px", borderBottom: "1px solid #e5e7eb", paddingBottom: "12px" }}>
+                  <div>
+                    <div style={{ color: "#6b7280", fontSize: "11px", fontWeight: "bold" }}>POTRERO / LOTE</div>
+                    <div style={{ fontSize: "14px", fontWeight: "700", color: "#111827" }}>{animalActivo.potrero || animalActivo.hectarea || "--"}</div>
+                  </div>
+                  <div>
+                    <div style={{ color: "#6b7280", fontSize: "11px", fontWeight: "bold" }}>GRUPO DE MANEJO</div>
+                    <div style={{ fontSize: "14px", fontWeight: "700", color: "#111827" }}>{animalActivo.grupo || "--"}</div>
+                  </div>
                 </div>
-              </div>
+              )}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
                   <div style={{ color: "#6b7280", fontSize: "11px", fontWeight: "bold" }}>MADRE</div>
@@ -448,8 +500,8 @@ export default function DashboardGanado() {
             </div>
 
 
-            {/* PANEL FINANCIERO */}
-            {finanzas && (
+            {/* PANEL FINANCIERO (Oculto temporalmente a peticion) */}
+            {false && finanzas && (
               <div style={{ backgroundColor: "#f9fafb", padding: "12px", borderRadius: "8px", border: "1px solid #e5e7eb", marginBottom: "20px" }}>
                 <h3 style={{ fontSize: "13px", color: "#374151", marginBottom: "8px", borderBottom: "1px solid #e5e7eb", paddingBottom: "6px" }}>Análisis de Rentabilidad Acumulada</h3>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
