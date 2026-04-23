@@ -195,6 +195,8 @@ export default function DashboardGanado() {
     if (filtroActivo === "Todos") return true;
     if (filtroActivo === "Bajas") return animal.estado?.includes('Baja');
     if (filtroActivo === "En Venta") return animal.estado === "Disponible para Venta" || animal.estado === "Desecho";
+    if (filtroActivo === "Machos") return animal.sexo?.toLowerCase() === "macho" && !animal.estado?.includes('Baja');
+    if (filtroActivo === "Hembras") return animal.sexo?.toLowerCase() === "hembra" && !animal.estado?.includes('Baja');
     
     return animal.tipo === filtroActivo && !animal.estado?.includes('Baja') && animal.estado !== "Disponible para Venta" && animal.estado !== "Desecho";
   });
@@ -321,22 +323,22 @@ export default function DashboardGanado() {
 
       {/* KPIs PRINCIPALES */}
       <div className="kpi-grid">
-        <div className="kpi-card">
+        <div className="kpi-card" onClick={() => setFiltroActivo("Todos")} style={{cursor: "pointer", border: filtroActivo === "Todos" ? "2px solid var(--verde-primario)" : "1px solid #e5e7eb"}}>
           <div style={{ fontSize: "22px", marginBottom: "6px" }}>🐄</div>
           <div className="kpi-value">{conteos.Todos}</div>
           <div className="kpi-label">Total Cabezas</div>
         </div>
-        <div className="kpi-card">
+        <div className="kpi-card" onClick={() => setFiltroActivo("Machos")} style={{cursor: "pointer", border: filtroActivo === "Machos" ? "2px solid #1565c0" : "1px solid #e5e7eb"}}>
           <div style={{ fontSize: "22px", marginBottom: "6px" }}>♂️</div>
           <div className="kpi-value" style={{ color: "#1565c0" }}>{machos}</div>
           <div className="kpi-label">Machos</div>
         </div>
-        <div className="kpi-card">
+        <div className="kpi-card" onClick={() => setFiltroActivo("Hembras")} style={{cursor: "pointer", border: filtroActivo === "Hembras" ? "2px solid #7b1fa2" : "1px solid #e5e7eb"}}>
           <div style={{ fontSize: "22px", marginBottom: "6px" }}>♀️</div>
           <div className="kpi-value" style={{ color: "#7b1fa2" }}>{hembras}</div>
           <div className="kpi-label">Hembras</div>
         </div>
-        <div className="kpi-card">
+        <div className="kpi-card" onClick={() => setFiltroActivo("En Venta")} style={{cursor: "pointer", border: filtroActivo === "En Venta" ? "2px solid #ef6c00" : "1px solid #e5e7eb"}}>
           <div style={{ fontSize: "22px", marginBottom: "6px" }}>💰</div>
           <div className="kpi-value" style={{ color: "#ef6c00" }}>{conteos["En Venta"]}</div>
           <div className="kpi-label">En Venta</div>
