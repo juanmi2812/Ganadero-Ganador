@@ -246,19 +246,7 @@ export default function ImportadorMasivo() {
 
             await Promise.all(misPromesas);
 
-            // Generar algunas alertas futuras (vacunaciones próximas)
-            if (Math.random() > 0.4) {
-                const diasFuturo = getRandomInt(15, 45); // Aseguramos que caigan en mes actual o siguiente
-                let fechaAlerta = new Date();
-                fechaAlerta.setDate(fechaAlerta.getDate() + diasFuturo);
-
-                await addDoc(collection(db, "alertas"), {
-                    fechaProgramada: fechaAlerta.toISOString().split('T')[0],
-                    titulo: `${getRandom(tiposEvento)} Planificado`,
-                    areteAnimal: animal.arete,
-                    completada: false
-                });
-            }
+            // Ya no generamos alertas automáticas para el calendario, ahora es solo un planner genérico.
         }
         setMensajeExito(true);
         await setDoc(doc(db, "configuracion", "demoGenerada"), { fecha: new Date().toISOString(), cantidad: batchSize });

@@ -29,7 +29,7 @@ export default function App() {
     { id: "calendario", label: "Calendario", icon: CalendarDays },
     { id: "reportes", label: "Reportes", icon: BarChart3 },
     { id: "rancho", label: "Rancho", icon: Map },
-    { id: "finanzas", label: "Ajustes", icon: Settings },
+    /* { id: "finanzas", label: "Ajustes", icon: Settings }, */ // Oculto temporalmente a peticion
   ];
 
   return (
