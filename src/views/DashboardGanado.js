@@ -74,7 +74,8 @@ export default function DashboardGanado() {
                   if (!nuevoEstado.includes('Baja') && nuevoEstado !== "Desecho" && nuevoEstado !== "Alerta: Revisión de Fertilidad") {
                     nuevoEstado = "Alerta: Revisión de Fertilidad";
                   }
-                  if (!animalesConAlerta.has(animal.id)) {
+                  // Omitimos inyectar alerta en el calendario visual a peticion del usuario, solo se queda el estado de la vaca
+                  /* if (!animalesConAlerta.has(animal.id)) {
                     await addDoc(collection(db, "alertas"), {
                       animalId: animal.id,
                       areteAnimal: animal.arete,
@@ -82,7 +83,7 @@ export default function DashboardGanado() {
                       fechaProgramada: hoy.toISOString().split('T')[0],
                       completada: false
                     });
-                  }
+                  } */
                 }
               } else if (mesesDeEdad >= 12 && mesesDeEdad < 48 && !haParido) {
                 nuevaCategoria = "Novillona";
@@ -221,7 +222,8 @@ export default function DashboardGanado() {
          await updateDoc(doc(db, "animales", animalActivo.id), { tipo: "Vaca" });
       }
 
-      if (datosEvento.recordatorio && datosEvento.recordatorio !== "Ninguno") {
+      // Omitimos generar alerta en calendario tras crear evento manual (a peticion de usaurio)
+      /* if (datosEvento.recordatorio && datosEvento.recordatorio !== "Ninguno") {
          const eventDate = new Date(datosEvento.fecha + "T00:00:00");
          let reminderDate;
          if (datosEvento.recordatorio === "1 día antes") {
@@ -240,7 +242,7 @@ export default function DashboardGanado() {
                completada: false
             });
          }
-      }
+      } */
 
       setDatosEvento({ tipo: "Desparasitante", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes", costo: "" });
       setMostrandoFormulario(false);
