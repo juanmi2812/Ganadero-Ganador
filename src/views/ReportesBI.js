@@ -220,13 +220,7 @@ export default function ReportesBI() {
             </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "10px" }}>
-           <span style={{ fontSize: "13px", fontWeight: "600", color: vistaFinanciera ? "#9ca3af" : "#3b82f6" }}>Inventario</span>
-           <div onClick={() => setVistaFinanciera(!vistaFinanciera)} style={{ width: "50px", height: "26px", borderRadius: "15px", backgroundColor: vistaFinanciera ? "#10b981" : "#d1d5db", position: "relative", cursor: "pointer", transition: "0.3s" }}>
-               <div style={{ width: "22px", height: "22px", backgroundColor: "white", borderRadius: "50%", position: "absolute", top: "2px", left: vistaFinanciera ? "26px" : "2px", transition: "0.3s", boxShadow: "0 2px 4px rgba(0,0,0,0.2)" }} />
-           </div>
-           <span style={{ fontSize: "13px", fontWeight: "600", color: vistaFinanciera ? "#10b981" : "#9ca3af" }}>Finanzas ($)</span>
-        </div>
+        {/* Toggle oculto por peticion del usuario */}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", marginBottom: "24px" }}>
@@ -273,23 +267,7 @@ export default function ReportesBI() {
             </ResponsiveContainer>
           </div>
         </div>
-        <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
-          <h3 style={{ marginTop: 0, color: "#374151" }}>Rendimiento por Genética {vistaFinanciera ? "($ Invest)" : "(Cabezas)"}</h3>
-          <div style={{ height: "300px", width: "100%", marginTop: "20px" }}>
-            <ResponsiveContainer>
-              <BarChart data={datosRazas} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" />
-                <YAxis allowDecimals={false} hide={vistaFinanciera} />
-                <RTTooltip formatter={(value) => vistaFinanciera ? `$${value.toLocaleString()}` : `${value} ud.` } cursor={{fill: 'transparent'}} />
-                <Bar dataKey="value" fill={vistaFinanciera ? "#10b981" : "#3b82f6"} radius={[4, 4, 0, 0]}>
-                   <LabelList dataKey="value" position="top" formatter={(val) => vistaFinanciera ? formatoMonedaCorta(val) : val} style={{ fontSize: "11px", fontWeight: "bold" }} />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        
+        {/* Gráfica Rendimiento por Genética eliminada a petición del usuario. (Solo se mantiene en reporte estático). */}
         {/* NUEVO GRÁFICO: DISTRIBUCIÓN POR POTRERO */}
         <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", marginTop: "24px" }}>
           <h3 style={{ marginTop: 0, color: "#374151" }}>Inventario por Potrero (Cabezas Totales)</h3>

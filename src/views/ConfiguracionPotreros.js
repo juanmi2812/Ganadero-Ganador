@@ -7,7 +7,7 @@ export default function ConfiguracionPotreros() {
   const [potreros, setPotreros] = useState([]);
   const [formActivo, setFormActivo] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
-  const [datosForm, setDatosForm] = useState({ nombre: "", hectareas: "" });
+  const [datosForm, setDatosForm] = useState({ nombre: "", hectareas: "", tipoPastoNombre: "", porcentajePasto: "", tipoPastoTamano: "" });
 
   const [grupos, setGrupos] = useState([]);
   const [formGrupoActivo, setFormGrupoActivo] = useState(false);
@@ -30,7 +30,10 @@ export default function ConfiguracionPotreros() {
     try {
       const potreroData = {
         nombre: datosForm.nombre,
-        hectareas: Number(datosForm.hectareas) || 0
+        hectareas: Number(datosForm.hectareas) || 0,
+        tipoPastoNombre: datosForm.tipoPastoNombre || "",
+        porcentajePasto: Number(datosForm.porcentajePasto) || 0,
+        tipoPastoTamano: datosForm.tipoPastoTamano || ""
       };
 
       if (editandoId) {
@@ -41,14 +44,20 @@ export default function ConfiguracionPotreros() {
 
       setFormActivo(false);
       setEditandoId(null);
-      setDatosForm({ nombre: "", hectareas: "" });
+      setDatosForm({ nombre: "", hectareas: "", tipoPastoNombre: "", porcentajePasto: "", tipoPastoTamano: "" });
     } catch (error) {
       console.error("Error guardando potrero:", error);
     }
   };
 
   const editarPotrero = (pot) => {
-    setDatosForm({ nombre: pot.nombre, hectareas: pot.hectareas });
+    setDatosForm({ 
+      nombre: pot.nombre || "", 
+      hectareas: pot.hectareas || "",
+      tipoPastoNombre: pot.tipoPastoNombre || "",
+      porcentajePasto: pot.porcentajePasto || "",
+      tipoPastoTamano: pot.tipoPastoTamano || ""
+    });
     setEditandoId(pot.id);
     setFormActivo(true);
   };
@@ -117,7 +126,7 @@ export default function ConfiguracionPotreros() {
             </div>
           </div>
           {!formActivo && (
-            <button className="btn-primary" onClick={() => { setFormActivo(true); setEditandoId(null); setDatosForm({ nombre: "", hectareas: "" }); }}>
+            <button className="btn-primary" onClick={() => { setFormActivo(true); setEditandoId(null); setDatosForm({ nombre: "", hectareas: "", tipoPastoNombre: "", porcentajePasto: "", tipoPastoTamano: "" }); }}>
               <Plus size={18} /> Nuevo Potrero
             </button>
           )}
@@ -153,6 +162,41 @@ export default function ConfiguracionPotreros() {
                   style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #d1d5db", boxSizing: "border-box" }}
                 />
               </div>
+              <div style={{ flex: "1 1 200px" }}>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", marginBottom: "4px", color: "#4b5563" }}>Tipo de Pasto (Nombre)</label>
+                <input 
+                  type="text" 
+                  placeholder="Ej: Bermudas, Pangola..." 
+                  value={datosForm.tipoPastoNombre} 
+                  onChange={e => setDatosForm({...datosForm, tipoPastoNombre: e.target.value})}
+                  style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #d1d5db", boxSizing: "border-box" }}
+                />
+              </div>
+              <div style={{ flex: "1 1 100px" }}>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", marginBottom: "4px", color: "#4b5563" }}>% Pasto</label>
+                <input 
+                  type="number" 
+                  min="1" max="100"
+                  placeholder="Ej: 80" 
+                  value={datosForm.porcentajePasto} 
+                  onChange={e => setDatosForm({...datosForm, porcentajePasto: e.target.value})}
+                  style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #d1d5db", boxSizing: "border-box" }}
+                />
+              </div>
+              <div style={{ flex: "1 1 150px" }}>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", marginBottom: "4px", color: "#4b5563" }}>Tamaño</label>
+                <select 
+                  value={datosForm.tipoPastoTamano} 
+                  onChange={e => setDatosForm({...datosForm, tipoPastoTamano: e.target.value})}
+                  style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #d1d5db", boxSizing: "border-box" }}
+                >
+                  <option value="">-- Seleccionar --</option>
+                  <option value="Corto">Corto</option>
+                  <option value="Mediano">Mediano</option>
+                  <option value="Alto">Alto</option>
+                  <option value="Corte">Corte</option>
+                </select>
+              </div>
             </div>
             
             <div style={{ display: "flex", gap: "10px" }}>
@@ -168,6 +212,7 @@ export default function ConfiguracionPotreros() {
               <tr style={{ borderBottom: "2px solid #e5e7eb", color: "#6b7280" }}>
                 <th style={{ padding: "12px 8px" }}>Nombre del Potrero</th>
                 <th style={{ padding: "12px 8px" }}>Capacidad (Hectáreas)</th>
+                <th style={{ padding: "12px 8px" }}>Sembrado de Pasto</th>
                 <th style={{ padding: "12px 8px", width: "100px", textAlign: "center" }}>Acciones</th>
               </tr>
             </thead>
@@ -179,6 +224,9 @@ export default function ConfiguracionPotreros() {
                   <tr key={pot.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
                     <td style={{ padding: "12px 8px", fontWeight: "500", color: "#111827" }}>{pot.nombre}</td>
                     <td style={{ padding: "12px 8px", color: "#4b5563" }}>{pot.hectareas} has</td>
+                    <td style={{ padding: "12px 8px", color: "#4b5563" }}>
+                      {pot.tipoPastoNombre ? `${pot.tipoPastoNombre} (${pot.porcentajePasto}%) - ${pot.tipoPastoTamano}` : "-"}
+                    </td>
                     <td style={{ padding: "12px 8px", textAlign: "center", display: "flex", justifyContent: "center", gap: "8px" }}>
                       <button onClick={() => editarPotrero(pot)} style={{ background: "none", border: "none", cursor: "pointer", color: "#3b82f6" }} title="Editar">
                         <Edit2 size={18} />
