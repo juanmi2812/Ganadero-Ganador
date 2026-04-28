@@ -4,16 +4,18 @@ import { db } from "../firebase";
 import { PieChart, Pie, Cell, Tooltip as RTTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LabelList } from "recharts";
 import { AlertCircle, DollarSign, Activity, TrendingUp, Download, FileText, FileSpreadsheet } from "lucide-react";
 import Header from "../components/Header";
-import { 
-  generarPDFVientres, generarExcelVientres, 
-  generarPDFReproduccion, generarExcelReproduccion, 
+import {
+  generarPDFVientres, generarExcelVientres,
+  generarPDFReproduccion, generarExcelReproduccion,
   generarPDFProyeccionPartos, generarExcelProyeccionPartos,
   generarPDFPotreros, generarExcelPotreros,
   generarPDFDesarrollo, generarExcelDesarrollo, prepararDatosDesarrollo,
   generarPDFCalendario, generarExcelCalendario, prepararDatosCalendario,
   calcularMetricasProductividad, generarPDFFichaIndividual,
-  prepararDatosVientres, prepararDatosReproduccion, prepararDatosProyeccionPartos, prepararDatosPotreros
+  prepararDatosVientres, prepararDatosReproduccion, prepararDatosProyeccionPartos, prepararDatosPotreros,
+  generarPDFTratamientos, generarExcelTratamientos, prepararDatosTratamientos
 } from "../reportes";
+import { TIPOS_EVENTO } from "../catalogoEventos";
 
 // Paletas de Colores Dinámicas
 const COLORES_INVENTARIO = ["#3b82f6", "#8b5cf6", "#ec4899", "#f43f5e", "#f59e0b", "#10b981"];
@@ -25,6 +27,11 @@ export default function ReportesBI() {
   const [alertas, setAlertas] = useState([]);
   const [config, setConfig] = useState(null);
   const [potreros, setPotreros] = useState([]);
+  const [eventosPotreros, setEventosPotreros] = useState([]);
+
+  // Filtros extra para Reporte de Tratamientos
+  const [filtroOrigenTrat, setFiltroOrigenTrat] = useState("ambos");
+  const [filtroTipoTrat, setFiltroTipoTrat] = useState("");
 
   // Slicers
   const [filtroCategoria, setFiltroCategoria] = useState("Todas");
@@ -76,7 +83,11 @@ export default function ReportesBI() {
       setPotreros(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
 
-    return () => { unsubAnimales(); unsubEventos(); unsubConfig(); unsubAlertas(); unsubPotreros(); };
+    const unsubEventosPotreros = onSnapshot(collection(db, "eventosPotreros"), snap => {
+      setEventosPotreros(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+
+    return () => { unsubAnimales(); unsubEventos(); unsubConfig(); unsubAlertas(); unsubPotreros(); unsubEventosPotreros(); };
   }, []);
 
   // --- MATEMÁTICA Y EXTRACCIÓN DE DATOS ---
@@ -330,6 +341,7 @@ export default function ReportesBI() {
                     <option value="hectareas">🚩 Producción por Hectárea</option>
                     <option value="desarrollo">📈 Desarrollo (GDP)</option>
                     <option value="calendario">📅 Calendario de Manejo</option>
+                    <option value="tratamientos">💊 Reporte de Tratamientos</option>
                 </select>
             </div>
             {reporteAvanzado && (
@@ -342,6 +354,25 @@ export default function ReportesBI() {
                         <label style={{ fontSize: "11px" }}>Hasta</label>
                         <input type="date" value={fechaFinReporte} onChange={(e) => setFechaFinReporte(e.target.value)} style={{ padding: "7px" }}/>
                     </div>
+                    {reporteAvanzado === "tratamientos" && (
+                        <>
+                            <div className="input-group" style={{ margin: 0 }}>
+                                <label style={{ fontSize: "11px" }}>Filtrar por</label>
+                                <select value={filtroOrigenTrat} onChange={(e) => setFiltroOrigenTrat(e.target.value)} style={{ padding: "7px", borderRadius: "6px", border: "1px solid #d1d5db" }}>
+                                    <option value="ambos">Mi Ganado + Mi Rancho</option>
+                                    <option value="ganado">Solo Mi Ganado</option>
+                                    <option value="rancho">Solo Mi Rancho</option>
+                                </select>
+                            </div>
+                            <div className="input-group" style={{ margin: 0 }}>
+                                <label style={{ fontSize: "11px" }}>Tipo de Actividad</label>
+                                <select value={filtroTipoTrat} onChange={(e) => setFiltroTipoTrat(e.target.value)} style={{ padding: "7px", borderRadius: "6px", border: "1px solid #d1d5db" }}>
+                                    <option value="">Todos los tipos</option>
+                                    {TIPOS_EVENTO.map(t => <option key={t} value={t}>{t}</option>)}
+                                </select>
+                            </div>
+                        </>
+                    )}
                 </>
             )}
         </div>
@@ -353,24 +384,28 @@ export default function ReportesBI() {
                     <div style={{ display: "flex", gap: "8px" }}>
                         <button className="btn-outline" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px" }}
                             onClick={() => {
-                                if (reporteAvanzado === "vientres") generarPDFVientres(animales, eventos, config, filtrosActuales);
-                                else if (reporteAvanzado === "reproduccion") generarPDFReproduccion(eventos, filtrosActuales);
-                                else if (reporteAvanzado === "proyeccion") generarPDFProyeccionPartos(animales, eventos, filtrosActuales);
-                                else if (reporteAvanzado === "potreros") generarPDFPotreros(animales, potreros, filtrosActuales);
-                                else if (reporteAvanzado === "desarrollo") generarPDFDesarrollo(animales, eventos, filtrosActuales);
-                                else if (reporteAvanzado === "calendario") generarPDFCalendario(animales, eventos, alertas, filtrosActuales);
+                                const f = filtrosActuales;
+                                if (reporteAvanzado === "vientres") generarPDFVientres(animales, eventos, config, f);
+                                else if (reporteAvanzado === "reproduccion") generarPDFReproduccion(eventos, f);
+                                else if (reporteAvanzado === "proyeccion") generarPDFProyeccionPartos(animales, eventos, f);
+                                else if (reporteAvanzado === "potreros") generarPDFPotreros(animales, potreros, f);
+                                else if (reporteAvanzado === "desarrollo") generarPDFDesarrollo(animales, eventos, f);
+                                else if (reporteAvanzado === "calendario") generarPDFCalendario(animales, eventos, alertas, f);
+                                else if (reporteAvanzado === "tratamientos") generarPDFTratamientos(animales, eventos, eventosPotreros, { ...f, origen: filtroOrigenTrat, tipoEvento: filtroTipoTrat });
                             }}
                         >
                             <Download size={16} /> PDF
                         </button>
                         <button className="btn-outline" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", borderColor: "var(--verde-claro)", color: "var(--verde-medio)" }}
                             onClick={() => {
-                                if (reporteAvanzado === "vientres") generarExcelVientres(animales, eventos, config, filtrosActuales);
-                                else if (reporteAvanzado === "reproduccion") generarExcelReproduccion(eventos, filtrosActuales);
-                                else if (reporteAvanzado === "proyeccion") generarExcelProyeccionPartos(animales, eventos, filtrosActuales);
-                                else if (reporteAvanzado === "potreros") generarExcelPotreros(animales, potreros, filtrosActuales);
-                                else if (reporteAvanzado === "desarrollo") generarExcelDesarrollo(animales, eventos, filtrosActuales);
-                                else if (reporteAvanzado === "calendario") generarExcelCalendario(animales, eventos, alertas, filtrosActuales);
+                                const f = filtrosActuales;
+                                if (reporteAvanzado === "vientres") generarExcelVientres(animales, eventos, config, f);
+                                else if (reporteAvanzado === "reproduccion") generarExcelReproduccion(eventos, f);
+                                else if (reporteAvanzado === "proyeccion") generarExcelProyeccionPartos(animales, eventos, f);
+                                else if (reporteAvanzado === "potreros") generarExcelPotreros(animales, potreros, f);
+                                else if (reporteAvanzado === "desarrollo") generarExcelDesarrollo(animales, eventos, f);
+                                else if (reporteAvanzado === "calendario") generarExcelCalendario(animales, eventos, alertas, f);
+                                else if (reporteAvanzado === "tratamientos") generarExcelTratamientos(animales, eventos, eventosPotreros, { ...f, origen: filtroOrigenTrat, tipoEvento: filtroTipoTrat });
                             }}
                         >
                             <FileSpreadsheet size={16} /> Excel
@@ -388,6 +423,7 @@ export default function ReportesBI() {
                             {reporteAvanzado === "potreros" && <tr><th style={{padding:"8px"}}>Potrero</th><th style={{padding:"8px"}}>Carga (Cab/Ha)</th><th style={{padding:"8px"}}>Biomasa Total</th><th style={{padding:"8px"}}>Prod (Kg/Ha)</th></tr>}
                             {reporteAvanzado === "desarrollo" && <tr><th style={{padding:"8px"}}>Categoría</th><th style={{padding:"8px"}}>Cantidad</th><th style={{padding:"8px"}}>GDP Promedio</th><th style={{padding:"8px"}}>Días Período</th></tr>}
                             {reporteAvanzado === "calendario" && <tr><th style={{padding:"8px"}}>Categoría</th><th style={{padding:"8px"}}>Mes Actual</th><th style={{padding:"8px"}}>Actividades Realizadas</th></tr>}
+                            {reporteAvanzado === "tratamientos" && <tr><th style={{padding:"8px"}}>Sección</th><th style={{padding:"8px"}}>Fecha</th><th style={{padding:"8px"}}>Tipo</th><th style={{padding:"8px"}}>Resultado / Insumo</th><th style={{padding:"8px"}}>Animal / Potrero</th><th style={{padding:"8px"}}>Arete</th><th style={{padding:"8px"}}>Costo ($)</th></tr>}
                         </thead>
                         <tbody>
                             {reporteAvanzado === "vientres" && prepararDatosVientres(animales, eventos, config, filtrosActuales).slice(0, 10).map((d, i) => (
@@ -407,6 +443,17 @@ export default function ReportesBI() {
                             ))}
                             {reporteAvanzado === "calendario" && prepararDatosCalendario(animales, eventos, alertas, filtrosActuales).slice(0, 10).map((d, i) => (
                                 <tr key={i} style={{ borderBottom: "1px solid #e5e7eb" }}><td style={{padding:"8px",fontWeight:"bold"}}>{d.categoria}</td><td style={{padding:"8px"}}>{d.mesActual}</td><td style={{padding:"8px"}}>{d.actividadesActual.filter(x=>x).join(" | ")}</td></tr>
+                            ))}
+                            {reporteAvanzado === "tratamientos" && prepararDatosTratamientos(animales, eventos, eventosPotreros, { ...filtrosActuales, origen: filtroOrigenTrat, tipoEvento: filtroTipoTrat }).filas.slice(0, 10).map((d, i) => (
+                                <tr key={i} style={{ borderBottom: "1px solid #e5e7eb" }}>
+                                    <td style={{padding:"8px",fontWeight:"bold",color: d.seccion === "Mi Rancho" ? "#92400e" : "#166534"}}>{d.seccion}</td>
+                                    <td style={{padding:"8px"}}>{d.fecha}</td>
+                                    <td style={{padding:"8px"}}>{d.tipo}</td>
+                                    <td style={{padding:"8px"}}>{d.resultado}</td>
+                                    <td style={{padding:"8px"}}>{d.entidad}</td>
+                                    <td style={{padding:"8px"}}>{d.arete}</td>
+                                    <td style={{padding:"8px",textAlign:"right"}}>${d.costo.toLocaleString()}</td>
+                                </tr>
                             ))}
                         </tbody>
                     </table>

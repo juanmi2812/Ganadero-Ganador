@@ -11,6 +11,7 @@ export const CATALOGO_EVENTOS = {
   "Herbicida": ["Picloram", "24D", "Paraquat"],
   "Fertilizante": ["Urea", "DAP", "Sulfato de amonio", "Triple 17"],
   "Plaguicida": ["Cipermetrina"],
+  "Tratamiento": ["Antibiótico", "Antiinflamatorio", "Vitaminas", "Suero Oral", "Otro"],
   "Repeso": [],
   "Palpación": ["Gestante", "Vacía - Fresca", "Vacía - Ciclando", "Vacía - Anestro", "Dudosa"],
   "Parto": [],

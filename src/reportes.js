@@ -1109,6 +1109,180 @@ export function calcularMetricasProductividad(animales, eventos) {
     };
 }
 
+// ================================================
+// REPORTE 8: TRATAMIENTOS (GANADO + RANCHO)
+// ================================================
+
+export function prepararDatosTratamientos(animales, eventos, eventosPotreros, filtros = {}) {
+  const { fechaInicio, fechaFin, origen = "ambos", tipoEvento = "" } = filtros;
+
+  const mapAnimales = {};
+  animales.forEach(a => { mapAnimales[a.id] = a; });
+
+  const dentroRango = (fecha) => {
+    if (!fecha) return false;
+    const f = new Date(fecha + "T00:00:00");
+    if (isNaN(f.getTime())) return false;
+    if (fechaInicio && f < new Date(fechaInicio + "T00:00:00")) return false;
+    if (fechaFin && f > new Date(fechaFin + "T23:59:59")) return false;
+    return true;
+  };
+
+  let filasGanado = [];
+  if (origen === "ganado" || origen === "ambos") {
+    filasGanado = eventos
+      .filter(e => {
+        if (!dentroRango(e.fecha)) return false;
+        if (tipoEvento && e.tipo !== tipoEvento) return false;
+        return true;
+      })
+      .map(e => {
+        const animal = mapAnimales[e.animalId] || {};
+        return {
+          seccion: "Mi Ganado",
+          fecha: e.fecha,
+          tipo: e.tipo,
+          resultado: e.resultado || "--",
+          entidad: animal.arete ? `Arete ${animal.arete}` : (e.animalId || "--"),
+          arete: animal.arete || "--",
+          costo: Number(e.costo) || 0,
+        };
+      });
+  }
+
+  let filasRancho = [];
+  if (origen === "rancho" || origen === "ambos") {
+    filasRancho = (eventosPotreros || [])
+      .filter(e => {
+        if (!dentroRango(e.fecha)) return false;
+        if (tipoEvento && e.tipo !== tipoEvento) return false;
+        return true;
+      })
+      .map(e => ({
+        seccion: "Mi Rancho",
+        fecha: e.fecha,
+        tipo: e.tipo,
+        resultado: e.resultado || "--",
+        entidad: e.potreroNombre || "--",
+        arete: "--",
+        costo: Number(e.costo) || 0,
+      }));
+  }
+
+  const todas = [...filasGanado, ...filasRancho].sort((a, b) =>
+    new Date(b.fecha) - new Date(a.fecha)
+  );
+
+  const costoTotal = todas.reduce((s, f) => s + f.costo, 0);
+  return { filas: todas, filasGanado, filasRancho, costoTotal };
+}
+
+export function generarPDFTratamientos(animales, eventos, eventosPotreros, filtros = {}) {
+  try {
+    const { filas, filasGanado, filasRancho, costoTotal } = prepararDatosTratamientos(animales, eventos, eventosPotreros, filtros);
+    const doc = new jsPDF({ orientation: "landscape" });
+    const fechaHoy = format(new Date(), "dd 'de' MMMM yyyy", { locale: es });
+
+    doc.setFillColor(27, 94, 32);
+    doc.rect(0, 0, doc.internal.pageSize.width, 28, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("REPORTE DE TRATAMIENTOS", 14, 14);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Actividades realizadas — ${fechaHoy}`, 14, 22);
+    doc.text(`Total: ${filas.length} eventos | Ganado: ${filasGanado.length} | Rancho: ${filasRancho.length}`, doc.internal.pageSize.width - 14, 14, { align: "right" });
+
+    const cabeceras = [["Sección", "Fecha", "Tipo", "Resultado / Insumo", "Animal / Potrero", "Arete", "Costo ($)"]];
+    const cuerpo = filas.map(f => [
+      f.seccion,
+      f.fecha,
+      f.tipo,
+      f.resultado,
+      f.entidad,
+      f.arete,
+      `$${f.costo.toLocaleString()}`,
+    ]);
+
+    autoTable(doc, {
+      startY: 35,
+      theme: "grid",
+      headStyles: { fillColor: [46, 125, 50], textColor: 255, fontSize: 8, fontStyle: "bold", halign: "center" },
+      bodyStyles: { fontSize: 7.5, cellPadding: 2 },
+      alternateRowStyles: { fillColor: [232, 245, 233] },
+      columnStyles: {
+        0: { fontStyle: "bold" },
+        6: { halign: "right" },
+      },
+      head: cabeceras,
+      body: cuerpo,
+      didDrawPage: (data) => {
+        const pageCount = doc.internal.getNumberOfPages();
+        doc.setFontSize(7);
+        doc.setTextColor(150);
+        doc.text(`Ganadero Ganador — Página ${data.pageNumber} de ${pageCount}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 8, { align: "center" });
+      },
+    });
+
+    const finalY = doc.lastAutoTable.finalY + 8;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(27, 94, 32);
+    doc.text(`COSTO TOTAL: $${costoTotal.toLocaleString()}`, doc.internal.pageSize.width - 14, finalY, { align: "right" });
+
+    doc.save(`Reporte_Tratamientos_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+  } catch (error) {
+    console.error("Error al generar PDF de Tratamientos:", error);
+    alert("Hubo un error al generar el PDF.");
+  }
+}
+
+export function generarExcelTratamientos(animales, eventos, eventosPotreros, filtros = {}) {
+  try {
+    const { filasGanado, filasRancho, costoTotal } = prepararDatosTratamientos(animales, eventos, eventosPotreros, filtros);
+    const wb = XLSX.utils.book_new();
+    const fechaHoy = format(new Date(), "yyyy-MM-dd");
+
+    const toSheet = (filas) =>
+      filas.map(f => ({
+        "Fecha": f.fecha,
+        "Tipo": f.tipo,
+        "Resultado / Insumo": f.resultado,
+        "Animal / Potrero": f.entidad,
+        "Arete": f.arete,
+        "Costo ($)": f.costo,
+      }));
+
+    if (filasGanado.length > 0) {
+      const wsG = XLSX.utils.json_to_sheet(toSheet(filasGanado));
+      wsG["!cols"] = [{ wch: 12 }, { wch: 16 }, { wch: 22 }, { wch: 20 }, { wch: 12 }, { wch: 10 }];
+      XLSX.utils.book_append_sheet(wb, wsG, "Mi Ganado");
+    }
+
+    if (filasRancho.length > 0) {
+      const wsR = XLSX.utils.json_to_sheet(toSheet(filasRancho));
+      wsR["!cols"] = [{ wch: 12 }, { wch: 16 }, { wch: 22 }, { wch: 20 }, { wch: 12 }, { wch: 10 }];
+      XLSX.utils.book_append_sheet(wb, wsR, "Mi Rancho");
+    }
+
+    // Resumen
+    const wsResumen = XLSX.utils.json_to_sheet([
+      { Concepto: "Eventos en Mi Ganado", Cantidad: filasGanado.length, "Costo ($)": filasGanado.reduce((s, f) => s + f.costo, 0) },
+      { Concepto: "Eventos en Mi Rancho", Cantidad: filasRancho.length, "Costo ($)": filasRancho.reduce((s, f) => s + f.costo, 0) },
+      { Concepto: "TOTAL", Cantidad: filasGanado.length + filasRancho.length, "Costo ($)": costoTotal },
+    ]);
+    XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen");
+
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    saveAs(blob, `Reporte_Tratamientos_${fechaHoy}.xlsx`);
+  } catch (error) {
+    console.error("Error al generar Excel de Tratamientos:", error);
+    alert("Hubo un error al generar el Excel.");
+  }
+}
+
 // Ficha Técnica Individual en PDF
 export function generarPDFFichaIndividual(animal, eventos) {
     try {

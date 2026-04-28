@@ -209,12 +209,13 @@ export default function DashboardGanado() {
   const guardarEvento = async (e) => {
     e.preventDefault();
     try {
-      await addDoc(collection(db, "eventos"), { 
-        animalId: animalActivo.id, 
-        tipo: datosEvento.tipo, 
-        resultado: datosEvento.resultado, 
+      await addDoc(collection(db, "eventos"), {
+        animalId: animalActivo.id,
+        tipo: datosEvento.tipo,
+        resultado: datosEvento.resultado,
         fecha: datosEvento.fecha,
-        costo: Number(datosEvento.costo) || 0
+        costo: Number(datosEvento.costo) || 0,
+        origen: "realizado"
       });
 
       // Actualización directa si el evento nuevo es un Parto (Sube la categoría de inmediato sin esperar refresh)
@@ -565,6 +566,7 @@ export default function DashboardGanado() {
             {!animalActivo.estado?.includes('Baja') && (
               <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
                 <button className="btn-primary" style={{ flex: 1, margin: 0 }} onClick={() => { setMostrandoFormulario(!mostrandoFormulario); setMostrandoBaja(false); }}>+ Evento</button>
+                <button className="btn-primary" style={{ flex: 1, margin: 0, backgroundColor: "#16a34a", borderColor: "#16a34a" }} onClick={() => { setDatosEvento(d => ({...d, tipo: "Tratamiento", resultado: ""})); setMostrandoFormulario(true); setMostrandoBaja(false); }}>💊 Tratamiento</button>
                 {animalActivo.tipo === "Torete" && (
                   <button className="btn-outline" style={{ flex: 1, margin: 0, borderColor: "#3b82f6", color: "#3b82f6" }} onClick={hacerSemental}>🔥 Hacer Semental</button>
                 )}
