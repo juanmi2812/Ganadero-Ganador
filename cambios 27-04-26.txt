@@ -1,0 +1,25 @@
+Prioridad 0: Armar formato de carga inicial ejemplo para que los nuevos clientes carguen la información real -> para que primeros usuarios junten la info.
+
+
+
+% de Maleza
+Poner ejemplos de nombres en el tamaño
+Crear Loguin de administrador 
+	-> registrar nuevo rancho
+	-> Excel qye esta en drive+
+
+
+Realizar pruebas con menos animales para poder validar. 
+
+- En el calendario se carga la pura planeación, y el botón debe de decir "planear Actividad" 
+- En la sección de mi ganado y Mi Rancho (solo cosas de protreros): agregar un botón que se vea bien, donde diga "Cargar Tratamiento" (misma info del calendario), que este será lo que paso
+realemente y se debe cargar en la basa de datos de animales y debe de aparecer en la ficha del animal cuando buscamos historia de lo que paso
+- EL botón de Rancho llamarlo "Mi Rancho" y moverlo después de "mi Ganado"
+- Analizar reporte de tratamientos, filtrar por mi ganado, mi rancho. y filtrar por tipo de actividad, tratamiento. todo con lo que realmente paso. seleccionar rango de fe
+
+
+3 grupos: 
+1) ganado
+2) potreros
+3) administrativo (siguente fase app)
+

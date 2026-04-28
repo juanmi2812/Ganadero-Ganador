@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { collection, onSnapshot, doc } from "firebase/firestore";
+import { collection, onSnapshot, doc, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { PieChart, Pie, Cell, Tooltip as RTTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LabelList } from "recharts";
 import { AlertCircle, DollarSign, Activity, TrendingUp, Download, FileText, FileSpreadsheet } from "lucide-react";
@@ -21,7 +21,7 @@ import { TIPOS_EVENTO } from "../catalogoEventos";
 const COLORES_INVENTARIO = ["#3b82f6", "#8b5cf6", "#ec4899", "#f43f5e", "#f59e0b", "#10b981"];
 const COLORES_FINANZAS = ["#059669", "#111827", "#34d399", "#fbbf24", "#d97706", "#dc2626"];
 
-export default function ReportesBI() {
+export default function ReportesBI({ usuario }) {
   const [animales, setAnimales] = useState([]);
   const [eventos, setEventos] = useState([]);
   const [alertas, setAlertas] = useState([]);
@@ -62,33 +62,34 @@ export default function ReportesBI() {
   const filtrosActuales = { fechaInicio: fechaInicioReporte, fechaFin: fechaFinReporte };
 
   useEffect(() => {
-    const unsubAnimales = onSnapshot(collection(db, "animales"), snap => {
+    if (!usuario?.ranchoId) return;
+    const unsubAnimales = onSnapshot(query(collection(db, "animales"), where("ranchoId", "==", usuario.ranchoId)), snap => {
       setAnimales(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
     
     // Optimizacion MVP: Cargar médicos directos.
-    const unsubEventos = onSnapshot(collection(db, "eventos"), snap => {
+    const unsubEventos = onSnapshot(query(collection(db, "eventos"), where("ranchoId", "==", usuario.ranchoId)), snap => {
       setEventos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
 
-    const unsubConfig = onSnapshot(doc(db, "configuracion", "financiera"), snap => {
+    const unsubConfig = onSnapshot(doc(db, "configuracion", `financiera_${usuario.ranchoId}`), snap => {
       if(snap.exists()) setConfig(snap.data());
     });
 
-    const unsubAlertas = onSnapshot(collection(db, "alertas"), snap => {
+    const unsubAlertas = onSnapshot(query(collection(db, "alertas"), where("ranchoId", "==", usuario.ranchoId)), snap => {
       setAlertas(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
 
-    const unsubPotreros = onSnapshot(collection(db, "potreros"), snap => {
+    const unsubPotreros = onSnapshot(query(collection(db, "potreros"), where("ranchoId", "==", usuario.ranchoId)), snap => {
       setPotreros(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
 
-    const unsubEventosPotreros = onSnapshot(collection(db, "eventosPotreros"), snap => {
+    const unsubEventosPotreros = onSnapshot(query(collection(db, "eventosPotreros"), where("ranchoId", "==", usuario.ranchoId)), snap => {
       setEventosPotreros(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
 
     return () => { unsubAnimales(); unsubEventos(); unsubConfig(); unsubAlertas(); unsubPotreros(); unsubEventosPotreros(); };
-  }, []);
+  }, [usuario]);
 
   // --- MATEMÁTICA Y EXTRACCIÓN DE DATOS ---
   

@@ -65,9 +65,9 @@ export default function App() {
 
   const tabs = [
     { id: "dashboard", label: "Mi Ganado", icon: Home },
+    { id: "rancho", label: "Mi Rancho", icon: Map },
     { id: "calendario", label: "Calendario", icon: CalendarDays },
     { id: "reportes", label: "Reportes", icon: BarChart3 },
-    { id: "rancho", label: "Mi Rancho", icon: Map },
   ];
 
   return (
@@ -97,10 +97,10 @@ export default function App() {
       {/* === PAGE CONTENT === */}
       <div className="page-wrapper">
         {vistaActiva === "dashboard" && <DashboardGanado usuario={usuario} />}
-        {vistaActiva === "nuevo" && <NuevoAnimal onTerminar={() => setVistaActiva("dashboard")} />}
+        {vistaActiva === "nuevo" && <NuevoAnimal onTerminar={() => setVistaActiva("dashboard")} usuario={usuario} />}
         {vistaActiva === "calendario" && <CalendarioAlertas usuario={usuario} />}
         {vistaActiva === "reportes" && <ReportesBI usuario={usuario} />}
-        {vistaActiva === "importar" && <ImportadorMasivo />}
+        {vistaActiva === "importar" && <ImportadorMasivo usuario={usuario} />}
         {vistaActiva === "finanzas" && <ConfiguracionFinanciera />}
         {vistaActiva === "rancho" && <ConfiguracionPotreros usuario={usuario} />}
       </div>

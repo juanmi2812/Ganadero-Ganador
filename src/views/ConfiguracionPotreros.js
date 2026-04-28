@@ -7,7 +7,7 @@ import { CATALOGO_EVENTOS, TIPOS_EVENTO } from "../catalogoEventos";
 const inputStyle = { width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #d1d5db", boxSizing: "border-box" };
 const labelStyle = { display: "block", fontSize: "12px", fontWeight: "bold", marginBottom: "4px", color: "#4b5563" };
 
-export default function ConfiguracionPotreros() {
+export default function ConfiguracionPotreros({ usuario }) {
   const [potreros, setPotreros] = useState([]);
   const [formActivo, setFormActivo] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
@@ -37,14 +37,15 @@ export default function ConfiguracionPotreros() {
   const [cargandoHistorial, setCargandoHistorial] = useState(false);
 
   useEffect(() => {
-    const unsubP = onSnapshot(collection(db, "potreros"), (snap) => {
+    if (!usuario?.ranchoId) return;
+    const unsubP = onSnapshot(query(collection(db, "potreros"), where("ranchoId", "==", usuario.ranchoId)), (snap) => {
       setPotreros(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
-    const unsubG = onSnapshot(collection(db, "grupos"), (snap) => {
+    const unsubG = onSnapshot(query(collection(db, "grupos"), where("ranchoId", "==", usuario.ranchoId)), (snap) => {
       setGrupos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
     return () => { unsubP(); unsubG(); };
-  }, []);
+  }, [usuario]);
 
   // ─── Divisiones ──────────────────────────────────────────────────────────────
 
@@ -71,6 +72,7 @@ export default function ConfiguracionPotreros() {
         porcentajePasto: Number(datosForm.porcentajePasto) || 0,
         tipoPastoTamano: datosForm.tipoPastoTamano || "",
         divisiones: datosForm.divisiones || [],
+        ranchoId: usuario?.ranchoId || null
       };
       if (editandoId) {
         await updateDoc(doc(db, "potreros", editandoId), potreroData);
@@ -128,6 +130,7 @@ export default function ConfiguracionPotreros() {
         resultado: datosTratamiento.resultado,
         fecha: datosTratamiento.fecha,
         costo: Number(datosTratamiento.costo) || 0,
+        ranchoId: usuario?.ranchoId || null
       });
       setExitoTrat(`✅ Tratamiento registrado en ${potreroActivo.nombre}`);
       setDatosTratamiento({ tipo: "Desparasitante", resultado: "", fecha: new Date().toISOString().split("T")[0], costo: "" });

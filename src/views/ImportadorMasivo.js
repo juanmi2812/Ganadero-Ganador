@@ -5,7 +5,7 @@ import { db } from "../firebase";
 import { format } from "date-fns";
 import * as XLSX from "xlsx";
 
-export default function ImportadorMasivo() {
+export default function ImportadorMasivo({ usuario }) {
   const [archivo, setArchivo] = useState(null);
   const [cargando, setCargando] = useState(false);
   const [mensajeExito, setMensajeExito] = useState(false);
@@ -16,14 +16,15 @@ export default function ImportadorMasivo() {
   const [demoYaGenerada, setDemoYaGenerada] = useState(false);
 
   useEffect(() => {
+    if (!usuario?.ranchoId) return;
     const verificarDemo = async () => {
       try {
-        const snap = await getDoc(doc(db, "configuracion", "demoGenerada"));
+        const snap = await getDoc(doc(db, "configuracion", `demoGenerada_${usuario.ranchoId}`));
         if (snap.exists()) setDemoYaGenerada(true);
       } catch (e) { console.error(e); }
     };
     verificarDemo();
-  }, []);
+  }, [usuario]);
 
   const manejarCambioArchivo = (e) => {
     const file = e.target.files[0];
@@ -399,6 +400,7 @@ export default function ImportadorMasivo() {
           madre:           String(fila["Arete_Madre"] || "").trim(),
           padre:           String(fila["Arete_Padre"] || "").trim(),
           fechaRegistro:   hoy,
+          ranchoId:        usuario?.ranchoId || null,
         };
 
         // Construir eventos a crear
@@ -452,7 +454,7 @@ export default function ImportadorMasivo() {
       for (const { animal, eventos } of animalesValidos) {
         const docRef = await addDoc(collection(db, "animales"), animal);
         for (const evento of eventos) {
-          await addDoc(collection(db, "eventos"), { ...evento, animalId: docRef.id });
+          await addDoc(collection(db, "eventos"), { ...evento, animalId: docRef.id, ranchoId: usuario?.ranchoId || null });
         }
       }
 
@@ -479,7 +481,7 @@ export default function ImportadorMasivo() {
     try {
       const colecciones = ["animales", "eventos", "alertas", "potreros", "grupos"];
       for (const col of colecciones) {
-        const snap = await getDocs(collection(db, col));
+        const snap = await getDocs(query(collection(db, col), where("ranchoId", "==", usuario?.ranchoId)));
         await Promise.all(snap.docs.map(d => deleteDoc(doc(db, col, d.id))));
       }
     } catch (e) { console.error("Error limpiando datos previos:", e); }
@@ -521,7 +523,8 @@ export default function ImportadorMasivo() {
         pesoActual: getRandomInt(400, 650),
         estado: Math.random() > 0.05 ? "Sano" : "Desecho",
         potrero: getRandom(potrerosNombres), grupo: "Vacas",
-        fechaRegistro: new Date().toISOString().split('T')[0]
+        fechaRegistro: new Date().toISOString().split('T')[0],
+        ranchoId: usuario?.ranchoId
       });
     }
     for(let i=0; i<20; i++){
@@ -534,7 +537,8 @@ export default function ImportadorMasivo() {
         estado: meses >= 48 ? "Alerta: Revisión de Fertilidad" : "Sano",
         potrero: getRandom(potrerosNombres), grupo: "Desarrollo",
         madre: `VC-${getRandomInt(1000, 9999)}`, padre: `SM-${getRandomInt(100, 999)}`,
-        fechaRegistro: new Date().toISOString().split('T')[0]
+        fechaRegistro: new Date().toISOString().split('T')[0],
+        ranchoId: usuario?.ranchoId
       });
     }
     for(let i=0; i<15; i++){
@@ -545,7 +549,8 @@ export default function ImportadorMasivo() {
         pesoActual: getRandomInt(350, 500),
         estado: Math.random() > 0.2 ? "Disponible para Venta" : "Sano",
         potrero: getRandom(potrerosNombres), grupo: "Engorda",
-        fechaRegistro: new Date().toISOString().split('T')[0]
+        fechaRegistro: new Date().toISOString().split('T')[0],
+        ranchoId: usuario?.ranchoId
       });
     }
     for(let i=0; i<40; i++){
@@ -558,7 +563,8 @@ export default function ImportadorMasivo() {
         estado: "Sano",
         potrero: getRandom(potrerosNombres), grupo: "Crías Lactantes",
         madre: `VC-${getRandomInt(1000, 9999)}`, padre: `SM-${getRandomInt(100, 999)}`,
-        fechaRegistro: new Date().toISOString().split('T')[0]
+        fechaRegistro: new Date().toISOString().split('T')[0],
+        ranchoId: usuario?.ranchoId
       });
     }
     for(let i=0; i<5; i++){
@@ -569,7 +575,8 @@ export default function ImportadorMasivo() {
         pesoActual: getRandomInt(800, 1100),
         estado: "Sano",
         potrero: getRandom(potrerosNombres), grupo: "Sementales",
-        fechaRegistro: new Date().toISOString().split('T')[0]
+        fechaRegistro: new Date().toISOString().split('T')[0],
+        ranchoId: usuario?.ranchoId
       });
     }
 
@@ -590,8 +597,8 @@ export default function ImportadorMasivo() {
     };
 
     try {
-      for(let p of potrerosDemo) await addDoc(collection(db, "potreros"), p);
-      for(let g of gruposDemo)   await addDoc(collection(db, "grupos"), g);
+      for(let p of potrerosDemo) await addDoc(collection(db, "potreros"), { ...p, ranchoId: usuario?.ranchoId });
+      for(let g of gruposDemo)   await addDoc(collection(db, "grupos"), { ...g, ranchoId: usuario?.ranchoId });
 
       const batchSize = animalesAGenerar.length;
       for(let i=0; i<batchSize; i++) {
@@ -604,7 +611,7 @@ export default function ImportadorMasivo() {
           misPromesas.push(addDoc(collection(db, "eventos"), {
             animalId, tipo: "Repeso",
             resultado: `${getRandomInt(animal.pesoActual - 40, animal.pesoActual - 10)} kg`,
-            fecha: restarMesesAFecha(getRandomInt(2, 4)), costo: 0
+            fecha: restarMesesAFecha(getRandomInt(2, 4)), costo: 0, ranchoId: usuario?.ranchoId
           }));
         }
         for(let j=0; j<getRandomInt(2,5); j++) {
@@ -614,34 +621,34 @@ export default function ImportadorMasivo() {
                             tipoEv === "Tratamiento" ? getRandom(tratamientos) : "Ivermectina 1%";
           misPromesas.push(addDoc(collection(db, "eventos"), {
             animalId, tipo: tipoEv, resultado,
-            fecha: generarFechaAleatoria(j === 0 ? 1 : 10), costo: getRandomInt(50, 400)
+            fecha: generarFechaAleatoria(j === 0 ? 1 : 10), costo: getRandomInt(50, 400), ranchoId: usuario?.ranchoId
           }));
         }
         if (["Vaca","Novillona"].includes(animal.tipo) && Math.random() > 0.3) {
           const resultadosPalp = ["Gestante","Vacía - Fresca","Vacía - Ciclando","Vacía - Anestro"];
           misPromesas.push(addDoc(collection(db, "eventos"), {
             animalId, tipo: "Palpación", resultado: getRandom(resultadosPalp),
-            fecha: generarFechaAleatoria(10), costo: 100
+            fecha: generarFechaAleatoria(10), costo: 100, ranchoId: usuario?.ranchoId
           }));
         }
         if (animal.tipo === "Vaca" && Math.random() > 0.4) {
           const fP1 = restarMesesAFecha(getRandomInt(22, 28));
           const fP2 = restarMesesAFecha(getRandomInt(8, 12));
           const fIn = format(new Date(new Date(fP1+"T00:00:00").getTime() + (getRandomInt(70,110)*86400000)), "yyyy-MM-dd");
-          misPromesas.push(addDoc(collection(db, "eventos"), { animalId, tipo: "Parto", resultado: "Cría sana", fecha: fP1, costo: 0 }));
-          misPromesas.push(addDoc(collection(db, "eventos"), { animalId, tipo: "Inseminación", resultado: "IA Directa", fecha: fIn, costo: 0 }));
-          misPromesas.push(addDoc(collection(db, "eventos"), { animalId, tipo: "Parto", resultado: "Cría sana", fecha: fP2, costo: 0 }));
+          misPromesas.push(addDoc(collection(db, "eventos"), { animalId, tipo: "Parto", resultado: "Cría sana", fecha: fP1, costo: 0, ranchoId: usuario?.ranchoId }));
+          misPromesas.push(addDoc(collection(db, "eventos"), { animalId, tipo: "Inseminación", resultado: "IA Directa", fecha: fIn, costo: 0, ranchoId: usuario?.ranchoId }));
+          misPromesas.push(addDoc(collection(db, "eventos"), { animalId, tipo: "Parto", resultado: "Cría sana", fecha: fP2, costo: 0, ranchoId: usuario?.ranchoId }));
           if (Math.random() > 0.5) {
             misPromesas.push(addDoc(collection(db, "eventos"), {
               animalId, tipo: "Palpación",
               resultado: `Gestante ${getRandomInt(2,7)} meses`,
-              fecha: format(new Date(), "yyyy-MM-dd"), costo: 100
+              fecha: format(new Date(), "yyyy-MM-dd"), costo: 100, ranchoId: usuario?.ranchoId
             }));
           }
         } else if (animal.tipo === "Novillona" && Math.random() > 0.5) {
           misPromesas.push(addDoc(collection(db, "eventos"), {
             animalId, tipo: "Inseminación", resultado: "IA",
-            fecha: restarMesesAFecha(getRandomInt(1, 4)), costo: 0
+            fecha: restarMesesAFecha(getRandomInt(1, 4)), costo: 0, ranchoId: usuario?.ranchoId
           }));
         }
         await Promise.all(misPromesas);
@@ -649,7 +656,7 @@ export default function ImportadorMasivo() {
 
       setContadorImportados(batchSize);
       setMensajeExito(true);
-      await setDoc(doc(db, "configuracion", "demoGenerada"), { fecha: new Date().toISOString(), cantidad: batchSize });
+      await setDoc(doc(db, "configuracion", `demoGenerada_${usuario?.ranchoId}`), { fecha: new Date().toISOString(), cantidad: batchSize });
       setDemoYaGenerada(true);
     } catch (e) { console.error("Error inyectando data", e); }
 
@@ -726,7 +733,9 @@ export default function ImportadorMasivo() {
       )}
 
       {/* Generador de Demo */}
-      {!demoYaGenerada ? (
+      {usuario?.rol === "Administrador" && (
+        <>
+          {!demoYaGenerada ? (
         <div style={{ marginTop: "50px", paddingTop: "30px", borderTop: "2px dashed #e5e7eb", textAlign: "center" }}>
           <Database size={40} color="#10b981" style={{ margin: "0 auto" }} />
           <h3 style={{ color: "#374151", marginTop: "10px" }}>¿Necesitas datos para probar la aplicación?</h3>
@@ -757,10 +766,10 @@ export default function ImportadorMasivo() {
               try {
                 const cols = ["animales", "eventos", "alertas", "potreros", "grupos"];
                 for (const col of cols) {
-                  const snap = await getDocs(collection(db, col));
+                  const snap = await getDocs(query(collection(db, col), where("ranchoId", "==", usuario?.ranchoId)));
                   await Promise.all(snap.docs.map(d => deleteDoc(doc(db, col, d.id))));
                 }
-                await deleteDoc(doc(db, "configuracion", "demoGenerada"));
+                await deleteDoc(doc(db, "configuracion", `demoGenerada_${usuario?.ranchoId}`));
                 setDemoYaGenerada(false);
                 setMensajeExito(false);
               } catch (e) { console.error(e); }
@@ -772,6 +781,8 @@ export default function ImportadorMasivo() {
             {cargandoDemo ? "Limpiando base de datos..." : "Resetear y Regenerar Demo"}
           </button>
         </div>
+      )}
+        </>
       )}
     </div>
   );

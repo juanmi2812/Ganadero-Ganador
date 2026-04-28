@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { collection, onSnapshot, addDoc } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { Plus, X, User, Layers, CalendarDays, ChevronDown, ChevronUp } from "lucide-react";
 import { CATALOGO_EVENTOS, TIPOS_EVENTO } from "../catalogoEventos";
@@ -12,7 +12,7 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 const locales = { es: es };
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
 
-export default function CalendarioAlertas() {
+export default function CalendarioAlertas({ usuario }) {
   const [eventosCalendario, setEventosCalendario] = useState([]);
   const [alertasPlaneadas, setAlertasPlaneadas] = useState([]);
   const [vista, setVista] = useState("month");
@@ -40,19 +40,21 @@ export default function CalendarioAlertas() {
   const [listaExpandida, setListaExpandida] = useState(true);
 
   useEffect(() => {
-    const unsubA = onSnapshot(collection(db, "animales"), (snap) => {
+    if (!usuario?.ranchoId) return;
+    const unsubA = onSnapshot(query(collection(db, "animales"), where("ranchoId", "==", usuario.ranchoId)), (snap) => {
       setAnimales(snap.docs.map(d => ({ id: d.id, ...d.data() }))
         .filter(a => !a.estado?.includes("Baja"))
         .sort((a, b) => (a.arete || "").localeCompare(b.arete || "")));
     });
-    const unsubP = onSnapshot(collection(db, "potreros"), (snap) => setPotreros(snap.docs.map(d => d.data().nombre)));
-    const unsubG = onSnapshot(collection(db, "grupos"), (snap) => setGrupos(snap.docs.map(d => d.data().nombre)));
+    const unsubP = onSnapshot(query(collection(db, "potreros"), where("ranchoId", "==", usuario.ranchoId)), (snap) => setPotreros(snap.docs.map(d => d.data().nombre)));
+    const unsubG = onSnapshot(query(collection(db, "grupos"), where("ranchoId", "==", usuario.ranchoId)), (snap) => setGrupos(snap.docs.map(d => d.data().nombre)));
     return () => { unsubA(); unsubP(); unsubG(); };
-  }, []);
+  }, [usuario]);
 
   // Cargar alertas planeadas para calendario y lista
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "alertas"), (snap) => {
+    if (!usuario?.ranchoId) return;
+    const unsub = onSnapshot(query(collection(db, "alertas"), where("ranchoId", "==", usuario.ranchoId)), (snap) => {
       const todas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
       // Solo mostrar en calendario las planeadas (origen: "planeado" o sin campo origen para compatibilidad)
@@ -81,7 +83,7 @@ export default function CalendarioAlertas() {
       );
     });
     return () => unsub();
-  }, []);
+  }, [usuario]);
 
   const estiloDeEventos = (event) => ({
     style: {
@@ -125,6 +127,7 @@ export default function CalendarioAlertas() {
         filtroGrupo: modoAplicacion === "masivo" ? filtroGrupo : null,
         completada: false,
         origen: "planeado",
+        ranchoId: usuario?.ranchoId || null
       });
 
       setExitoMsg(`✅ Actividad planeada para el ${datosEvento.fecha}`);

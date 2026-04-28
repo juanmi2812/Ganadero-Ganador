@@ -6,7 +6,7 @@ import { db } from "../firebase";
 import Header from "../components/Header";
 import { CATALOGO_EVENTOS, TIPOS_EVENTO } from "../catalogoEventos";
 
-export default function DashboardGanado() {
+export default function DashboardGanado({ usuario }) {
   // --- ESTADOS ---
   const [inventario, setInventario] = useState([]);
   const [busqueda, setBusqueda] = useState("");
@@ -29,6 +29,14 @@ export default function DashboardGanado() {
     motivo: "Venta", notas: "", fecha: new Date().toISOString().split('T')[0] 
   });
   const [sincronizado, setSincronizado] = useState(false);
+  
+  // Tratamiento Masivo
+  const [mostrarModalMasivo, setMostrarModalMasivo] = useState(false);
+  const [datosMasivos, setDatosMasivos] = useState({ tipo: "Vacunación", resultado: "", fecha: new Date().toISOString().split("T")[0], costo: "" });
+  const [filtroPotreroMasivo, setFiltroPotreroMasivo] = useState("Todos");
+  const [filtroGrupoMasivo, setFiltroGrupoMasivo] = useState("Todos");
+  const [guardandoMasivo, setGuardandoMasivo] = useState(false);
+  const [exitoMasivo, setExitoMasivo] = useState("");
 
   // --- EFECTOS AUTOMÁTICOS (OPCIÓN A) ---
   useEffect(() => {
@@ -37,12 +45,12 @@ export default function DashboardGanado() {
       
       const sincronizarCategorias = async () => {
         try {
-          const qPartos = query(collection(db, "eventos"), where("tipo", "==", "Parto"));
+          const qPartos = query(collection(db, "eventos"), where("tipo", "==", "Parto"), where("ranchoId", "==", usuario?.ranchoId));
           const partosSnap = await getDocs(qPartos);
           const hembrasConParto = new Set();
           partosSnap.forEach(d => hembrasConParto.add(d.data().animalId));
 
-          const qAlertas = query(collection(db, "alertas"), where("titulo", "==", "Revisión de Fertilidad"));
+          const qAlertas = query(collection(db, "alertas"), where("titulo", "==", "Revisión de Fertilidad"), where("ranchoId", "==", usuario?.ranchoId));
           const alertasSnap = await getDocs(qAlertas);
           const animalesConAlerta = new Set();
           alertasSnap.forEach(d => animalesConAlerta.add(d.data().animalId));
@@ -112,13 +120,15 @@ export default function DashboardGanado() {
 
   // --- EFECTOS (FIREBASE) ---
   useEffect(() => {
-    const cancelarSuscripcion = onSnapshot(collection(db, "animales"), (snapshot) => {
+    if (!usuario?.ranchoId) return;
+    const q = query(collection(db, "animales"), where("ranchoId", "==", usuario.ranchoId));
+    const cancelarSuscripcion = onSnapshot(q, (snapshot) => {
         const listaAnimales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setInventario(listaAnimales);
       }
     );
     return () => cancelarSuscripcion();
-  }, []);
+  }, [usuario]);
 
   useEffect(() => {
     if (!animalActivo) return;
@@ -132,11 +142,13 @@ export default function DashboardGanado() {
   }, [animalActivo]);
 
   useEffect(() => {
-    const cancelarConfig = onSnapshot(doc(db, "configuracion", "financiera"), (docSnap) => {
+    if (!usuario?.ranchoId) return;
+    const qConf = doc(db, "configuracion", `financiera_${usuario.ranchoId}`);
+    const cancelarConfig = onSnapshot(qConf, (docSnap) => {
       if (docSnap.exists()) setConfig(docSnap.data());
     });
     return () => cancelarConfig();
-  }, []);
+  }, [usuario]);
 
   // --- LÓGICA DE NEGOCIO (BI & CALCULOS) ---
   const obtenerEstadisticasPeso = () => {
@@ -248,6 +260,44 @@ export default function DashboardGanado() {
       setDatosEvento({ tipo: "Desparasitante", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes", costo: "" });
       setMostrandoFormulario(false);
     } catch (error) { console.error(error); }
+  };
+
+  const guardarEventoMasivo = async (e) => {
+    e.preventDefault();
+    setGuardandoMasivo(true);
+    setExitoMasivo("");
+    try {
+      const animalesAfectados = inventario.filter(a => {
+        if (a.estado?.includes('Baja')) return false;
+        if (filtroPotreroMasivo !== "Todos" && (a.potrero || a.hectarea) !== filtroPotreroMasivo) return false;
+        if (filtroGrupoMasivo !== "Todos" && a.grupo !== filtroGrupoMasivo) return false;
+        return true;
+      });
+
+      if (animalesAfectados.length === 0) {
+        alert("No hay animales que coincidan con estos filtros.");
+        setGuardandoMasivo(false);
+        return;
+      }
+
+      for (const animal of animalesAfectados) {
+        await addDoc(collection(db, "eventos"), {
+          animalId: animal.id,
+          tipo: datosMasivos.tipo,
+          resultado: datosMasivos.resultado,
+          fecha: datosMasivos.fecha,
+          costo: Number(datosMasivos.costo) || 0,
+          origen: "realizado",
+          ranchoId: usuario?.ranchoId || null
+        });
+      }
+      setExitoMasivo(`✅ Aplicado a ${animalesAfectados.length} cabezas.`);
+      setTimeout(() => { setExitoMasivo(""); setMostrarModalMasivo(false); }, 2000);
+    } catch (error) {
+      console.error(error);
+      alert("Error al aplicar tratamientos.");
+    }
+    setGuardandoMasivo(false);
   };
 
   const guardarBaja = async (e) => {
@@ -366,8 +416,8 @@ export default function DashboardGanado() {
         ))}
       </div>
 
-      {/* BUSCADOR */}
-      <div className="search-bar" style={{ gap: "10px" }}>
+      {/* BUSCADOR Y BOTÓN TRATAMIENTO MASIVO */}
+      <div className="search-bar" style={{ gap: "10px", alignItems: "center" }}>
         <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "10px", backgroundColor: "#f9fafb", padding: "0 12px", borderRadius: "8px", border: "1px solid #d1d5db" }}>
           <Search size={20} color="#9ca3af" />
           <input 
@@ -378,6 +428,16 @@ export default function DashboardGanado() {
             style={{ border: "none", width: "100%", padding: "10px 0", backgroundColor: "transparent", outline: "none" }}
           />
         </div>
+        <button 
+          className="btn-primary" 
+          onClick={() => setMostrarModalMasivo(true)}
+          style={{ margin: 0, display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#16a34a", borderColor: "#16a34a", whiteSpace: "nowrap" }}
+        >
+          💊 Cargar Tratamiento Masivo
+        </button>
+      </div>
+      
+      <div className="search-bar" style={{ gap: "10px", marginTop: "10px" }}>
         <select 
           value={filtroPotrero} 
           onChange={(e) => setFiltroPotrero(e.target.value)}
@@ -651,6 +711,86 @@ export default function DashboardGanado() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+      {/* === MODAL TRATAMIENTO MASIVO === */}
+      {mostrarModalMasivo && (
+        <div className="modal-overlay" onClick={() => setMostrarModalMasivo(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "500px" }}>
+            <div className="modal-header">
+              <h2>💊 Cargar Tratamiento Masivo</h2>
+              <button onClick={() => setMostrarModalMasivo(false)} style={{ background: "none", border: "none" }}><X size={24} /></button>
+            </div>
+            
+            <form onSubmit={guardarEventoMasivo}>
+              {/* Filtros de aplicación */}
+              <div style={{ backgroundColor: "#f9fafb", padding: "12px", borderRadius: "8px", marginBottom: "15px", border: "1px solid #e5e7eb" }}>
+                <h4 style={{ margin: "0 0 10px 0", fontSize: "14px", color: "#374151" }}>Filtros de Aplicación</h4>
+                
+                <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: "block", fontSize: "12px", marginBottom: "4px", fontWeight: "600" }}>Por Potrero</label>
+                    <select 
+                      value={filtroPotreroMasivo} 
+                      onChange={(e) => setFiltroPotreroMasivo(e.target.value)}
+                      style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #d1d5db" }}
+                    >
+                      <option value="Todos">Todos los Potreros</option>
+                      {listaPotreros.filter(p => p !== "Todos").map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: "block", fontSize: "12px", marginBottom: "4px", fontWeight: "600" }}>Por Grupo</label>
+                    <select 
+                      value={filtroGrupoMasivo} 
+                      onChange={(e) => setFiltroGrupoMasivo(e.target.value)}
+                      style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #d1d5db" }}
+                    >
+                      <option value="Todos">Todos los Grupos</option>
+                      {listaGrupos.filter(g => g !== "Todos").map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ fontSize: "12px", color: "#166534", backgroundColor: "#dcfce7", padding: "8px", borderRadius: "6px" }}>
+                  <strong>Animales afectados:</strong> {inventario.filter(a => !a.estado?.includes('Baja') && (filtroPotreroMasivo === "Todos" || (a.potrero || a.hectarea) === filtroPotreroMasivo) && (filtroGrupoMasivo === "Todos" || a.grupo === filtroGrupoMasivo)).length} cabezas.
+                </div>
+              </div>
+
+              {/* Formulario del evento */}
+              <select value={datosMasivos.tipo} onChange={(e) => setDatosMasivos({...datosMasivos, tipo: e.target.value, resultado: ""})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #16a34a", borderRadius: "4px", backgroundColor: "#f0fdf4" }} required>
+                {TIPOS_EVENTO.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+
+              {CATALOGO_EVENTOS[datosMasivos.tipo]?.length > 0 && (
+                <select value={datosMasivos.resultado} onChange={(e) => setDatosMasivos({...datosMasivos, resultado: e.target.value})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} required>
+                  <option value="">Selecciona una opción...</option>
+                  {CATALOGO_EVENTOS[datosMasivos.tipo].map(op => <option key={op} value={op}>{op}</option>)}
+                </select>
+              )}
+
+              {(!CATALOGO_EVENTOS[datosMasivos.tipo] || CATALOGO_EVENTOS[datosMasivos.tipo].length === 0) && (
+                <input type="text" placeholder="Resultado o Medicina aplicada..." value={datosMasivos.resultado} onChange={(e) => setDatosMasivos({...datosMasivos, resultado: e.target.value})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px", boxSizing: "border-box" }} required />
+              )}
+
+              <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: "12px", marginBottom: "4px", fontWeight: "600" }}>Fecha</label>
+                  <input type="date" value={datosMasivos.fecha} onChange={(e) => setDatosMasivos({...datosMasivos, fecha: e.target.value})} style={{ width: "100%", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px", boxSizing: "border-box" }} required />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: "12px", marginBottom: "4px", fontWeight: "600" }}>Costo Total ($)</label>
+                  <input type="number" placeholder="Opcional" value={datosMasivos.costo} onChange={(e) => setDatosMasivos({...datosMasivos, costo: e.target.value})} style={{ width: "100%", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px", boxSizing: "border-box" }} />
+                </div>
+              </div>
+
+              {exitoMasivo && <div style={{ color: "#166534", backgroundColor: "#dcfce7", padding: "10px", borderRadius: "6px", marginBottom: "10px", textAlign: "center", fontWeight: "bold" }}>{exitoMasivo}</div>}
+
+              <button type="submit" className="btn-primary" style={{ width: "100%", backgroundColor: "#16a34a", borderColor: "#16a34a" }} disabled={guardandoMasivo}>
+                {guardandoMasivo ? "Guardando..." : "Aplicar a Todos"}
+              </button>
+            </form>
           </div>
         </div>
       )}

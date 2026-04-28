@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { CheckCircle2 } from "lucide-react";
-import { collection, addDoc, onSnapshot } from "firebase/firestore";
+import { collection, addDoc, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 
-export default function NuevoAnimal() {
+export default function NuevoAnimal({ usuario }) {
   const [exito, setExito] = useState(false);
   const [vientres, setVientres] = useState([]);
   const [sementales, setSementales] = useState([]);
@@ -26,8 +26,9 @@ export default function NuevoAnimal() {
 
   // Cargamos las listas de madres y padres existentes
   useEffect(() => {
+    if (!usuario?.ranchoId) return;
     const cancelarSuscripcion = onSnapshot(
-      collection(db, "animales"),
+      query(collection(db, "animales"), where("ranchoId", "==", usuario.ranchoId)),
       (snapshot) => {
         const lista = snapshot.docs.map((doc) => ({
           id: doc.id,
@@ -47,10 +48,10 @@ export default function NuevoAnimal() {
     );
     
     // Cargar potreros y grupos
-    const unsubPotreros = onSnapshot(collection(db, "potreros"), (snap) => {
+    const unsubPotreros = onSnapshot(query(collection(db, "potreros"), where("ranchoId", "==", usuario.ranchoId)), (snap) => {
       setPotreros(snap.docs.map(doc => doc.data()));
     });
-    const unsubGrupos = onSnapshot(collection(db, "grupos"), (snap) => {
+    const unsubGrupos = onSnapshot(query(collection(db, "grupos"), where("ranchoId", "==", usuario.ranchoId)), (snap) => {
       setGrupos(snap.docs.map(doc => doc.data()));
     });
 
@@ -59,7 +60,7 @@ export default function NuevoAnimal() {
       unsubPotreros();
       unsubGrupos();
     };
-  }, []);
+  }, [usuario]);
 
   const manejarCambio = (e) => {
     setDatosFormulario({ ...datosFormulario, [e.target.name]: e.target.value });
@@ -78,8 +79,10 @@ export default function NuevoAnimal() {
       madre: datosFormulario.madre, // Guardamos el arete o ID de la madre
       padre: datosFormulario.padre, // Guardamos el arete o ID del padre
       potrero: datosFormulario.potrero || "Sin Asignar",
+      grupo: datosFormulario.grupo || "",
       estado: "Sano",
       fechaRegistro: new Date().toISOString(),
+      ranchoId: usuario?.ranchoId || null
     };
 
     try {
