@@ -654,6 +654,62 @@ export default function ImportadorMasivo({ usuario }) {
         await Promise.all(misPromesas);
       }
 
+      // Generar alertas/recordatorios (futuras actividades)
+      const alertasPromesas = [];
+      const generarFechaFutura = (diasAdelante) => {
+        let d = new Date();
+        d.setDate(d.getDate() + diasAdelante);
+        return d.toISOString().split('T')[0];
+      };
+
+      alertasPromesas.push(addDoc(collection(db, "alertas"), {
+        titulo: "Vacunación - Crías Lactantes",
+        tipo: "Vacunación",
+        fechaProgramada: generarFechaFutura(getRandomInt(5, 15)),
+        objetivoTipo: "Grupo",
+        objetivoNombre: "Crías Lactantes",
+        completada: false,
+        origen: "planeado",
+        ranchoId: usuario?.ranchoId
+      }));
+
+      alertasPromesas.push(addDoc(collection(db, "alertas"), {
+        titulo: "Desparasitación - Potrero Norte",
+        tipo: "Desparasitación",
+        fechaProgramada: generarFechaFutura(getRandomInt(10, 25)),
+        objetivoTipo: "Potrero",
+        objetivoNombre: "Potrero Norte",
+        completada: false,
+        origen: "planeado",
+        ranchoId: usuario?.ranchoId
+      }));
+
+      alertasPromesas.push(addDoc(collection(db, "alertas"), {
+        titulo: "Palpación - Vacas",
+        tipo: "Palpación",
+        fechaProgramada: generarFechaFutura(getRandomInt(2, 8)),
+        objetivoTipo: "Grupo",
+        objetivoNombre: "Vacas",
+        completada: false,
+        origen: "planeado",
+        ranchoId: usuario?.ranchoId
+      }));
+      
+      if (animalesAGenerar.length > 0) {
+        alertasPromesas.push(addDoc(collection(db, "alertas"), {
+          titulo: "Tratamiento - " + animalesAGenerar[0].arete,
+          tipo: "Tratamiento",
+          fechaProgramada: generarFechaFutura(getRandomInt(1, 3)),
+          objetivoTipo: "Animal",
+          objetivoNombre: animalesAGenerar[0].arete,
+          completada: false,
+          origen: "planeado",
+          ranchoId: usuario?.ranchoId
+        }));
+      }
+
+      await Promise.all(alertasPromesas);
+
       setContadorImportados(batchSize);
       setMensajeExito(true);
       await setDoc(doc(db, "configuracion", `demoGenerada_${usuario?.ranchoId}`), { fecha: new Date().toISOString(), cantidad: batchSize });
