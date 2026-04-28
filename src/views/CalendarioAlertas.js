@@ -1,16 +1,25 @@
 import { useState, useEffect } from "react";
-import { collection, onSnapshot, addDoc, query, where } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, query, where, doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { Plus, X, User, Layers, CalendarDays, ChevronDown, ChevronUp } from "lucide-react";
 import { CATALOGO_EVENTOS, TIPOS_EVENTO } from "../catalogoEventos";
 
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
-import { format, parse, startOfWeek, getDay, isBefore, addDays } from "date-fns";
+import { format, parse, startOfWeek, getDay, isBefore, addDays, startOfDay } from "date-fns";
 import { es } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
 const locales = { es: es };
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
+
+const EventoMinimalista = ({ event }) => {
+  const color = event.vencida ? "#ef4444" : event.completada ? "#10b981" : "#3b82f6";
+  return (
+    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", width: "100%", padding: "2px" }} title={event.title}>
+      <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: color }} />
+    </div>
+  );
+};
 
 export default function CalendarioAlertas({ usuario }) {
   const [eventosCalendario, setEventosCalendario] = useState([]);
@@ -58,18 +67,32 @@ export default function CalendarioAlertas({ usuario }) {
       const todas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
       // Solo mostrar en calendario las planeadas (origen: "planeado" o sin campo origen para compatibilidad)
-      const paraCalendario = todas
+      const hoy = startOfDay(new Date());
+
+      const procesadas = todas
         .filter(a => a.fechaProgramada && (a.origen === "planeado" || !a.origen))
         .map(a => {
           const [y, m, d] = a.fechaProgramada.split("-");
+          const fechaObj = new Date(y, m - 1, d);
+          const vencida = !a.completada && isBefore(fechaObj, hoy);
+          return {
+            ...a,
+            fechaObj,
+            vencida
+          };
+        });
+
+      const paraCalendario = procesadas
+        .map(a => {
           return {
             id: a.id,
             title: a.titulo || a.tipo || "Actividad",
-            start: new Date(y, m - 1, d),
-            end: new Date(y, m - 1, d),
+            start: a.fechaObj,
+            end: a.fechaObj,
             allDay: true,
             tipo: "alerta",
             completada: a.completada,
+            vencida: a.vencida,
             origen: a.origen,
           };
         });
@@ -77,9 +100,7 @@ export default function CalendarioAlertas({ usuario }) {
       setEventosCalendario(paraCalendario);
       // Para lista compacta: todas las planeadas, ordenadas por fecha
       setAlertasPlaneadas(
-        todas
-          .filter(a => a.fechaProgramada && (a.origen === "planeado" || !a.origen))
-          .sort((a, b) => new Date(a.fechaProgramada) - new Date(b.fechaProgramada))
+        procesadas.sort((a, b) => a.fechaObj - b.fechaObj)
       );
     });
     return () => unsub();
@@ -87,9 +108,9 @@ export default function CalendarioAlertas({ usuario }) {
 
   const estiloDeEventos = (event) => ({
     style: {
-      backgroundColor: event.completada ? "#10b981" : "#3b82f6",
-      borderRadius: "6px", color: "white", border: "none",
-      display: "block", padding: "4px", fontSize: "12px",
+      backgroundColor: "transparent",
+      borderRadius: "0", color: "transparent", border: "none",
+      display: "block", padding: "0"
     },
   });
 
@@ -139,6 +160,12 @@ export default function CalendarioAlertas({ usuario }) {
       alert("Error al guardar la actividad.");
     }
     setGuardando(false);
+  };
+
+  const marcarCompletada = async (id) => {
+    try {
+      await updateDoc(doc(db, "alertas", id), { completada: true });
+    } catch (e) { console.error("Error al marcar como completada:", e); }
   };
 
   const animalesFiltrados = animales.filter(a =>
@@ -205,6 +232,7 @@ export default function CalendarioAlertas({ usuario }) {
             setMostrarModal(true);
           }}
           selectable={true}
+          components={{ event: EventoMinimalista }}
         />
       </div>
 
@@ -277,14 +305,28 @@ export default function CalendarioAlertas({ usuario }) {
                         )}
                       </div>
                     </div>
-                    <span style={{
-                      fontSize: "11px", fontWeight: "600", padding: "3px 8px", borderRadius: "12px",
-                      backgroundColor: alerta.completada ? "#dcfce7" : "#fef9c3",
-                      color: alerta.completada ? "#166534" : "#854d0e",
-                      whiteSpace: "nowrap",
-                    }}>
-                      {alerta.completada ? "Realizado" : "Pendiente"}
-                    </span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-end" }}>
+                      <span style={{
+                        fontSize: "11px", fontWeight: "600", padding: "3px 8px", borderRadius: "12px",
+                        backgroundColor: alerta.completada ? "#dcfce7" : (esPasada ? "#fef2f2" : "#fef9c3"),
+                        color: alerta.completada ? "#166534" : (esPasada ? "#dc2626" : "#854d0e"),
+                        whiteSpace: "nowrap",
+                      }}>
+                        {alerta.completada ? "Realizada" : (esPasada ? "No realizada (Vencida)" : "Pendiente")}
+                      </span>
+                      {!alerta.completada && (
+                        <button 
+                          onClick={() => marcarCompletada(alerta.id)}
+                          style={{
+                            fontSize: "11px", backgroundColor: "#f3f4f6", border: "1px solid #d1d5db",
+                            color: "#374151", padding: "4px 8px", borderRadius: "4px", cursor: "pointer",
+                            whiteSpace: "nowrap"
+                          }}
+                        >
+                          Marcar Realizada
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}

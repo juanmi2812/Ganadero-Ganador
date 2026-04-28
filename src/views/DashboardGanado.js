@@ -37,6 +37,8 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   const [filtroGrupoMasivo, setFiltroGrupoMasivo] = useState("Todos");
   const [guardandoMasivo, setGuardandoMasivo] = useState(false);
   const [exitoMasivo, setExitoMasivo] = useState("");
+  const [crearRecordatorio, setCrearRecordatorio] = useState(false);
+  const [fechaRecordatorio, setFechaRecordatorio] = useState("");
 
   useEffect(() => {
     if (abrirModalTratamientoMasivo) {
@@ -298,8 +300,32 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
           ranchoId: usuario?.ranchoId || null
         });
       }
+
+      if (crearRecordatorio && fechaRecordatorio) {
+        let titulo = `${datosMasivos.tipo} Masivo`;
+        if (filtroGrupoMasivo !== "Todos") titulo += ` - ${filtroGrupoMasivo}`;
+        else if (filtroPotreroMasivo !== "Todos") titulo += ` - ${filtroPotreroMasivo}`;
+        else titulo += " - Todo el Ganado";
+
+        await addDoc(collection(db, "alertas"), {
+          titulo: titulo,
+          tipo: datosMasivos.tipo,
+          fechaProgramada: fechaRecordatorio,
+          objetivoTipo: "Grupo",
+          objetivoNombre: titulo,
+          completada: false,
+          origen: "planeado",
+          ranchoId: usuario?.ranchoId || null
+        });
+      }
+
       setExitoMasivo(`✅ Aplicado a ${animalesAfectados.length} cabezas.`);
-      setTimeout(() => { setExitoMasivo(""); setMostrarModalMasivo(false); }, 2000);
+      setTimeout(() => { 
+        setExitoMasivo(""); 
+        setMostrarModalMasivo(false); 
+        setCrearRecordatorio(false);
+        setFechaRecordatorio("");
+      }, 2000);
     } catch (error) {
       console.error(error);
       alert("Error al aplicar tratamientos.");
@@ -791,6 +817,19 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                   <label style={{ display: "block", fontSize: "12px", marginBottom: "4px", fontWeight: "600" }}>Costo Total ($)</label>
                   <input type="number" placeholder="Opcional" value={datosMasivos.costo} onChange={(e) => setDatosMasivos({...datosMasivos, costo: e.target.value})} style={{ width: "100%", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px", boxSizing: "border-box" }} />
                 </div>
+              </div>
+
+              <div style={{ backgroundColor: "#eff6ff", padding: "12px", borderRadius: "8px", marginBottom: "15px", border: "1px solid #bfdbfe" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: "600", color: "#1e3a8a", cursor: "pointer", margin: 0 }}>
+                  <input type="checkbox" checked={crearRecordatorio} onChange={(e) => setCrearRecordatorio(e.target.checked)} style={{ width: "16px", height: "16px" }} />
+                  Programar recordatorio futuro
+                </label>
+                {crearRecordatorio && (
+                  <div style={{ marginTop: "10px" }}>
+                    <label style={{ display: "block", fontSize: "12px", marginBottom: "4px", color: "#1e40af" }}>Fecha del recordatorio en el calendario</label>
+                    <input type="date" value={fechaRecordatorio} onChange={(e) => setFechaRecordatorio(e.target.value)} style={{ width: "100%", padding: "8px", border: "1px solid #bfdbfe", borderRadius: "4px", boxSizing: "border-box" }} required={crearRecordatorio} />
+                  </div>
+                )}
               </div>
 
               {exitoMasivo && <div style={{ color: "#166534", backgroundColor: "#dcfce7", padding: "10px", borderRadius: "6px", marginBottom: "10px", textAlign: "center", fontWeight: "bold" }}>{exitoMasivo}</div>}
