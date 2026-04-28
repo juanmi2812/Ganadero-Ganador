@@ -34,31 +34,268 @@ export default function ImportadorMasivo() {
     }
   };
 
+  // ─── Descarga de plantilla con 2 hojas ───────────────────────────────────────
+
   const descargarPlantilla = () => {
-    const encabezados = [
-      ["Arete", "Tipo", "Sexo", "Raza", "Fecha_Nacimiento", "Peso_kg", "Estado", "Potrero", "Grupo", "Arete_Madre", "Arete_Padre"]
-    ];
-    const ejemplos = [
-      ["VC-001", "Vaca", "Hembra", "Brahman", "2018-05-15", 480, "Sano", "Potrero Norte", "Vacas", "", "SM-001"],
-      ["VC-002", "Vaca", "Hembra", "Angus", "2019-03-20", 510, "Sano", "Potrero Sur", "Vacas Secas", "", "SM-002"],
-      ["NV-003", "Novillona", "Hembra", "Hereford", "2023-08-01", 300, "Sano", "Potrero Norte", "Desarrollo", "VC-001", "SM-001"],
-      ["TR-004", "Torete", "Macho", "Brangus", "2024-01-10", 320, "Disponible para Venta", "Corral Engorda", "Engorda", "VC-002", "SM-002"],
-      ["CR-005", "Becerra", "Hembra", "Brahman", "2025-02-14", 95, "Sano", "Potrero Maternidad", "Crías Lactantes", "VC-001", "SM-001"],
-      ["SM-001", "Semental", "Macho", "Angus", "2017-11-05", 950, "Sano", "Pradera Abierta", "Sementales", "", ""],
-    ];
-
-    const ws = XLSX.utils.aoa_to_sheet([...encabezados, ...ejemplos]);
-
-    // Ancho de columnas
-    ws["!cols"] = [
-      { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 12 }, { wch: 18 },
-      { wch: 10 }, { wch: 25 }, { wch: 18 }, { wch: 18 }, { wch: 14 }, { wch: 14 }
-    ];
-
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Animales");
+
+    // ── Hoja 1: Datos ──────────────────────────────────────────────────────────
+    const encabezados = [[
+      // Datos básicos del animal
+      "Arete", "Tipo", "Sexo", "Raza",
+      "Fecha_Nacimiento", "Peso_kg", "Estado",
+      "Potrero", "Grupo", "Arete_Madre", "Arete_Padre",
+      // Genera evento Parto
+      "Fecha_Ultimo_Parto",
+      // Genera evento Palpación
+      "Resultado_Palpacion", "Meses_Gestacion", "Fecha_Palpacion",
+      // Genera evento Repeso (para GDP)
+      "Peso_Anterior_kg", "Fecha_Peso_Anterior",
+      // Genera evento Inseminación
+      "Fecha_Inseminacion",
+      // Genera evento Vacunación
+      "Fecha_Ultima_Vacuna", "Producto_Vacuna"
+    ]];
+
+    const ejemplos = [
+      // Vaca con historial completo
+      ["VC-001", "Vaca", "Hembra", "Brahman",
+       "2018-05-15", 480, "Sano",
+       "Potrero Norte", "Vacas", "", "SM-001",
+       "2024-11-10",
+       "Gestante", 4, "2025-01-15",
+       430, "2024-09-01",
+       "2024-07-20",
+       "2024-10-05", "Clostridial"],
+
+      // Vaca vacía ciclando
+      ["VC-002", "Vaca", "Hembra", "Angus",
+       "2019-03-20", 510, "Sano",
+       "Potrero Sur", "Vacas Secas", "", "SM-002",
+       "2024-06-01",
+       "Vacía - Ciclando", "", "2025-02-10",
+       460, "2024-10-15",
+       "", "", ""],
+
+      // Novillona sin parto
+      ["NV-003", "Novillona", "Hembra", "Hereford",
+       "2023-08-01", 300, "Sano",
+       "Potrero Norte", "Desarrollo", "VC-001", "SM-001",
+       "",
+       "", "", "",
+       260, "2024-11-01",
+       "2025-01-10", "", ""],
+
+      // Torete
+      ["TR-004", "Torete", "Macho", "Brangus",
+       "2024-01-10", 320, "Disponible para Venta",
+       "Corral Engorda", "Engorda", "VC-002", "SM-002",
+       "", "", "", "",
+       280, "2024-10-20",
+       "", "", ""],
+
+      // Becerra lactante
+      ["CR-005", "Becerra", "Hembra", "Brahman",
+       "2025-02-14", 95, "Sano",
+       "Potrero Maternidad", "Crías Lactantes", "VC-001", "SM-001",
+       "", "", "", "",
+       "", "", "", "", ""],
+
+      // Semental
+      ["SM-001", "Semental", "Macho", "Angus",
+       "2017-11-05", 950, "Sano",
+       "Pradera Abierta", "Sementales", "", "",
+       "", "", "", "",
+       900, "2024-08-01",
+       "", "2024-12-01", "IBR + DVB"],
+    ];
+
+    const ws1 = XLSX.utils.aoa_to_sheet([...encabezados, ...ejemplos]);
+    ws1["!cols"] = [
+      {wch:12},{wch:11},{wch:8},{wch:12},
+      {wch:16},{wch:9},{wch:26},
+      {wch:17},{wch:17},{wch:13},{wch:13},
+      {wch:16},
+      {wch:22},{wch:15},{wch:15},
+      {wch:16},{wch:17},
+      {wch:16},
+      {wch:17},{wch:16}
+    ];
+    XLSX.utils.book_append_sheet(wb, ws1, "Animales");
+
+    // ── Hoja 2: Guía de llenado ────────────────────────────────────────────────
+    const guia = [
+      ["GUÍA DE LLENADO — IMPORTADOR DE GANADO", "", "", "", ""],
+      ["Llena la hoja 'Animales' siguiendo estas instrucciones. Las columnas en ROJO son obligatorias.", "", "", "", ""],
+      ["", "", "", "", ""],
+      ["COLUMNA", "OBLIGATORIA", "DESCRIPCIÓN", "VALORES VÁLIDOS", "EJEMPLO"],
+
+      // ── Bloque: Datos básicos ──
+      ["── DATOS BÁSICOS DEL ANIMAL ──", "", "", "", ""],
+      ["Arete",
+       "SÍ — obligatorio",
+       "Número o código único que identifica al animal. No puede repetirse.",
+       "Cualquier texto. Recomendado: prefijo + número (VC-001, SM-003)",
+       "VC-001"],
+      ["Tipo",
+       "SÍ — obligatorio",
+       "Categoría del animal. El sistema usa este valor para clasificarlo correctamente.",
+       "Vaca | Novillona | Torete | Becerro | Becerra | Semental",
+       "Vaca"],
+      ["Sexo",
+       "SÍ — obligatorio",
+       "Sexo biológico del animal.",
+       "Hembra | Macho",
+       "Hembra"],
+      ["Raza",
+       "No",
+       "Raza genética del animal. Texto libre.",
+       "Cualquier texto (Brahman, Angus, Hereford, Brangus, Charolais...)",
+       "Brahman"],
+      ["Fecha_Nacimiento",
+       "No (muy recomendada)",
+       "Fecha de nacimiento. Permite calcular edad, GDP y alertas de fertilidad automáticamente.",
+       "Formato: YYYY-MM-DD  Ej: 2018-05-15  También acepta DD/MM/YYYY",
+       "2018-05-15"],
+      ["Peso_kg",
+       "No (recomendada)",
+       "Peso actual del animal en kilogramos. Solo número, sin 'kg'.",
+       "Número entero o decimal. Ej: 480 o 482.5",
+       "480"],
+      ["Estado",
+       "No (default: Sano)",
+       "Estado actual del animal. Si se deja vacío se registra como 'Sano'.",
+       "Sano | Desecho | Disponible para Venta | Baja - Muerte | Baja - Venta | Baja - Venta (Desecho) | Alerta: Revisión de Fertilidad",
+       "Sano"],
+      ["Potrero",
+       "No",
+       "Nombre exacto del potrero donde está el animal. Debe coincidir con los potreros creados en 'Mi Rancho'.",
+       "Texto exacto del nombre del potrero ya registrado en la app.",
+       "Potrero Norte"],
+      ["Grupo",
+       "No",
+       "Nombre exacto del grupo de manejo. Debe coincidir con los grupos creados en 'Mi Rancho'.",
+       "Texto exacto del nombre del grupo ya registrado en la app.",
+       "Vacas Secas"],
+      ["Arete_Madre",
+       "No",
+       "Arete de la madre del animal. Permite trazabilidad genética.",
+       "Arete de la madre (debe existir en el archivo o en la base de datos)",
+       "VC-001"],
+      ["Arete_Padre",
+       "No",
+       "Arete del semental padre.",
+       "Arete del padre (debe existir en el archivo o en la base de datos)",
+       "SM-001"],
+
+      // ── Bloque: Parto ──
+      ["", "", "", "", ""],
+      ["── ÚLTIMO PARTO (genera un evento de Parto en el historial) ──", "", "", "", ""],
+      ["Fecha_Ultimo_Parto",
+       "No — pero MUY recomendada para vacas",
+       "Fecha del último parto registrado. SIN este dato, una vaca menor de 48 meses que ya ha parido aparecerá clasificada incorrectamente como 'Novillona'. También alimenta el Reporte de Vientres y las Métricas de Productividad.",
+       "Formato: YYYY-MM-DD  Solo aplica para Vacas y Novillonas que ya parieron.",
+       "2024-11-10"],
+
+      // ── Bloque: Palpación ──
+      ["", "", "", "", ""],
+      ["── PALPACIÓN RECIENTE (genera un evento de Palpación en el historial) ──", "", "", "", ""],
+      ["Resultado_Palpacion",
+       "No — recomendada para vientres",
+       "Resultado de la última palpación. Alimenta el Reporte de Reproducción (% de preñez por mes). Si está Gestante, el sistema proyectará automáticamente la fecha estimada de parto.",
+       "Gestante | Vacía - Fresca | Vacía - Ciclando | Vacía - Anestro",
+       "Gestante"],
+      ["Meses_Gestacion",
+       "No — requerida si Resultado_Palpacion = Gestante",
+       "Meses de gestación al momento de la palpación. Necesario para que la Proyección de Partos calcule la fecha estimada de nacimiento.",
+       "Número del 1 al 9. Ej: 4 significa 4 meses de gestación.",
+       "4"],
+      ["Fecha_Palpacion",
+       "No — recomendada si llenaste Resultado_Palpacion",
+       "Fecha en que se realizó la palpación. Si se deja vacío se usará la fecha de importación. Importante para que la proyección de partos sea exacta.",
+       "Formato: YYYY-MM-DD",
+       "2025-01-15"],
+
+      // ── Bloque: Repeso ──
+      ["", "", "", "", ""],
+      ["── REPESO ANTERIOR (genera un evento de Repeso para calcular GDP) ──", "", "", "", ""],
+      ["Peso_Anterior_kg",
+       "No — recomendada para desarrollo",
+       "Un peso anterior del animal (distinto al peso actual). Junto con Fecha_Peso_Anterior, permite que el sistema calcule la Ganancia Diaria de Peso (GDP) desde el primer día. Sin este dato, el Reporte de Desarrollo mostrará GDP = 0.000 para los animales importados.",
+       "Número en kg. Debe ser menor al Peso_kg actual para que el cálculo sea coherente.",
+       "430"],
+      ["Fecha_Peso_Anterior",
+       "No — requerida si llenaste Peso_Anterior_kg",
+       "Fecha en que se tomó ese peso anterior.",
+       "Formato: YYYY-MM-DD",
+       "2024-09-01"],
+
+      // ── Bloque: Inseminación ──
+      ["", "", "", "", ""],
+      ["── ÚLTIMA INSEMINACIÓN (genera un evento de Inseminación) ──", "", "", "", ""],
+      ["Fecha_Inseminacion",
+       "No",
+       "Fecha de la última inseminación o monta. Se usa como respaldo para la Proyección de Partos: si no hay palpación registrada, el sistema suma 285 días a esta fecha para estimar la fecha de parto.",
+       "Formato: YYYY-MM-DD  Solo aplica para Vacas y Novillonas.",
+       "2024-07-20"],
+
+      // ── Bloque: Vacunación ──
+      ["", "", "", "", ""],
+      ["── ÚLTIMA VACUNACIÓN (genera un evento de Vacunación en el historial) ──", "", "", "", ""],
+      ["Fecha_Ultima_Vacuna",
+       "No",
+       "Fecha de la última vacuna aplicada. Aparece en el Reporte de Vientres como 'Último Evento Médico' y sirve para saber cuándo corresponde revacunar.",
+       "Formato: YYYY-MM-DD",
+       "2024-10-05"],
+      ["Producto_Vacuna",
+       "No — recomendada si llenaste Fecha_Ultima_Vacuna",
+       "Nombre del producto o vacuna aplicada.",
+       "Texto libre. Ej: Clostridial, IBR, DVB, Brucella, Leptospira, Triple...",
+       "Clostridial"],
+
+      // ── Notas finales ──
+      ["", "", "", "", ""],
+      ["── NOTAS IMPORTANTES ──", "", "", "", ""],
+      ["1. Fechas",
+       "",
+       "Usa siempre el formato YYYY-MM-DD (año-mes-día). También acepta DD/MM/YYYY.",
+       "Correcto: 2024-11-10 | 10/11/2024    Incorrecto: Nov 10, 2024 | 10-Nov-24",
+       ""],
+      ["2. Potreros y Grupos",
+       "",
+       "Crea los Potreros y Grupos en 'Mi Rancho' ANTES de importar. El nombre debe ser idéntico (mayúsculas/minúsculas no importan).",
+       "Si el potrero no existe, el animal quedará sin potrero asignado. No causará error.",
+       ""],
+      ["3. La importación AGREGA",
+       "",
+       "La importación NO borra datos existentes. Cada vez que importas se suman animales nuevos a los que ya existen.",
+       "",
+       ""],
+      ["4. Columnas opcionales vacías",
+       "",
+       "Si una columna opcional no aplica, déjala completamente vacía (no escribas 'N/A' ni guiones).",
+       "",
+       ""],
+      ["5. Tipo vs Edad",
+       "",
+       "El sistema recalculará la categoría automáticamente según la Fecha_Nacimiento. Si pones Tipo='Vaca' pero la fecha de nacimiento indica que tiene 8 meses, el sistema la reclasificará como Becerra.",
+       "",
+       ""],
+    ];
+
+    const ws2 = XLSX.utils.aoa_to_sheet(guia);
+    ws2["!cols"] = [
+      {wch:30}, {wch:22}, {wch:55}, {wch:50}, {wch:18}
+    ];
+    // Fijar la fila de encabezado de columnas (fila 4) como referencia visual
+    ws2["!freeze"] = { xSplit: 0, ySplit: 4 };
+
+    XLSX.utils.book_append_sheet(wb, ws2, "Guía de Llenado");
+
     XLSX.writeFile(wb, "plantilla_importacion_ganado.xlsx");
   };
+
+  // ─── Helpers ─────────────────────────────────────────────────────────────────
 
   const normalizarFecha = (val) => {
     if (!val) return "";
@@ -86,14 +323,14 @@ export default function ImportadorMasivo() {
           const primerHoja = workbook.Sheets[workbook.SheetNames[0]];
           const filas = XLSX.utils.sheet_to_json(primerHoja, { defval: "" });
           resolve(filas);
-        } catch (err) {
-          reject(err);
-        }
+        } catch (err) { reject(err); }
       };
       reader.onerror = reject;
       reader.readAsArrayBuffer(file);
     });
   };
+
+  // ─── Importación real ─────────────────────────────────────────────────────────
 
   const subirArchivo = async () => {
     if (!archivo) return;
@@ -103,6 +340,8 @@ export default function ImportadorMasivo() {
 
     const tiposValidos = ["Vaca", "Novillona", "Torete", "Becerro", "Becerra", "Semental"];
     const sexosValidos = ["Hembra", "Macho"];
+    const resultadosPalpValidos = ["Gestante", "Vacía - Fresca", "Vacía - Ciclando", "Vacía - Anestro"];
+    const hoy = new Date().toISOString().split("T")[0];
 
     try {
       const filas = await procesarArchivoExcel(archivo);
@@ -119,13 +358,10 @@ export default function ImportadorMasivo() {
       filas.forEach((fila, idx) => {
         const numFila = idx + 2;
         const arete = String(fila["Arete"] || "").trim();
-        const tipo = String(fila["Tipo"] || "").trim();
-        const sexo = String(fila["Sexo"] || "").trim();
+        const tipo  = String(fila["Tipo"]  || "").trim();
+        const sexo  = String(fila["Sexo"]  || "").trim();
 
-        if (!arete) {
-          erroresEncontrados.push(`Fila ${numFila}: La columna "Arete" está vacía.`);
-          return;
-        }
+        if (!arete) { erroresEncontrados.push(`Fila ${numFila}: La columna "Arete" está vacía.`); return; }
         if (!tiposValidos.includes(tipo)) {
           erroresEncontrados.push(`Fila ${numFila} (${arete}): Tipo "${tipo}" no válido. Opciones: ${tiposValidos.join(", ")}`);
           return;
@@ -135,20 +371,75 @@ export default function ImportadorMasivo() {
           return;
         }
 
-        animalesValidos.push({
+        // Validar Resultado_Palpacion si está llenado
+        const resultadoPalp = String(fila["Resultado_Palpacion"] || "").trim();
+        if (resultadoPalp && !resultadosPalpValidos.includes(resultadoPalp)) {
+          erroresEncontrados.push(`Fila ${numFila} (${arete}): Resultado_Palpacion "${resultadoPalp}" no válido. Opciones: ${resultadosPalpValidos.join(", ")}`);
+          return;
+        }
+
+        // Validar Meses_Gestacion si hay palpación Gestante
+        const mesesGes = Number(fila["Meses_Gestacion"]) || 0;
+        if (resultadoPalp === "Gestante" && (mesesGes < 1 || mesesGes > 9)) {
+          erroresEncontrados.push(`Fila ${numFila} (${arete}): Si Resultado_Palpacion es "Gestante", Meses_Gestacion debe ser un número del 1 al 9.`);
+          return;
+        }
+
+        // Construir objeto del animal
+        const animal = {
           arete,
           tipo,
           sexo,
-          raza: String(fila["Raza"] || "").trim(),
+          raza:            String(fila["Raza"] || "").trim(),
           fechaNacimiento: normalizarFecha(fila["Fecha_Nacimiento"]),
-          pesoActual: Number(fila["Peso_kg"]) || 0,
-          estado: String(fila["Estado"] || "Sano").trim() || "Sano",
-          potrero: String(fila["Potrero"] || "").trim(),
-          grupo: String(fila["Grupo"] || "").trim(),
-          madre: String(fila["Arete_Madre"] || "").trim(),
-          padre: String(fila["Arete_Padre"] || "").trim(),
-          fechaRegistro: new Date().toISOString().split("T")[0],
-        });
+          pesoActual:      Number(fila["Peso_kg"]) || 0,
+          estado:          String(fila["Estado"] || "Sano").trim() || "Sano",
+          potrero:         String(fila["Potrero"] || "").trim(),
+          grupo:           String(fila["Grupo"] || "").trim(),
+          madre:           String(fila["Arete_Madre"] || "").trim(),
+          padre:           String(fila["Arete_Padre"] || "").trim(),
+          fechaRegistro:   hoy,
+        };
+
+        // Construir eventos a crear
+        const eventos = [];
+
+        // Evento: Parto
+        const fechaParto = normalizarFecha(fila["Fecha_Ultimo_Parto"]);
+        if (fechaParto) {
+          eventos.push({ tipo: "Parto", resultado: "Importado del histórico", fecha: fechaParto, costo: 0 });
+        }
+
+        // Evento: Palpación
+        if (resultadoPalp) {
+          const fechaPalp = normalizarFecha(fila["Fecha_Palpacion"]) || hoy;
+          const resultadoFinal = resultadoPalp === "Gestante"
+            ? `Gestante ${mesesGes} meses`
+            : resultadoPalp;
+          eventos.push({ tipo: "Palpación", resultado: resultadoFinal, fecha: fechaPalp, costo: 100 });
+        }
+
+        // Evento: Repeso anterior (para GDP)
+        const pesoAnterior = Number(fila["Peso_Anterior_kg"]) || 0;
+        const fechaPesoAnt = normalizarFecha(fila["Fecha_Peso_Anterior"]);
+        if (pesoAnterior > 0 && fechaPesoAnt) {
+          eventos.push({ tipo: "Repeso", resultado: `${pesoAnterior} kg`, fecha: fechaPesoAnt, costo: 0 });
+        }
+
+        // Evento: Inseminación
+        const fechaInsem = normalizarFecha(fila["Fecha_Inseminacion"]);
+        if (fechaInsem) {
+          eventos.push({ tipo: "Inseminación", resultado: "IA - Importado del histórico", fecha: fechaInsem, costo: 0 });
+        }
+
+        // Evento: Vacunación
+        const fechaVacuna = normalizarFecha(fila["Fecha_Ultima_Vacuna"]);
+        const productoVacuna = String(fila["Producto_Vacuna"] || "").trim();
+        if (fechaVacuna) {
+          eventos.push({ tipo: "Vacunación", resultado: productoVacuna || "Vacuna importada", fecha: fechaVacuna, costo: 0 });
+        }
+
+        animalesValidos.push({ animal, eventos });
       });
 
       if (erroresEncontrados.length > 0) {
@@ -157,8 +448,12 @@ export default function ImportadorMasivo() {
         return;
       }
 
-      for (const animal of animalesValidos) {
-        await addDoc(collection(db, "animales"), animal);
+      // Subir a Firestore
+      for (const { animal, eventos } of animalesValidos) {
+        const docRef = await addDoc(collection(db, "animales"), animal);
+        for (const evento of eventos) {
+          await addDoc(collection(db, "eventos"), { ...evento, animalId: docRef.id });
+        }
       }
 
       setContadorImportados(animalesValidos.length);
@@ -194,9 +489,9 @@ export default function ImportadorMasivo() {
     const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
     const restarMesesAFecha = (meses) => {
-        let d = new Date();
-        d.setMonth(d.getMonth() - meses);
-        return d.toISOString().split('T')[0];
+      let d = new Date();
+      d.setMonth(d.getMonth() - meses);
+      return d.toISOString().split('T')[0];
     };
 
     const potrerosDemo = [
@@ -219,85 +514,69 @@ export default function ImportadorMasivo() {
     const animalesAGenerar = [];
 
     for(let i=0; i<70; i++){
-        animalesAGenerar.push({
-            arete: `VC-${getRandomInt(1000, 9999)}`,
-            tipo: "Vaca", sexo: "Hembra", raza: getRandom(razas),
-            fechaNacimiento: restarMesesAFecha(getRandomInt(50, 120)),
-            pesoActual: getRandomInt(400, 650),
-            estado: Math.random() > 0.05 ? "Sano" : "Desecho",
-            potrero: getRandom(potrerosNombres),
-            grupo: "Vacas",
-            fechaRegistro: new Date().toISOString().split('T')[0]
-        });
+      animalesAGenerar.push({
+        arete: `VC-${getRandomInt(1000, 9999)}`,
+        tipo: "Vaca", sexo: "Hembra", raza: getRandom(razas),
+        fechaNacimiento: restarMesesAFecha(getRandomInt(50, 120)),
+        pesoActual: getRandomInt(400, 650),
+        estado: Math.random() > 0.05 ? "Sano" : "Desecho",
+        potrero: getRandom(potrerosNombres), grupo: "Vacas",
+        fechaRegistro: new Date().toISOString().split('T')[0]
+      });
     }
-
     for(let i=0; i<20; i++){
-        const meses = getRandomInt(14, 52);
-        animalesAGenerar.push({
-            arete: `NV-${getRandomInt(1000, 9999)}`,
-            tipo: "Novillona", sexo: "Hembra", raza: getRandom(razas),
-            fechaNacimiento: restarMesesAFecha(meses),
-            pesoActual: getRandomInt(280, 420),
-            estado: meses >= 48 ? "Alerta: Revisión de Fertilidad" : "Sano",
-            potrero: getRandom(potrerosNombres),
-            grupo: "Desarrollo",
-            madre: `VC-${getRandomInt(1000, 9999)}`,
-            padre: `SM-${getRandomInt(100, 999)}`,
-            fechaRegistro: new Date().toISOString().split('T')[0]
-        });
+      const meses = getRandomInt(14, 52);
+      animalesAGenerar.push({
+        arete: `NV-${getRandomInt(1000, 9999)}`,
+        tipo: "Novillona", sexo: "Hembra", raza: getRandom(razas),
+        fechaNacimiento: restarMesesAFecha(meses),
+        pesoActual: getRandomInt(280, 420),
+        estado: meses >= 48 ? "Alerta: Revisión de Fertilidad" : "Sano",
+        potrero: getRandom(potrerosNombres), grupo: "Desarrollo",
+        madre: `VC-${getRandomInt(1000, 9999)}`, padre: `SM-${getRandomInt(100, 999)}`,
+        fechaRegistro: new Date().toISOString().split('T')[0]
+      });
     }
-
     for(let i=0; i<15; i++){
-        animalesAGenerar.push({
-            arete: `TR-${getRandomInt(1000, 9999)}`,
-            tipo: "Torete", sexo: "Macho", raza: getRandom(razas),
-            fechaNacimiento: restarMesesAFecha(getRandomInt(12, 30)),
-            pesoActual: getRandomInt(350, 500),
-            estado: Math.random() > 0.2 ? "Disponible para Venta" : "Sano",
-            potrero: getRandom(potrerosNombres),
-            grupo: "Engorda",
-            fechaRegistro: new Date().toISOString().split('T')[0]
-        });
+      animalesAGenerar.push({
+        arete: `TR-${getRandomInt(1000, 9999)}`,
+        tipo: "Torete", sexo: "Macho", raza: getRandom(razas),
+        fechaNacimiento: restarMesesAFecha(getRandomInt(12, 30)),
+        pesoActual: getRandomInt(350, 500),
+        estado: Math.random() > 0.2 ? "Disponible para Venta" : "Sano",
+        potrero: getRandom(potrerosNombres), grupo: "Engorda",
+        fechaRegistro: new Date().toISOString().split('T')[0]
+      });
     }
-
     for(let i=0; i<40; i++){
-        const esMacho = Math.random() > 0.5;
-        animalesAGenerar.push({
-            arete: `CR-${getRandomInt(1000, 9999)}`,
-            tipo: esMacho ? "Becerro" : "Becerra", sexo: esMacho ? "Macho" : "Hembra", raza: getRandom(razas),
-            fechaNacimiento: restarMesesAFecha(getRandomInt(2, 11)),
-            pesoActual: getRandomInt(80, 220),
-            estado: "Sano",
-            potrero: getRandom(potrerosNombres),
-            grupo: "Crías Lactantes",
-            madre: `VC-${getRandomInt(1000, 9999)}`,
-            padre: `SM-${getRandomInt(100, 999)}`,
-            fechaRegistro: new Date().toISOString().split('T')[0]
-        });
+      const esMacho = Math.random() > 0.5;
+      animalesAGenerar.push({
+        arete: `CR-${getRandomInt(1000, 9999)}`,
+        tipo: esMacho ? "Becerro" : "Becerra", sexo: esMacho ? "Macho" : "Hembra", raza: getRandom(razas),
+        fechaNacimiento: restarMesesAFecha(getRandomInt(2, 11)),
+        pesoActual: getRandomInt(80, 220),
+        estado: "Sano",
+        potrero: getRandom(potrerosNombres), grupo: "Crías Lactantes",
+        madre: `VC-${getRandomInt(1000, 9999)}`, padre: `SM-${getRandomInt(100, 999)}`,
+        fechaRegistro: new Date().toISOString().split('T')[0]
+      });
     }
-
     for(let i=0; i<5; i++){
-        animalesAGenerar.push({
-            arete: `SM-${getRandomInt(100, 999)}`,
-            tipo: "Semental", sexo: "Macho", raza: getRandom(razas),
-            fechaNacimiento: restarMesesAFecha(getRandomInt(60, 100)),
-            pesoActual: getRandomInt(800, 1100),
-            estado: "Sano",
-            potrero: getRandom(potrerosNombres),
-            grupo: "Sementales",
-            fechaRegistro: new Date().toISOString().split('T')[0]
-        });
+      animalesAGenerar.push({
+        arete: `SM-${getRandomInt(100, 999)}`,
+        tipo: "Semental", sexo: "Macho", raza: getRandom(razas),
+        fechaNacimiento: restarMesesAFecha(getRandomInt(60, 100)),
+        pesoActual: getRandomInt(800, 1100),
+        estado: "Sano",
+        potrero: getRandom(potrerosNombres), grupo: "Sementales",
+        fechaRegistro: new Date().toISOString().split('T')[0]
+      });
     }
 
     animalesAGenerar.forEach(a => {
-        const rand = Math.random();
-        if (rand < 0.03) {
-            a.estado = "Baja - Muerte";
-            a.fechaBaja = new Date().toISOString().split('T')[0];
-        } else if (rand < 0.06 && a.tipo === "Vaca") {
-            a.estado = "Baja - Venta (Desecho)";
-            a.fechaBaja = new Date().toISOString().split('T')[0];
-        }
+      const rand = Math.random();
+      if (rand < 0.03) { a.estado = "Baja - Muerte"; a.fechaBaja = new Date().toISOString().split('T')[0]; }
+      else if (rand < 0.06 && a.tipo === "Vaca") { a.estado = "Baja - Venta (Desecho)"; a.fechaBaja = new Date().toISOString().split('T')[0]; }
     });
 
     const tiposEvento = ["Vacunación", "Repeso", "Tratamiento", "Desparasitación"];
@@ -305,92 +584,85 @@ export default function ImportadorMasivo() {
     const tratamientos = ["Antibiótico Oxitetraciclina", "Antiinflamatorio Flunixin", "Vitaminas ADE", "Suero Oral"];
 
     const generarFechaAleatoria = (mesesAtras) => {
-        let d = new Date();
-        d.setDate(d.getDate() - getRandomInt(1, mesesAtras * 30));
-        return d.toISOString().split('T')[0];
+      let d = new Date();
+      d.setDate(d.getDate() - getRandomInt(1, mesesAtras * 30));
+      return d.toISOString().split('T')[0];
     };
 
     try {
-        for(let p of potrerosDemo) {
-          await addDoc(collection(db, "potreros"), p);
+      for(let p of potrerosDemo) await addDoc(collection(db, "potreros"), p);
+      for(let g of gruposDemo)   await addDoc(collection(db, "grupos"), g);
+
+      const batchSize = animalesAGenerar.length;
+      for(let i=0; i<batchSize; i++) {
+        const docRef  = await addDoc(collection(db, "animales"), animalesAGenerar[i]);
+        const animalId = docRef.id;
+        const animal  = animalesAGenerar[i];
+        const misPromesas = [];
+
+        if (["Becerro","Becerra","Novillona","Torete"].includes(animal.tipo)) {
+          misPromesas.push(addDoc(collection(db, "eventos"), {
+            animalId, tipo: "Repeso",
+            resultado: `${getRandomInt(animal.pesoActual - 40, animal.pesoActual - 10)} kg`,
+            fecha: restarMesesAFecha(getRandomInt(2, 4)), costo: 0
+          }));
         }
-        for(let g of gruposDemo) {
-          await addDoc(collection(db, "grupos"), g);
+        for(let j=0; j<getRandomInt(2,5); j++) {
+          const tipoEv = getRandom(tiposEvento);
+          const resultado = tipoEv === "Vacunación"  ? getRandom(vacunas) :
+                            tipoEv === "Repeso"      ? `${getRandomInt(animal.pesoActual - 10, animal.pesoActual + 15)} kg` :
+                            tipoEv === "Tratamiento" ? getRandom(tratamientos) : "Ivermectina 1%";
+          misPromesas.push(addDoc(collection(db, "eventos"), {
+            animalId, tipo: tipoEv, resultado,
+            fecha: generarFechaAleatoria(j === 0 ? 1 : 10), costo: getRandomInt(50, 400)
+          }));
         }
-
-        const batchSize = animalesAGenerar.length;
-        for(let i=0; i<batchSize; i++) {
-            const docRef = await addDoc(collection(db, "animales"), animalesAGenerar[i]);
-            const animalId = docRef.id;
-            const animal = animalesAGenerar[i];
-            const misPromesas = [];
-
-            const numEventos = getRandomInt(2, 5);
-            if (["Becerro", "Becerra", "Novillona", "Torete"].includes(animal.tipo)) {
-                 misPromesas.push(addDoc(collection(db, "eventos"), {
-                    animalId, tipo: "Repeso",
-                    resultado: `${getRandomInt(animal.pesoActual - 40, animal.pesoActual - 10)} kg`,
-                    fecha: restarMesesAFecha(getRandomInt(2, 4)),
-                    costo: 0
-                }));
-            }
-
-            for(let j=0; j<numEventos; j++) {
-                const tipoEv = getRandom(tiposEvento);
-                let resultado = (tipoEv === "Vacunación") ? getRandom(vacunas) :
-                                (tipoEv === "Repeso") ? `${getRandomInt(animal.pesoActual - 10, animal.pesoActual + 15)} kg` :
-                                (tipoEv === "Tratamiento") ? getRandom(tratamientos) : "Ivermectina 1%";
-
-                misPromesas.push(addDoc(collection(db, "eventos"), {
-                    animalId, tipo: tipoEv, resultado, fecha: generarFechaAleatoria(j === 0 ? 1 : 10), costo: getRandomInt(50, 400)
-                }));
-            }
-
-            if (["Vaca", "Novillona"].includes(animal.tipo) && Math.random() > 0.3) {
-                const resultadosPalp = ["Gestante", "Vacía - Fresca", "Vacía - Ciclando", "Vacía - Anestro"];
-                misPromesas.push(addDoc(collection(db, "eventos"), {
-                    animalId, tipo: "Palpación", resultado: getRandom(resultadosPalp), fecha: generarFechaAleatoria(10), costo: 100
-                }));
-            }
-
-            if (animal.tipo === "Vaca" && Math.random() > 0.4) {
-                const fP1 = restarMesesAFecha(getRandomInt(22, 28));
-                const fP2 = restarMesesAFecha(getRandomInt(8, 12));
-                const fIn = format(new Date(new Date(fP1 + "T00:00:00").getTime() + (getRandomInt(70, 110) * 86400000)), "yyyy-MM-dd");
-
-                misPromesas.push(addDoc(collection(db, "eventos"), { animalId, tipo: "Parto", resultado: "Cría sana", fecha: fP1, costo: 0 }));
-                misPromesas.push(addDoc(collection(db, "eventos"), { animalId, tipo: "Inseminación", resultado: "IA Directa", fecha: fIn, costo: 0 }));
-                misPromesas.push(addDoc(collection(db, "eventos"), { animalId, tipo: "Parto", resultado: "Cría sana", fecha: fP2, costo: 0 }));
-
-                if (Math.random() > 0.5) {
-                    misPromesas.push(addDoc(collection(db, "eventos"), {
-                        animalId, tipo: "Palpación", resultado: `Gestante ${getRandomInt(2, 7)} meses`, fecha: format(new Date(), "yyyy-MM-dd"), costo: 100
-                    }));
-                }
-            } else if (animal.tipo === "Novillona" && Math.random() > 0.5) {
-                misPromesas.push(addDoc(collection(db, "eventos"), {
-                    animalId, tipo: "Inseminación", resultado: "IA", fecha: restarMesesAFecha(getRandomInt(1, 4)), costo: 0
-                }));
-            }
-
-            await Promise.all(misPromesas);
+        if (["Vaca","Novillona"].includes(animal.tipo) && Math.random() > 0.3) {
+          const resultadosPalp = ["Gestante","Vacía - Fresca","Vacía - Ciclando","Vacía - Anestro"];
+          misPromesas.push(addDoc(collection(db, "eventos"), {
+            animalId, tipo: "Palpación", resultado: getRandom(resultadosPalp),
+            fecha: generarFechaAleatoria(10), costo: 100
+          }));
         }
-        setMensajeExito(true);
-        setContadorImportados(batchSize);
-        await setDoc(doc(db, "configuracion", "demoGenerada"), { fecha: new Date().toISOString(), cantidad: batchSize });
-        setDemoYaGenerada(true);
-    } catch (e) {
-        console.error("Error inyectando data", e);
-    }
+        if (animal.tipo === "Vaca" && Math.random() > 0.4) {
+          const fP1 = restarMesesAFecha(getRandomInt(22, 28));
+          const fP2 = restarMesesAFecha(getRandomInt(8, 12));
+          const fIn = format(new Date(new Date(fP1+"T00:00:00").getTime() + (getRandomInt(70,110)*86400000)), "yyyy-MM-dd");
+          misPromesas.push(addDoc(collection(db, "eventos"), { animalId, tipo: "Parto", resultado: "Cría sana", fecha: fP1, costo: 0 }));
+          misPromesas.push(addDoc(collection(db, "eventos"), { animalId, tipo: "Inseminación", resultado: "IA Directa", fecha: fIn, costo: 0 }));
+          misPromesas.push(addDoc(collection(db, "eventos"), { animalId, tipo: "Parto", resultado: "Cría sana", fecha: fP2, costo: 0 }));
+          if (Math.random() > 0.5) {
+            misPromesas.push(addDoc(collection(db, "eventos"), {
+              animalId, tipo: "Palpación",
+              resultado: `Gestante ${getRandomInt(2,7)} meses`,
+              fecha: format(new Date(), "yyyy-MM-dd"), costo: 100
+            }));
+          }
+        } else if (animal.tipo === "Novillona" && Math.random() > 0.5) {
+          misPromesas.push(addDoc(collection(db, "eventos"), {
+            animalId, tipo: "Inseminación", resultado: "IA",
+            fecha: restarMesesAFecha(getRandomInt(1, 4)), costo: 0
+          }));
+        }
+        await Promise.all(misPromesas);
+      }
+
+      setContadorImportados(batchSize);
+      setMensajeExito(true);
+      await setDoc(doc(db, "configuracion", "demoGenerada"), { fecha: new Date().toISOString(), cantidad: batchSize });
+      setDemoYaGenerada(true);
+    } catch (e) { console.error("Error inyectando data", e); }
 
     setCargandoDemo(false);
   };
+
+  // ─── UI ──────────────────────────────────────────────────────────────────────
 
   return (
     <div className="admin-container">
       <div className="header">
         <h1>Importar Inventario de Ganado</h1>
-        <p>Sube tu Excel con el inventario actual. Descarga la plantilla para ver el formato correcto.</p>
+        <p>Sube tu Excel con el inventario actual. Descarga la plantilla para ver el formato y la guía de llenado.</p>
       </div>
 
       {/* Botón descargar plantilla */}
@@ -405,25 +677,16 @@ export default function ImportadorMasivo() {
         }}
       >
         <Download size={16} />
-        Descargar Plantilla Excel
+        Descargar Plantilla Excel (con Guía de Llenado)
       </button>
 
       {/* Zona de carga */}
       <label className="upload-box" htmlFor="excel-upload" style={{ display: "block" }}>
         <UploadCloud size={48} color="#9ca3af" style={{ margin: "0 auto" }} />
-        <h3 style={{ color: "#374151", marginTop: "16px" }}>
-          Haz clic para subir tu Excel
-        </h3>
-        <p style={{ color: "#6b7280", fontSize: "14px" }}>
-          Archivos soportados: .xlsx, .xls, .csv
-        </p>
-        <input
-          id="excel-upload"
-          type="file"
-          accept=".xlsx, .xls, .csv"
-          style={{ display: "none" }}
-          onChange={manejarCambioArchivo}
-        />
+        <h3 style={{ color: "#374151", marginTop: "16px" }}>Haz clic para subir tu Excel</h3>
+        <p style={{ color: "#6b7280", fontSize: "14px" }}>Archivos soportados: .xlsx, .xls, .csv</p>
+        <input id="excel-upload" type="file" accept=".xlsx, .xls, .csv"
+          style={{ display: "none" }} onChange={manejarCambioArchivo} />
       </label>
 
       {archivo && (
@@ -432,11 +695,7 @@ export default function ImportadorMasivo() {
             <FileSpreadsheet size={24} color="#3b82f6" />
             <span>Archivo listo: <strong>{archivo.name}</strong></span>
           </div>
-          <button
-            className="btn-primary"
-            onClick={subirArchivo}
-            disabled={cargando}
-          >
+          <button className="btn-primary" onClick={subirArchivo} disabled={cargando}>
             {cargando ? "Procesando animales..." : "Importar al Sistema"}
           </button>
         </div>
@@ -445,8 +704,8 @@ export default function ImportadorMasivo() {
       {/* Errores de validación */}
       {errores.length > 0 && (
         <div style={{
-          marginTop: "20px", backgroundColor: "#fef2f2", border: "1px solid #fca5a5",
-          borderRadius: "8px", padding: "16px"
+          marginTop: "20px", backgroundColor: "#fef2f2",
+          border: "1px solid #fca5a5", borderRadius: "8px", padding: "16px"
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", color: "#dc2626", fontWeight: "600" }}>
             <AlertCircle size={18} />
@@ -462,59 +721,56 @@ export default function ImportadorMasivo() {
       {mensajeExito && (
         <div className="file-status status-success" style={{ marginTop: "20px" }}>
           <CheckCircle2 size={20} />
-          <span>
-            ¡{contadorImportados} animales importados exitosamente! Ve a "Mi Ganado" para verlos.
-          </span>
+          <span>¡{contadorImportados} animales importados exitosamente! Ve a "Mi Ganado" para verlos.</span>
         </div>
       )}
 
       {/* Generador de Demo */}
       {!demoYaGenerada ? (
         <div style={{ marginTop: "50px", paddingTop: "30px", borderTop: "2px dashed #e5e7eb", textAlign: "center" }}>
-            <Database size={40} color="#10b981" style={{ margin: "0 auto" }} />
-            <h3 style={{ color: "#374151", marginTop: "10px" }}>¿Necesitas datos para probar la aplicación?</h3>
-            <p style={{ color: "#6b7280", fontSize: "14px", marginBottom: "20px" }}>
-                Esta función inyectará 150 cabezas de ganado simuladas (Vacas, Sementales, Novillonas en Alerta y Toretes en Venta) directo a tu base de datos para que la app cobre vida.
-            </p>
-            <button
-                className="btn-primary"
-                style={{ backgroundColor: "#10b981", maxWidth: "300px", margin: "0 auto" }}
-                onClick={generarBaseDemo}
-                disabled={cargandoDemo}
-            >
-                {cargandoDemo ? "Inyectando 150 animales (Espera)..." : "⚡ Generar 150 Animales de Prueba"}
-            </button>
+          <Database size={40} color="#10b981" style={{ margin: "0 auto" }} />
+          <h3 style={{ color: "#374151", marginTop: "10px" }}>¿Necesitas datos para probar la aplicación?</h3>
+          <p style={{ color: "#6b7280", fontSize: "14px", marginBottom: "20px" }}>
+            Esta función inyectará 150 cabezas de ganado simuladas con historial médico completo.
+          </p>
+          <button
+            className="btn-primary"
+            style={{ backgroundColor: "#10b981", maxWidth: "300px", margin: "0 auto" }}
+            onClick={generarBaseDemo} disabled={cargandoDemo}
+          >
+            {cargandoDemo ? "Inyectando 150 animales (Espera)..." : "⚡ Generar 150 Animales de Prueba"}
+          </button>
         </div>
       ) : (
         <div style={{ marginTop: "50px", paddingTop: "30px", borderTop: "2px dashed #e5e7eb", textAlign: "center" }}>
-            <CheckCircle2 size={40} color="#10b981" style={{ margin: "0 auto" }} />
-            <h3 style={{ color: "#166534", marginTop: "10px" }}>Base de datos de demostración activa</h3>
-            <p style={{ color: "#6b7280", fontSize: "14px", marginBottom: "16px" }}>
-                Los animales de prueba ya fueron inyectados. Ve a "Mi Ganado" o "Reportes" para explorar.
-            </p>
-            <button
-                className="btn-outline"
-                style={{ borderColor: "#ef4444", color: "#ef4444", display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px" }}
-                onClick={async () => {
-                    if (!window.confirm("⚠️ Esto borrará TODOS los animales, eventos y alertas de la base de datos y te permitirá regenerarlos. ¿Continuar?")) return;
-                    setCargandoDemo(true);
-                    try {
-                        const colecciones = ["animales", "eventos", "alertas", "potreros", "grupos"];
-                        for (const col of colecciones) {
-                            const snap = await getDocs(collection(db, col));
-                            await Promise.all(snap.docs.map(d => deleteDoc(doc(db, col, d.id))));
-                        }
-                        await deleteDoc(doc(db, "configuracion", "demoGenerada"));
-                        setDemoYaGenerada(false);
-                        setMensajeExito(false);
-                    } catch (e) { console.error(e); }
-                    setCargandoDemo(false);
-                }}
-                disabled={cargandoDemo}
-            >
-                <RefreshCw size={16} />
-                {cargandoDemo ? "Limpiando base de datos..." : "Resetear y Regenerar Demo"}
-            </button>
+          <CheckCircle2 size={40} color="#10b981" style={{ margin: "0 auto" }} />
+          <h3 style={{ color: "#166534", marginTop: "10px" }}>Base de datos de demostración activa</h3>
+          <p style={{ color: "#6b7280", fontSize: "14px", marginBottom: "16px" }}>
+            Los animales de prueba ya fueron inyectados. Ve a "Mi Ganado" o "Reportes" para explorar.
+          </p>
+          <button
+            className="btn-outline"
+            style={{ borderColor: "#ef4444", color: "#ef4444", display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px" }}
+            onClick={async () => {
+              if (!window.confirm("⚠️ Esto borrará TODOS los animales, eventos y alertas. ¿Continuar?")) return;
+              setCargandoDemo(true);
+              try {
+                const cols = ["animales", "eventos", "alertas", "potreros", "grupos"];
+                for (const col of cols) {
+                  const snap = await getDocs(collection(db, col));
+                  await Promise.all(snap.docs.map(d => deleteDoc(doc(db, col, d.id))));
+                }
+                await deleteDoc(doc(db, "configuracion", "demoGenerada"));
+                setDemoYaGenerada(false);
+                setMensajeExito(false);
+              } catch (e) { console.error(e); }
+              setCargandoDemo(false);
+            }}
+            disabled={cargandoDemo}
+          >
+            <RefreshCw size={16} />
+            {cargandoDemo ? "Limpiando base de datos..." : "Resetear y Regenerar Demo"}
+          </button>
         </div>
       )}
     </div>
