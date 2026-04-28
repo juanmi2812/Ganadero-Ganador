@@ -51,12 +51,14 @@ export default function CalendarioAlertas({ usuario }) {
   const [grupos, setGrupos] = useState([]);
 
   const [datosEvento, setDatosEvento] = useState({
-    tipo: "Vacunación", resultado: "", fecha: new Date().toISOString().split("T")[0], costo: "",
+    tipo: "Vacunación", resultado: "", fecha: new Date().toISOString().split("T")[0],
   });
 
   // Filtro lista compacta
   const [filtroMesLista, setFiltroMesLista] = useState("todos");
   const [listaExpandida, setListaExpandida] = useState(true);
+  const [crearRecordatorio, setCrearRecordatorio] = useState(false);
+  const [fechaRecordatorio, setFechaRecordatorio] = useState("");
 
   useEffect(() => {
     if (!usuario?.ranchoId) return;
@@ -142,7 +144,6 @@ export default function CalendarioAlertas({ usuario }) {
         titulo,
         tipo: datosEvento.tipo,
         resultado: datosEvento.resultado,
-        costo: Number(datosEvento.costo) || 0,
         modoAplicacion,
         animalId: modoAplicacion === "individual" ? animalSeleccionado : null,
         filtroPotrero: modoAplicacion === "masivo" ? filtroPotrero : null,
@@ -152,9 +153,28 @@ export default function CalendarioAlertas({ usuario }) {
         ranchoId: usuario?.ranchoId || null
       });
 
+      // Crear recordatorio adicional si el usuario lo activó
+      if (crearRecordatorio && fechaRecordatorio) {
+        await addDoc(collection(db, "alertas"), {
+          fechaProgramada: fechaRecordatorio,
+          titulo: `🔔 Recordatorio: ${titulo}`,
+          tipo: datosEvento.tipo,
+          resultado: datosEvento.resultado,
+          modoAplicacion,
+          animalId: modoAplicacion === "individual" ? animalSeleccionado : null,
+          filtroPotrero: modoAplicacion === "masivo" ? filtroPotrero : null,
+          filtroGrupo: modoAplicacion === "masivo" ? filtroGrupo : null,
+          completada: false,
+          origen: "planeado",
+          ranchoId: usuario?.ranchoId || null
+        });
+      }
+
       setExitoMsg(`✅ Actividad planeada para el ${datosEvento.fecha}`);
-      setDatosEvento({ tipo: "Vacunación", resultado: "", fecha: new Date().toISOString().split("T")[0], costo: "" });
+      setDatosEvento({ tipo: "Vacunación", resultado: "", fecha: new Date().toISOString().split("T")[0] });
       setAnimalSeleccionado("");
+      setCrearRecordatorio(false);
+      setFechaRecordatorio("");
       setTimeout(() => { setExitoMsg(""); setMostrarModal(false); }, 2000);
     } catch (err) {
       console.error(err);
@@ -465,12 +485,37 @@ export default function CalendarioAlertas({ usuario }) {
                 </div>
               )}
 
-              <div style={{ marginBottom: "20px" }}>
-                <label style={labelStyle}>Costo Estimado ($)</label>
-                <input type="number" step="0.5" placeholder="$0.00"
-                  value={datosEvento.costo}
-                  onChange={e => setDatosEvento({ ...datosEvento, costo: e.target.value })}
-                  style={inputStyle} />
+              {/* Sección de Recordatorio Futuro */}
+              <div style={{ backgroundColor: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: "8px", padding: "12px", marginBottom: "16px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px", color: "#0369a1" }}>
+                  <input
+                    type="checkbox"
+                    checked={crearRecordatorio}
+                    onChange={e => setCrearRecordatorio(e.target.checked)}
+                    style={{ width: "16px", height: "16px", accentColor: "#0ea5e9" }}
+                  />
+                  📅 Programar recordatorio adicional
+                </label>
+                {crearRecordatorio && (
+                  <div style={{ marginTop: "10px" }}>
+                    <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#374151" }}>Fecha del Recordatorio</label>
+                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      <input
+                        type="date"
+                        value={fechaRecordatorio}
+                        onChange={e => setFechaRecordatorio(e.target.value)}
+                        style={{ flex: 1, padding: "8px", border: "1px solid #0ea5e9", borderRadius: "6px" }}
+                      />
+                      <button type="button" onClick={() => {
+                        const d = new Date(datosEvento.fecha + "T00:00:00");
+                        d.setDate(d.getDate() - 1);
+                        setFechaRecordatorio(d.toISOString().split("T")[0]);
+                      }} style={{ fontSize: "11px", padding: "6px 10px", border: "1px solid #0ea5e9", borderRadius: "6px", backgroundColor: "#e0f2fe", color: "#0369a1", cursor: "pointer", whiteSpace: "nowrap" }}>
+                        1 día antes
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button type="submit" className="btn-primary" style={{ width: "100%", marginTop: 0 }} disabled={guardando}>

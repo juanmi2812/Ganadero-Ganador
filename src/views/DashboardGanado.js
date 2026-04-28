@@ -805,15 +805,9 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                 <input type="text" placeholder="Resultado o Medicina aplicada..." value={datosMasivos.resultado} onChange={(e) => setDatosMasivos({...datosMasivos, resultado: e.target.value})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px", boxSizing: "border-box" }} required />
               )}
 
-              <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: "block", fontSize: "12px", marginBottom: "4px", fontWeight: "600" }}>Fecha</label>
-                  <input type="date" value={datosMasivos.fecha} onChange={(e) => setDatosMasivos({...datosMasivos, fecha: e.target.value})} style={{ width: "100%", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px", boxSizing: "border-box" }} required />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: "block", fontSize: "12px", marginBottom: "4px", fontWeight: "600" }}>Costo Total ($)</label>
-                  <input type="number" placeholder="Opcional" value={datosMasivos.costo} onChange={(e) => setDatosMasivos({...datosMasivos, costo: e.target.value})} style={{ width: "100%", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px", boxSizing: "border-box" }} />
-                </div>
+              <div style={{ marginBottom: "15px" }}>
+                <label style={{ display: "block", fontSize: "12px", marginBottom: "4px", fontWeight: "600" }}>Fecha</label>
+                <input type="date" value={datosMasivos.fecha} onChange={(e) => setDatosMasivos({...datosMasivos, fecha: e.target.value})} style={{ width: "100%", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px", boxSizing: "border-box" }} required />
               </div>
 
               {/* Sección de Recordatorio Futuro */}
