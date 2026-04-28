@@ -1,161 +1,423 @@
-import React, { useState } from "react";
-import { Chrome, Apple } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Chrome, Apple, ArrowLeft, Plus, Users } from "lucide-react";
 import logoConvivet from "../assets/logo_convivet.jpg";
-// Importamos las funciones reales de Firebase (comentadas por ahora para que no rompan CodeSandbox sin llaves reales)
-// import { iniciarSesionCorreo, registrarCorreo, iniciarSesionGoogle, iniciarSesionApple } from "../firebase";
+import {
+  auth,
+  db,
+  iniciarSesionCorreo,
+  registrarCorreo,
+  iniciarSesionGoogle,
+} from "../firebase";
+import {
+  doc, setDoc, getDoc, collection, query, getDocs, orderBy,
+} from "firebase/firestore";
 
+// pantalla: "login" | "elegir-registro" | "registro-admin" | "registro-empleado"
 export default function Login({ alIniciarSesion }) {
-  const [esRegistro, setEsRegistro] = useState(false); // Estado para cambiar entre Login y Registro
+  const [pantalla, setPantalla] = useState("login");
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState("");
+  const [ranchos, setRanchos] = useState([]);
+
+  // Campos comunes
+  const [nombre, setNombre] = useState("");
   const [correo, setCorreo] = useState("");
   const [password, setPassword] = useState("");
-  const [codigoRancho, setCodigoRancho] = useState("");
-  const [error, setError] = useState("");
 
-  const manejarSubmit = async (e) => {
+  // Admin
+  const [nombreRancho, setNombreRancho] = useState("");
+
+  // Empleado
+  const [ranchoSeleccionado, setRanchoSeleccionado] = useState("");
+
+  // Carga lista de ranchos al entrar a registro-empleado
+  useEffect(() => {
+    if (pantalla === "registro-empleado") {
+      getDocs(query(collection(db, "ranchos"), orderBy("nombre"))).then(snap => {
+        setRanchos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      }).catch(() => {});
+    }
+  }, [pantalla]);
+
+  const reset = () => {
+    setError("");
+    setNombre("");
+    setCorreo("");
+    setPassword("");
+    setNombreRancho("");
+    setRanchoSeleccionado("");
+  };
+
+  const ir = (p) => { reset(); setPantalla(p); };
+
+  // ─── Login correo ─────────────────────────────────────────────────────────
+  const manejarLogin = async (e) => {
     e.preventDefault();
     setError("");
-
+    setCargando(true);
     try {
-      if (esRegistro) {
-        if (!codigoRancho) {
-          setError("El Código de Rancho es obligatorio para crear una cuenta.");
-          return;
-        }
-        // Lógica real: await registrarCorreo(correo, password);
-        // Lógica real: Guardar en la base de datos que este correo pertenece al codigoRancho
-        console.log("Registrando usuario para el rancho:", codigoRancho);
-        alIniciarSesion(true); // Simulamos éxito
+      const cred = await iniciarSesionCorreo(correo, password);
+      const perfil = await getDoc(doc(db, "usuarios", cred.user.uid));
+      if (!perfil.exists()) throw new Error("No se encontró perfil de usuario.");
+      alIniciarSesion({ uid: cred.user.uid, ...perfil.data() });
+    } catch (err) {
+      setError(mensajeError(err.code || err.message));
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  // ─── Registro Admin ───────────────────────────────────────────────────────
+  const manejarRegistroAdmin = async (e) => {
+    e.preventDefault();
+    if (!nombre.trim()) { setError("El nombre es obligatorio."); return; }
+    if (!nombreRancho.trim()) { setError("El nombre del rancho es obligatorio."); return; }
+    setError("");
+    setCargando(true);
+    try {
+      const cred = await registrarCorreo(correo, password);
+      const ranchoRef = doc(collection(db, "ranchos"));
+      await setDoc(ranchoRef, {
+        nombre: nombreRancho.trim(),
+        adminUid: cred.user.uid,
+        fechaCreacion: new Date().toISOString(),
+      });
+      await setDoc(doc(db, "usuarios", cred.user.uid), {
+        nombre: nombre.trim(),
+        correo: correo.trim(),
+        rol: "admin",
+        ranchoId: ranchoRef.id,
+        ranchoNombre: nombreRancho.trim(),
+      });
+      alIniciarSesion({
+        uid: cred.user.uid,
+        nombre: nombre.trim(),
+        correo: correo.trim(),
+        rol: "admin",
+        ranchoId: ranchoRef.id,
+        ranchoNombre: nombreRancho.trim(),
+      });
+    } catch (err) {
+      setError(mensajeError(err.code || err.message));
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  // ─── Registro Empleado ────────────────────────────────────────────────────
+  const manejarRegistroEmpleado = async (e) => {
+    e.preventDefault();
+    if (!nombre.trim()) { setError("El nombre es obligatorio."); return; }
+    if (!ranchoSeleccionado) { setError("Selecciona el rancho al que perteneces."); return; }
+    setError("");
+    setCargando(true);
+    try {
+      const rancho = ranchos.find(r => r.id === ranchoSeleccionado);
+      const cred = await registrarCorreo(correo, password);
+      await setDoc(doc(db, "usuarios", cred.user.uid), {
+        nombre: nombre.trim(),
+        correo: correo.trim(),
+        rol: "empleado",
+        ranchoId: ranchoSeleccionado,
+        ranchoNombre: rancho?.nombre || "",
+      });
+      alIniciarSesion({
+        uid: cred.user.uid,
+        nombre: nombre.trim(),
+        correo: correo.trim(),
+        rol: "empleado",
+        ranchoId: ranchoSeleccionado,
+        ranchoNombre: rancho?.nombre || "",
+      });
+    } catch (err) {
+      setError(mensajeError(err.code || err.message));
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  // ─── Google ───────────────────────────────────────────────────────────────
+  const loginGoogle = async () => {
+    setError("");
+    setCargando(true);
+    try {
+      const cred = await iniciarSesionGoogle();
+      const perfilRef = doc(db, "usuarios", cred.user.uid);
+      const perfil = await getDoc(perfilRef);
+      if (perfil.exists()) {
+        alIniciarSesion({ uid: cred.user.uid, ...perfil.data() });
       } else {
-        // Lógica real: await iniciarSesionCorreo(correo, password);
-        console.log("Iniciando sesión con:", correo);
-        alIniciarSesion(true); // Simulamos éxito
+        // Usuario nuevo con Google → va a elegir perfil
+        setPantalla("elegir-registro-google");
+        // Guardamos temporalmente el uid y correo en state para usarlos después
+        setCorreo(cred.user.email || "");
+        setNombre(cred.user.displayName || "");
+        // guardamos uid en closure via cred
+        window.__googleUid = cred.user.uid;
+        window.__googleEmail = cred.user.email;
+        window.__googleNombre = cred.user.displayName;
       }
     } catch (err) {
-      setError("Ocurrió un error de autenticación. Verifica tus datos.");
+      setError(mensajeError(err.code || err.message));
+    } finally {
+      setCargando(false);
     }
   };
 
-  const loginConRedes = async (proveedor) => {
+  // ─── Completar registro Google como Admin ─────────────────────────────────
+  const completarGoogleAdmin = async (e) => {
+    e.preventDefault();
+    if (!nombreRancho.trim()) { setError("El nombre del rancho es obligatorio."); return; }
+    setCargando(true);
     try {
-      if (proveedor === "google") {
-        // Lógica real: await iniciarSesionGoogle();
-        console.log("Abriendo popup de Google...");
-      } else if (proveedor === "apple") {
-        // Lógica real: await iniciarSesionApple();
-        console.log("Abriendo popup de Apple...");
-      }
-      alIniciarSesion(true); // Simulamos éxito temporalmente
+      const uid = window.__googleUid;
+      const ranchoRef = doc(collection(db, "ranchos"));
+      await setDoc(ranchoRef, {
+        nombre: nombreRancho.trim(),
+        adminUid: uid,
+        fechaCreacion: new Date().toISOString(),
+      });
+      const perfil = {
+        nombre: window.__googleNombre || nombre,
+        correo: window.__googleEmail || correo,
+        rol: "admin",
+        ranchoId: ranchoRef.id,
+        ranchoNombre: nombreRancho.trim(),
+      };
+      await setDoc(doc(db, "usuarios", uid), perfil);
+      alIniciarSesion({ uid, ...perfil });
     } catch (err) {
-      setError(`Error al conectar con ${proveedor}`);
+      setError(mensajeError(err.code || err.message));
+    } finally {
+      setCargando(false);
     }
   };
+
+  const completarGoogleEmpleado = async (e) => {
+    e.preventDefault();
+    if (!ranchoSeleccionado) { setError("Selecciona el rancho."); return; }
+    setCargando(true);
+    try {
+      const uid = window.__googleUid;
+      const rancho = ranchos.find(r => r.id === ranchoSeleccionado);
+      const perfil = {
+        nombre: window.__googleNombre || nombre,
+        correo: window.__googleEmail || correo,
+        rol: "empleado",
+        ranchoId: ranchoSeleccionado,
+        ranchoNombre: rancho?.nombre || "",
+      };
+      await setDoc(doc(db, "usuarios", uid), perfil);
+      alIniciarSesion({ uid, ...perfil });
+    } catch (err) {
+      setError(mensajeError(err.code || err.message));
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  // ─── Helpers ──────────────────────────────────────────────────────────────
+  const mensajeError = (code) => {
+    const m = {
+      "auth/email-already-in-use": "Este correo ya está registrado. Inicia sesión.",
+      "auth/invalid-email": "Correo no válido.",
+      "auth/weak-password": "La contraseña debe tener al menos 6 caracteres.",
+      "auth/user-not-found": "No existe cuenta con ese correo.",
+      "auth/wrong-password": "Contraseña incorrecta.",
+      "auth/invalid-credential": "Correo o contraseña incorrectos.",
+      "auth/popup-closed-by-user": "Se cerró la ventana de Google.",
+      "auth/popup-blocked": "El navegador bloqueó la ventana de Google. Permite popups e intenta de nuevo.",
+    };
+    return m[code] || "Error de autenticación. Verifica tus datos e intenta de nuevo.";
+  };
+
+  const inputStyle = {
+    width: "100%", padding: "10px 12px", borderRadius: "8px",
+    border: "1px solid #d1d5db", fontSize: "14px", boxSizing: "border-box",
+    outline: "none", marginTop: "4px",
+  };
+  const labelStyle = { fontSize: "13px", fontWeight: "600", color: "#374151", display: "block" };
+  const groupStyle = { marginBottom: "14px" };
 
   return (
     <div className="login-wrapper">
       <div className="login-card">
-        <div className="login-logo"><img 
-  src={logoConvivet} 
-  alt="Convivet Logo" 
-  style={{ height: "55px", width: "auto", margin: "0 auto 16px auto", display: "block" }} 
-/></div>
-        <h2 style={{ margin: "0 0 8px 0", color: "#111827" }}>
-          {esRegistro ? "Crear Nueva Cuenta" : "Ganadero Ganador"}
-        </h2>
-        <p style={{ color: "#6b7280", marginBottom: "24px", fontSize: "14px" }}>
-          {esRegistro
-            ? "Regístrate e ingresa el código de tu rancho"
-            : "Ingresa a tu cuenta para gestionar tu rancho"}
-        </p>
+        <img src={logoConvivet} alt="Convivet Logo"
+          style={{ height: "55px", width: "auto", margin: "0 auto 16px auto", display: "block" }} />
 
-        {error && (
-          <div
-            style={{
-              backgroundColor: "#fee2e2",
-              color: "#991b1b",
-              padding: "10px",
-              borderRadius: "6px",
-              marginBottom: "16px",
-              fontSize: "14px",
-            }}
-          >
-            {error}
-          </div>
+        {/* ══════════ PANTALLA: LOGIN ══════════ */}
+        {pantalla === "login" && (
+          <>
+            <h2 style={{ margin: "0 0 4px 0", color: "#111827", textAlign: "center" }}>Ganadero Ganador</h2>
+            <p style={{ color: "#6b7280", marginBottom: "20px", fontSize: "14px", textAlign: "center" }}>
+              Ingresa a tu cuenta para gestionar tu rancho
+            </p>
+            {error && <ErrorBox msg={error} />}
+            <form onSubmit={manejarLogin}>
+              <div style={groupStyle}>
+                <label style={labelStyle}>Correo Electrónico</label>
+                <input style={inputStyle} type="email" placeholder="usuario@ejemplo.com"
+                  value={correo} onChange={e => setCorreo(e.target.value)} required />
+              </div>
+              <div style={groupStyle}>
+                <label style={labelStyle}>Contraseña</label>
+                <input style={inputStyle} type="password" placeholder="••••••••"
+                  value={password} onChange={e => setPassword(e.target.value)} required />
+              </div>
+              <button type="submit" className="btn-primary" style={{ width: "100%", marginTop: "4px" }} disabled={cargando}>
+                {cargando ? "Ingresando..." : "Iniciar Sesión"}
+              </button>
+            </form>
+
+            <div style={{ margin: "16px 0", textAlign: "center", fontSize: "13px", color: "#9ca3af" }}>— o continúa con —</div>
+
+            <button className="btn-social" onClick={loginGoogle} disabled={cargando}>
+              <Chrome size={18} /> Continuar con Google
+            </button>
+
+            <div style={{ marginTop: "20px", textAlign: "center", fontSize: "14px", color: "#6b7280" }}>
+              ¿No tienes cuenta?{" "}
+              <button type="button" onClick={() => ir("elegir-registro")}
+                style={{ background: "none", border: "none", color: "#2e7d32", fontWeight: "700", cursor: "pointer", padding: 0 }}>
+                Regístrate aquí
+              </button>
+            </div>
+          </>
         )}
 
-        <form onSubmit={manejarSubmit}>
-          {esRegistro && (
-            <div className="input-group">
-              <label>Código de Rancho (Proporcionado por Admin)</label>
-              <input
-                type="text"
-                placeholder="Ej. RANCHO-001"
-                value={codigoRancho}
-                onChange={(e) => setCodigoRancho(e.target.value.toUpperCase())}
-              />
-            </div>
-          )}
+        {/* ══════════ PANTALLA: ELEGIR TIPO DE REGISTRO ══════════ */}
+        {(pantalla === "elegir-registro" || pantalla === "elegir-registro-google") && (
+          <>
+            <button onClick={() => ir("login")} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", display: "flex", alignItems: "center", gap: "4px", fontSize: "13px", marginBottom: "16px", padding: 0 }}>
+              <ArrowLeft size={14} /> Volver
+            </button>
+            <h2 style={{ margin: "0 0 8px 0", color: "#111827" }}>¿Cuál es tu perfil?</h2>
+            <p style={{ color: "#6b7280", fontSize: "14px", marginBottom: "20px" }}>
+              {pantalla === "elegir-registro-google"
+                ? "Cuenta nueva con Google. Elige tu rol para continuar."
+                : "Selecciona el tipo de cuenta que necesitas."}
+            </p>
 
-          <div className="input-group">
-            <label>Correo Electrónico</label>
-            <input
-              type="email"
-              placeholder="usuario@ejemplo.com"
-              value={correo}
-              onChange={(e) => setCorreo(e.target.value)}
-              required
-            />
-          </div>
+            <button onClick={() => { ir(pantalla === "elegir-registro-google" ? "google-admin" : "registro-admin"); }}
+              style={{ width: "100%", padding: "16px", borderRadius: "10px", border: "2px solid #16a34a", backgroundColor: "#f0fdf4", cursor: "pointer", textAlign: "left", marginBottom: "12px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <Plus size={22} color="#16a34a" />
+                <div>
+                  <div style={{ fontWeight: "700", color: "#15803d", fontSize: "15px" }}>Administrador</div>
+                  <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "2px" }}>Crea un nuevo rancho y gestiona todo</div>
+                </div>
+              </div>
+            </button>
 
-          <div className="input-group">
-            <label>Contraseña</label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
+            <button onClick={() => { if (pantalla === "elegir-registro-google") { getDocs(query(collection(db, "ranchos"), orderBy("nombre"))).then(snap => setRanchos(snap.docs.map(d => ({ id: d.id, ...d.data() })))).catch(() => {}); setPantalla("google-empleado"); } else { ir("registro-empleado"); } }}
+              style={{ width: "100%", padding: "16px", borderRadius: "10px", border: "2px solid #3b82f6", backgroundColor: "#eff6ff", cursor: "pointer", textAlign: "left" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <Users size={22} color="#3b82f6" />
+                <div>
+                  <div style={{ fontWeight: "700", color: "#1d4ed8", fontSize: "15px" }}>Empleado del Rancho</div>
+                  <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "2px" }}>Únete a un rancho ya existente</div>
+                </div>
+              </div>
+            </button>
+          </>
+        )}
 
-          <button
-            type="submit"
-            className="btn-primary"
-            style={{ marginTop: "8px" }}
-          >
-            {esRegistro ? "Crear Cuenta" : "Iniciar Sesión"}
-          </button>
-        </form>
+        {/* ══════════ PANTALLA: REGISTRO ADMIN ══════════ */}
+        {(pantalla === "registro-admin" || pantalla === "google-admin") && (
+          <>
+            <button onClick={() => ir("elegir-registro")} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", display: "flex", alignItems: "center", gap: "4px", fontSize: "13px", marginBottom: "16px", padding: 0 }}>
+              <ArrowLeft size={14} /> Volver
+            </button>
+            <h2 style={{ margin: "0 0 4px 0", color: "#111827" }}>Nuevo Administrador</h2>
+            <p style={{ color: "#6b7280", fontSize: "14px", marginBottom: "18px" }}>Crea tu cuenta y registra tu rancho</p>
+            {error && <ErrorBox msg={error} />}
+            <form onSubmit={pantalla === "google-admin" ? completarGoogleAdmin : manejarRegistroAdmin}>
+              <div style={groupStyle}>
+                <label style={labelStyle}>Tu Nombre</label>
+                <input style={inputStyle} type="text" placeholder="Ej. Juan García"
+                  value={nombre} onChange={e => setNombre(e.target.value)} required />
+              </div>
+              <div style={groupStyle}>
+                <label style={labelStyle}>Nombre del Rancho</label>
+                <input style={inputStyle} type="text" placeholder="Ej. Rancho San José"
+                  value={nombreRancho} onChange={e => setNombreRancho(e.target.value)} required />
+              </div>
+              {pantalla !== "google-admin" && (
+                <>
+                  <div style={groupStyle}>
+                    <label style={labelStyle}>Correo Electrónico</label>
+                    <input style={inputStyle} type="email" placeholder="admin@ejemplo.com"
+                      value={correo} onChange={e => setCorreo(e.target.value)} required />
+                  </div>
+                  <div style={groupStyle}>
+                    <label style={labelStyle}>Contraseña (mínimo 6 caracteres)</label>
+                    <input style={inputStyle} type="password" placeholder="••••••••"
+                      value={password} onChange={e => setPassword(e.target.value)} required />
+                  </div>
+                </>
+              )}
+              <button type="submit" className="btn-primary" style={{ width: "100%", marginTop: "4px", backgroundColor: "#16a34a", borderColor: "#16a34a" }} disabled={cargando}>
+                {cargando ? "Creando cuenta..." : "Crear Cuenta de Administrador"}
+              </button>
+            </form>
+          </>
+        )}
 
-        <div style={{ marginTop: "16px", fontSize: "14px" }}>
-          {esRegistro ? "¿Ya tienes cuenta? " : "¿No tienes cuenta? "}
-          <button
-            type="button"
-            onClick={() => setEsRegistro(!esRegistro)}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#2e7d32",
-              fontWeight: "bold",
-              cursor: "pointer",
-              padding: 0,
-            }}
-          >
-            {esRegistro ? "Inicia sesión aquí" : "Regístrate aquí"}
-          </button>
-        </div>
-
-        <div className="divider">O continúa con</div>
-
-        <button className="btn-social" onClick={() => loginConRedes("google")}>
-          <Chrome size={20} />
-          {esRegistro ? "Registrarse con Google" : "Continuar con Google"}
-        </button>
-
-        <button className="btn-social" onClick={() => loginConRedes("apple")}>
-          <Apple size={20} />
-          {esRegistro ? "Registrarse con Apple" : "Continuar con Apple"}
-        </button>
+        {/* ══════════ PANTALLA: REGISTRO EMPLEADO ══════════ */}
+        {(pantalla === "registro-empleado" || pantalla === "google-empleado") && (
+          <>
+            <button onClick={() => ir("elegir-registro")} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", display: "flex", alignItems: "center", gap: "4px", fontSize: "13px", marginBottom: "16px", padding: 0 }}>
+              <ArrowLeft size={14} /> Volver
+            </button>
+            <h2 style={{ margin: "0 0 4px 0", color: "#111827" }}>Nuevo Empleado</h2>
+            <p style={{ color: "#6b7280", fontSize: "14px", marginBottom: "18px" }}>Regístrate y selecciona tu rancho</p>
+            {error && <ErrorBox msg={error} />}
+            <form onSubmit={pantalla === "google-empleado" ? completarGoogleEmpleado : manejarRegistroEmpleado}>
+              <div style={groupStyle}>
+                <label style={labelStyle}>Tu Nombre</label>
+                <input style={inputStyle} type="text" placeholder="Ej. Carlos López"
+                  value={nombre} onChange={e => setNombre(e.target.value)} required />
+              </div>
+              <div style={groupStyle}>
+                <label style={labelStyle}>Rancho al que perteneces</label>
+                {ranchos.length === 0
+                  ? <p style={{ fontSize: "13px", color: "#ef4444", marginTop: "6px" }}>No hay ranchos registrados todavía. Pide al administrador que cree su cuenta primero.</p>
+                  : <select style={{ ...inputStyle, backgroundColor: "#fff" }}
+                      value={ranchoSeleccionado} onChange={e => setRanchoSeleccionado(e.target.value)} required>
+                      <option value="">-- Selecciona un rancho --</option>
+                      {ranchos.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
+                    </select>
+                }
+              </div>
+              {pantalla !== "google-empleado" && (
+                <>
+                  <div style={groupStyle}>
+                    <label style={labelStyle}>Correo Electrónico</label>
+                    <input style={inputStyle} type="email" placeholder="empleado@ejemplo.com"
+                      value={correo} onChange={e => setCorreo(e.target.value)} required />
+                  </div>
+                  <div style={groupStyle}>
+                    <label style={labelStyle}>Contraseña (mínimo 6 caracteres)</label>
+                    <input style={inputStyle} type="password" placeholder="••••••••"
+                      value={password} onChange={e => setPassword(e.target.value)} required />
+                  </div>
+                </>
+              )}
+              <button type="submit" className="btn-primary" style={{ width: "100%", marginTop: "4px", backgroundColor: "#1d4ed8", borderColor: "#1d4ed8" }} disabled={cargando || ranchos.length === 0}>
+                {cargando ? "Creando cuenta..." : "Crear Cuenta de Empleado"}
+              </button>
+            </form>
+          </>
+        )}
       </div>
+    </div>
+  );
+}
+
+function ErrorBox({ msg }) {
+  return (
+    <div style={{ backgroundColor: "#fee2e2", color: "#991b1b", padding: "10px 12px", borderRadius: "8px", marginBottom: "14px", fontSize: "13px" }}>
+      {msg}
     </div>
   );
 }

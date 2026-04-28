@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Login from "./views/Login";
 import ImportadorMasivo from "./views/ImportadorMasivo";
 import DashboardGanado from "./views/DashboardGanado";
@@ -9,19 +9,59 @@ import ConfiguracionFinanciera from "./views/ConfiguracionFinanciera";
 import ConfiguracionPotreros from "./views/ConfiguracionPotreros";
 import { Home, CalendarDays, BarChart3, Settings, LogOut, Plus, Map } from "lucide-react";
 import logoConvivet from "./assets/logo_convivet.jpg";
+import { auth, db, onAuthStateChanged, signOut } from "./firebase";
+import { doc, getDoc } from "firebase/firestore";
 import "./styles.css";
 
 export default function App() {
-  const [estaAutenticado, setEstaAutenticado] = useState(false);
+  const [usuario, setUsuario] = useState(null);   // null = no auth, objeto = perfil cargado
+  const [cargandoAuth, setCargandoAuth] = useState(true);
   const [vistaActiva, setVistaActiva] = useState("dashboard");
 
-  const cerrarSesion = () => {
-    setEstaAutenticado(false);
+  // Detecta sesión activa al arrancar (persistencia automática de Firebase)
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const perfil = await getDoc(doc(db, "usuarios", firebaseUser.uid));
+          if (perfil.exists()) {
+            setUsuario({ uid: firebaseUser.uid, ...perfil.data() });
+          } else {
+            // usuario sin perfil en Firestore → forzar re-login para elegir rol
+            await signOut(auth);
+            setUsuario(null);
+          }
+        } catch {
+          setUsuario(null);
+        }
+      } else {
+        setUsuario(null);
+      }
+      setCargandoAuth(false);
+    });
+    return () => unsub();
+  }, []);
+
+  const cerrarSesion = async () => {
+    await signOut(auth);
+    setUsuario(null);
     setVistaActiva("dashboard");
   };
 
-  if (!estaAutenticado) {
-    return <Login alIniciarSesion={setEstaAutenticado} />;
+  // Spinner mientras se verifica la sesión
+  if (cargandoAuth) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f0f2f5" }}>
+        <div style={{ textAlign: "center", color: "#6b7280" }}>
+          <div style={{ fontSize: "24px", marginBottom: "8px" }}>🐄</div>
+          <div style={{ fontSize: "14px" }}>Cargando...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!usuario) {
+    return <Login alIniciarSesion={setUsuario} />;
   }
 
   const tabs = [
@@ -29,7 +69,6 @@ export default function App() {
     { id: "calendario", label: "Calendario", icon: CalendarDays },
     { id: "reportes", label: "Reportes", icon: BarChart3 },
     { id: "rancho", label: "Mi Rancho", icon: Map },
-    /* { id: "finanzas", label: "Ajustes", icon: Settings }, */ // Oculto temporalmente a peticion
   ];
 
   return (
@@ -41,9 +80,15 @@ export default function App() {
           <span>Ganadero Ganador</span>
         </div>
         <div className="top-header-actions">
-          <button title="Importar Excel" onClick={() => setVistaActiva("importar")}>
-            <Settings size={18} />
-          </button>
+          {/* Importar solo visible para admin */}
+          {usuario.rol === "admin" && (
+            <button title="Importar Excel" onClick={() => setVistaActiva("importar")}>
+              <Settings size={18} />
+            </button>
+          )}
+          <div style={{ fontSize: "12px", color: "#e5e7eb", lineHeight: 1.2, textAlign: "right", maxWidth: "100px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {usuario.nombre || usuario.correo}
+          </div>
           <button title="Cerrar sesión" onClick={cerrarSesion}>
             <LogOut size={18} />
           </button>
@@ -52,13 +97,13 @@ export default function App() {
 
       {/* === PAGE CONTENT === */}
       <div className="page-wrapper">
-        {vistaActiva === "dashboard" && <DashboardGanado />}
+        {vistaActiva === "dashboard" && <DashboardGanado usuario={usuario} />}
         {vistaActiva === "nuevo" && <NuevoAnimal onTerminar={() => setVistaActiva("dashboard")} />}
-        {vistaActiva === "calendario" && <CalendarioAlertas />}
-        {vistaActiva === "reportes" && <ReportesBI />}
-        { vistaActiva === "importar" && <ImportadorMasivo /> }
-        { vistaActiva === "finanzas" && <ConfiguracionFinanciera /> }
-        { vistaActiva === "rancho" && <ConfiguracionPotreros /> }
+        {vistaActiva === "calendario" && <CalendarioAlertas usuario={usuario} />}
+        {vistaActiva === "reportes" && <ReportesBI usuario={usuario} />}
+        {vistaActiva === "importar" && <ImportadorMasivo />}
+        {vistaActiva === "finanzas" && <ConfiguracionFinanciera />}
+        {vistaActiva === "rancho" && <ConfiguracionPotreros usuario={usuario} />}
       </div>
 
       {/* === FAB — Registrar Animal === */}

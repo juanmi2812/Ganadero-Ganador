@@ -5,6 +5,10 @@ import {
   GoogleAuthProvider,
   OAuthProvider,
   signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut,
 } from "firebase/auth";
 
 // TODO: Reemplaza esto con las llaves reales de tu proyecto de Firebase
@@ -27,18 +31,8 @@ export const googleProvider = new GoogleAuthProvider();
 export const appleProvider = new OAuthProvider("apple.com");
 
 // --- FUNCIONES DE AUTENTICACIÓN ---
-export const iniciarSesionCorreo = (correo, password) => {
-  return signInWithEmailAndPassword(auth, correo, password);
-};
-
-export const registrarCorreo = (correo, password) => {
-  return createUserWithEmailAndPassword(auth, correo, password);
-};
-
-export const iniciarSesionGoogle = () => {
-  return signInWithPopup(auth, googleProvider);
-};
-
-export const iniciarSesionApple = () => {
-  return signInWithPopup(auth, appleProvider);
-};
+export { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut };
+export const iniciarSesionCorreo = (correo, password) => signInWithEmailAndPassword(auth, correo, password);
+export const registrarCorreo = (correo, password) => createUserWithEmailAndPassword(auth, correo, password);
+export const iniciarSesionGoogle = () => signInWithPopup(auth, googleProvider);
+export const iniciarSesionApple = () => signInWithPopup(auth, appleProvider);
