@@ -29,9 +29,12 @@ export default function Login({ alIniciarSesion }) {
   // Empleado
   const [ranchoSeleccionado, setRanchoSeleccionado] = useState("");
 
-  // Carga lista de ranchos al entrar a registro-empleado
+  // Usuario Firebase de Google (guardado en state para el flujo de registro con Google)
+  const [googleUser, setGoogleUser] = useState(null);
+
+  // Carga lista de ranchos al entrar a pantallas de empleado
   useEffect(() => {
-    if (pantalla === "registro-empleado") {
+    if (pantalla === "registro-empleado" || pantalla === "google-empleado") {
       getDocs(query(collection(db, "ranchos"), orderBy("nombre"))).then(snap => {
         setRanchos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       }).catch(() => {});
@@ -146,15 +149,10 @@ export default function Login({ alIniciarSesion }) {
       if (perfil.exists()) {
         alIniciarSesion({ uid: cred.user.uid, ...perfil.data() });
       } else {
-        // Usuario nuevo con Google → va a elegir perfil
-        setPantalla("elegir-registro-google");
-        // Guardamos temporalmente el uid y correo en state para usarlos después
-        setCorreo(cred.user.email || "");
+        // Usuario nuevo con Google → guardar en state y elegir perfil
+        setGoogleUser(cred.user);
         setNombre(cred.user.displayName || "");
-        // guardamos uid en closure via cred
-        window.__googleUid = cred.user.uid;
-        window.__googleEmail = cred.user.email;
-        window.__googleNombre = cred.user.displayName;
+        setPantalla("elegir-registro-google");
       }
     } catch (err) {
       setError(mensajeError(err.code || err.message));
@@ -167,9 +165,10 @@ export default function Login({ alIniciarSesion }) {
   const completarGoogleAdmin = async (e) => {
     e.preventDefault();
     if (!nombreRancho.trim()) { setError("El nombre del rancho es obligatorio."); return; }
+    if (!googleUser) { setError("Error: sesión de Google perdida. Intenta de nuevo."); return; }
     setCargando(true);
     try {
-      const uid = window.__googleUid;
+      const uid = googleUser.uid;
       const ranchoRef = doc(collection(db, "ranchos"));
       await setDoc(ranchoRef, {
         nombre: nombreRancho.trim(),
@@ -177,8 +176,8 @@ export default function Login({ alIniciarSesion }) {
         fechaCreacion: new Date().toISOString(),
       });
       const perfil = {
-        nombre: window.__googleNombre || nombre,
-        correo: window.__googleEmail || correo,
+        nombre: nombre || googleUser.displayName || "",
+        correo: googleUser.email || "",
         rol: "admin",
         ranchoId: ranchoRef.id,
         ranchoNombre: nombreRancho.trim(),
@@ -195,13 +194,14 @@ export default function Login({ alIniciarSesion }) {
   const completarGoogleEmpleado = async (e) => {
     e.preventDefault();
     if (!ranchoSeleccionado) { setError("Selecciona el rancho."); return; }
+    if (!googleUser) { setError("Error: sesión de Google perdida. Intenta de nuevo."); return; }
     setCargando(true);
     try {
-      const uid = window.__googleUid;
+      const uid = googleUser.uid;
       const rancho = ranchos.find(r => r.id === ranchoSeleccionado);
       const perfil = {
-        nombre: window.__googleNombre || nombre,
-        correo: window.__googleEmail || correo,
+        nombre: nombre || googleUser.displayName || "",
+        correo: googleUser.email || "",
         rol: "empleado",
         ranchoId: ranchoSeleccionado,
         ranchoNombre: rancho?.nombre || "",
@@ -309,7 +309,7 @@ export default function Login({ alIniciarSesion }) {
               </div>
             </button>
 
-            <button onClick={() => { if (pantalla === "elegir-registro-google") { getDocs(query(collection(db, "ranchos"), orderBy("nombre"))).then(snap => setRanchos(snap.docs.map(d => ({ id: d.id, ...d.data() })))).catch(() => {}); setPantalla("google-empleado"); } else { ir("registro-empleado"); } }}
+            <button onClick={() => { pantalla === "elegir-registro-google" ? setPantalla("google-empleado") : ir("registro-empleado"); }}
               style={{ width: "100%", padding: "16px", borderRadius: "10px", border: "2px solid #3b82f6", backgroundColor: "#eff6ff", cursor: "pointer", textAlign: "left" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <Users size={22} color="#3b82f6" />
