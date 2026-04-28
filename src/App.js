@@ -27,8 +27,7 @@ export default function App() {
           if (perfil.exists()) {
             setUsuario({ uid: firebaseUser.uid, ...perfil.data() });
           } else {
-            // usuario sin perfil en Firestore → forzar re-login para elegir rol
-            await signOut(auth);
+            // Perfil no existe todavía (puede estar en medio del registro) → solo mostrar Login
             setUsuario(null);
           }
         } catch {
