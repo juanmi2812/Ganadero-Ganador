@@ -497,11 +497,11 @@ export default function ImportadorMasivo({ usuario }) {
     };
 
     const potrerosDemo = [
-      { nombre: "Potrero Norte", hectareas: 50 },
-      { nombre: "Potrero Sur", hectareas: 100 },
-      { nombre: "Potrero Maternidad", hectareas: 20 },
-      { nombre: "Corral Engorda", hectareas: 5 },
-      { nombre: "Pradera Abierta", hectareas: 200 }
+      { nombre: "Potrero Norte", hectareas: 50, tipoPastoNombre: "Bermudas", porcentajePasto: 85, tipoPastoTamano: "corto", divisiones: ["Sección A", "Sección B"] },
+      { nombre: "Potrero Sur", hectareas: 100, tipoPastoNombre: "Estrella", porcentajePasto: 90, tipoPastoTamano: "mediano", divisiones: ["Sección 1", "Sección 2", "Sección 3"] },
+      { nombre: "Potrero Maternidad", hectareas: 20, tipoPastoNombre: "Pangola", porcentajePasto: 95, tipoPastoTamano: "corto", divisiones: ["Lote Único"] },
+      { nombre: "Corral Engorda", hectareas: 5, tipoPastoNombre: "Taiwán", porcentajePasto: 100, tipoPastoTamano: "corte", divisiones: ["Corral 1", "Corral 2"] },
+      { nombre: "Pradera Abierta", hectareas: 200, tipoPastoNombre: "Mombasa", porcentajePasto: 80, tipoPastoTamano: "alto", divisiones: ["Este", "Oeste", "Norte"] }
     ];
     const potrerosNombres = potrerosDemo.map(p => p.nombre);
 

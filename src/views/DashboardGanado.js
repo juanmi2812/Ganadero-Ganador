@@ -372,7 +372,15 @@ export default function DashboardGanado({ usuario }) {
   return (
     <div className="dashboard-container">
       
-      <Header subtitle="Control de inventario y análisis de rendimiento." />
+      <Header subtitle="Control de inventario y análisis de rendimiento.">
+        <button 
+          className="btn-primary" 
+          onClick={() => setMostrarModalMasivo(true)}
+          style={{ margin: 0, display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#16a34a", borderColor: "#16a34a", whiteSpace: "nowrap" }}
+        >
+          💊 Cargar Tratamiento
+        </button>
+      </Header>
 
       {/* KPIs PRINCIPALES */}
       <div className="kpi-grid">
@@ -416,7 +424,7 @@ export default function DashboardGanado({ usuario }) {
         ))}
       </div>
 
-      {/* BUSCADOR Y BOTÓN TRATAMIENTO MASIVO */}
+      {/* BUSCADOR Y FILTROS */}
       <div className="search-bar" style={{ gap: "10px", alignItems: "center" }}>
         <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "10px", backgroundColor: "#f9fafb", padding: "0 12px", borderRadius: "8px", border: "1px solid #d1d5db" }}>
           <Search size={20} color="#9ca3af" />
@@ -428,13 +436,6 @@ export default function DashboardGanado({ usuario }) {
             style={{ border: "none", width: "100%", padding: "10px 0", backgroundColor: "transparent", outline: "none" }}
           />
         </div>
-        <button 
-          className="btn-primary" 
-          onClick={() => setMostrarModalMasivo(true)}
-          style={{ margin: 0, display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#16a34a", borderColor: "#16a34a", whiteSpace: "nowrap" }}
-        >
-          💊 Cargar Tratamiento Masivo
-        </button>
       </div>
       
       <div className="search-bar" style={{ gap: "10px", marginTop: "10px" }}>
@@ -719,7 +720,7 @@ export default function DashboardGanado({ usuario }) {
         <div className="modal-overlay" onClick={() => setMostrarModalMasivo(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "500px" }}>
             <div className="modal-header">
-              <h2>💊 Cargar Tratamiento Masivo</h2>
+              <h2>💊 Cargar Tratamiento</h2>
               <button onClick={() => setMostrarModalMasivo(false)} style={{ background: "none", border: "none" }}><X size={24} /></button>
             </div>
             
