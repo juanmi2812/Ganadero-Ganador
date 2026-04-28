@@ -202,7 +202,7 @@ export default function ConfiguracionPotreros({ usuario, onCargarTratamiento }) 
         <button 
           className="btn-primary" 
           onClick={onCargarTratamiento}
-          style={{ margin: 0, display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#16a34a", borderColor: "#16a34a", whiteSpace: "nowrap" }}
+          style={{ margin: 0, width: "auto", display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#16a34a", borderColor: "#16a34a", padding: "10px 20px" }}
         >
           💊 Cargar Tratamiento
         </button>
@@ -218,7 +218,7 @@ export default function ConfiguracionPotreros({ usuario, onCargarTratamiento }) 
             </div>
           </div>
           {!formActivo && (
-            <button className="btn-primary" onClick={() => { setFormActivo(true); setEditandoId(null); }}>
+            <button className="btn-primary" style={{ width: "auto", padding: "8px 16px" }} onClick={() => { setFormActivo(true); setEditandoId(null); }}>
               <Plus size={18} /> Nuevo Potrero
             </button>
           )}
@@ -382,7 +382,7 @@ export default function ConfiguracionPotreros({ usuario, onCargarTratamiento }) 
             </div>
           </div>
           {!formGrupoActivo && (
-            <button className="btn-primary" onClick={() => { setFormGrupoActivo(true); setEditandoGrupoId(null); setDatosFormGrupo({ nombre: "" }); }}>
+            <button className="btn-primary" style={{ width: "auto", padding: "8px 16px" }} onClick={() => { setFormGrupoActivo(true); setEditandoGrupoId(null); setDatosFormGrupo({ nombre: "" }); }}>
               <Plus size={18} /> Nuevo Grupo
             </button>
           )}

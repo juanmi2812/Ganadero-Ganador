@@ -383,7 +383,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
         <button 
           className="btn-primary" 
           onClick={() => setMostrarModalMasivo(true)}
-          style={{ margin: 0, display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#16a34a", borderColor: "#16a34a", whiteSpace: "nowrap" }}
+          style={{ margin: 0, width: "auto", display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#16a34a", borderColor: "#16a34a", padding: "10px 20px" }}
         >
           💊 Cargar Tratamiento
         </button>
