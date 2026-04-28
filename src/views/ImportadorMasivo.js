@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { UploadCloud, FileSpreadsheet, CheckCircle2, Database, RefreshCw, Download, AlertCircle } from "lucide-react";
-import { collection, addDoc, doc, getDoc, setDoc, deleteDoc, getDocs } from "firebase/firestore";
+import { collection, addDoc, doc, getDoc, setDoc, deleteDoc, getDocs, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { format } from "date-fns";
 import * as XLSX from "xlsx";
