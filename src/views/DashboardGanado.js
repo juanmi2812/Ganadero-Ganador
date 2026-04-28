@@ -300,32 +300,29 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
           ranchoId: usuario?.ranchoId || null
         });
       }
-
+      // Crear recordatorio en Calendario si el usuario lo activó
       if (crearRecordatorio && fechaRecordatorio) {
-        let titulo = `${datosMasivos.tipo} Masivo`;
-        if (filtroGrupoMasivo !== "Todos") titulo += ` - ${filtroGrupoMasivo}`;
-        else if (filtroPotreroMasivo !== "Todos") titulo += ` - ${filtroPotreroMasivo}`;
-        else titulo += " - Todo el Ganado";
-
+        const partePotrero = filtroPotreroMasivo !== "Todos" ? `Potrero: ${filtroPotreroMasivo}` : "Todos los potreros";
+        const parteGrupo = filtroGrupoMasivo !== "Todos" ? ` · Grupo: ${filtroGrupoMasivo}` : "";
+        const tituloRecord = `${datosMasivos.tipo}${datosMasivos.resultado ? ` (${datosMasivos.resultado})` : ""} — ${partePotrero}${parteGrupo}`;
         await addDoc(collection(db, "alertas"), {
-          titulo: titulo,
-          tipo: datosMasivos.tipo,
           fechaProgramada: fechaRecordatorio,
-          objetivoTipo: "Grupo",
-          objetivoNombre: titulo,
+          titulo: tituloRecord,
+          tipo: datosMasivos.tipo,
+          resultado: datosMasivos.resultado,
+          costo: 0,
+          modoAplicacion: "masivo",
+          filtroPotrero: filtroPotreroMasivo,
+          filtroGrupo: filtroGrupoMasivo,
           completada: false,
           origen: "planeado",
           ranchoId: usuario?.ranchoId || null
         });
       }
-
       setExitoMasivo(`✅ Aplicado a ${animalesAfectados.length} cabezas.`);
-      setTimeout(() => { 
-        setExitoMasivo(""); 
-        setMostrarModalMasivo(false); 
-        setCrearRecordatorio(false);
-        setFechaRecordatorio("");
-      }, 2000);
+      setCrearRecordatorio(false);
+      setFechaRecordatorio("");
+      setTimeout(() => { setExitoMasivo(""); setMostrarModalMasivo(false); }, 2000);
     } catch (error) {
       console.error(error);
       alert("Error al aplicar tratamientos.");
@@ -819,15 +816,35 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                 </div>
               </div>
 
-              <div style={{ backgroundColor: "#eff6ff", padding: "12px", borderRadius: "8px", marginBottom: "15px", border: "1px solid #bfdbfe" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: "600", color: "#1e3a8a", cursor: "pointer", margin: 0 }}>
-                  <input type="checkbox" checked={crearRecordatorio} onChange={(e) => setCrearRecordatorio(e.target.checked)} style={{ width: "16px", height: "16px" }} />
-                  Programar recordatorio futuro
+              {/* Sección de Recordatorio Futuro */}
+              <div style={{ backgroundColor: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: "8px", padding: "12px", marginBottom: "15px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px", color: "#0369a1" }}>
+                  <input
+                    type="checkbox"
+                    checked={crearRecordatorio}
+                    onChange={e => setCrearRecordatorio(e.target.checked)}
+                    style={{ width: "16px", height: "16px", accentColor: "#0ea5e9" }}
+                  />
+                  📅 Programar recordatorio en el Calendario
                 </label>
                 {crearRecordatorio && (
                   <div style={{ marginTop: "10px" }}>
-                    <label style={{ display: "block", fontSize: "12px", marginBottom: "4px", color: "#1e40af" }}>Fecha del recordatorio en el calendario</label>
-                    <input type="date" value={fechaRecordatorio} onChange={(e) => setFechaRecordatorio(e.target.value)} style={{ width: "100%", padding: "8px", border: "1px solid #bfdbfe", borderRadius: "4px", boxSizing: "border-box" }} required={crearRecordatorio} />
+                    <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#374151" }}>Fecha del Recordatorio</label>
+                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      <input
+                        type="date"
+                        value={fechaRecordatorio}
+                        onChange={e => setFechaRecordatorio(e.target.value)}
+                        style={{ flex: 1, padding: "8px", border: "1px solid #0ea5e9", borderRadius: "6px" }}
+                      />
+                      <button type="button" onClick={() => {
+                        const d = new Date(datosMasivos.fecha + "T00:00:00");
+                        d.setDate(d.getDate() - 1);
+                        setFechaRecordatorio(d.toISOString().split("T")[0]);
+                      }} style={{ fontSize: "11px", padding: "6px 10px", border: "1px solid #0ea5e9", borderRadius: "6px", backgroundColor: "#e0f2fe", color: "#0369a1", cursor: "pointer", whiteSpace: "nowrap" }}>
+                        1 día antes
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

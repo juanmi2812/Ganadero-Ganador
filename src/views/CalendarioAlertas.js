@@ -1,25 +1,35 @@
 import { useState, useEffect } from "react";
-import { collection, onSnapshot, addDoc, query, where, doc, updateDoc } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, updateDoc, doc, query, where } from "firebase/firestore";
 import { db } from "../firebase";
-import { Plus, X, User, Layers, CalendarDays, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, X, User, Layers, CalendarDays, ChevronDown, ChevronUp, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { CATALOGO_EVENTOS, TIPOS_EVENTO } from "../catalogoEventos";
 
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
-import { format, parse, startOfWeek, getDay, isBefore, addDays, startOfDay } from "date-fns";
+import { format, parse, startOfWeek, getDay, isBefore, addDays } from "date-fns";
 import { es } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
 const locales = { es: es };
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
 
-const EventoMinimalista = ({ event }) => {
-  const color = event.vencida ? "#ef4444" : event.completada ? "#10b981" : "#3b82f6";
+// ── Render minimalista de eventos en el calendario ────────────────────────────
+function EventoMinimalista({ event }) {
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const color = event.completada ? "#10b981"
+    : isBefore(event.start, hoy) ? "#ef4444"
+    : "#3b82f6";
   return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", width: "100%", padding: "2px" }} title={event.title}>
-      <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: color }} />
+    <div title={event.title} style={{ display: "flex", alignItems: "center", gap: "4px", padding: "2px 4px" }}>
+      <span style={{
+        display: "inline-block", width: "8px", height: "8px",
+        borderRadius: "50%", backgroundColor: color, flexShrink: 0,
+      }} />
+      <span style={{ fontSize: "11px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#1f2937" }}>
+        {event.title}
+      </span>
     </div>
   );
-};
+}
 
 export default function CalendarioAlertas({ usuario }) {
   const [eventosCalendario, setEventosCalendario] = useState([]);
@@ -66,64 +76,56 @@ export default function CalendarioAlertas({ usuario }) {
     const unsub = onSnapshot(query(collection(db, "alertas"), where("ranchoId", "==", usuario.ranchoId)), (snap) => {
       const todas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-      // Solo mostrar en calendario las planeadas (origen: "planeado" o sin campo origen para compatibilidad)
-      const hoy = startOfDay(new Date());
-
-      const procesadas = todas
+      const paraCalendario = todas
         .filter(a => a.fechaProgramada && (a.origen === "planeado" || !a.origen))
         .map(a => {
           const [y, m, d] = a.fechaProgramada.split("-");
-          const fechaObj = new Date(y, m - 1, d);
-          const vencida = !a.completada && isBefore(fechaObj, hoy);
-          return {
-            ...a,
-            fechaObj,
-            vencida
-          };
-        });
-
-      const paraCalendario = procesadas
-        .map(a => {
           return {
             id: a.id,
             title: a.titulo || a.tipo || "Actividad",
-            start: a.fechaObj,
-            end: a.fechaObj,
+            start: new Date(y, m - 1, d),
+            end: new Date(y, m - 1, d),
             allDay: true,
             tipo: "alerta",
             completada: a.completada,
-            vencida: a.vencida,
             origen: a.origen,
           };
         });
 
       setEventosCalendario(paraCalendario);
-      // Para lista compacta: todas las planeadas, ordenadas por fecha
       setAlertasPlaneadas(
-        procesadas.sort((a, b) => a.fechaObj - b.fechaObj)
+        todas
+          .filter(a => a.fechaProgramada && (a.origen === "planeado" || !a.origen))
+          .sort((a, b) => new Date(a.fechaProgramada) - new Date(b.fechaProgramada))
       );
     });
     return () => unsub();
   }, [usuario]);
 
-  const estiloDeEventos = (event) => ({
+  // Estilo minimalista: fondo transparente, sin borde — el renderizado lo maneja EventoMinimalista
+  const estiloDeEventos = () => ({
     style: {
       backgroundColor: "transparent",
-      borderRadius: "0", color: "transparent", border: "none",
-      display: "block", padding: "0"
+      border: "none",
+      padding: 0,
+      margin: 0,
     },
   });
 
-  // ─── Guardar actividad planeada en alertas ────────────────────────────────────
+  // ─── Marcar actividad como realizada ─────────────────────────────────────────
+  const marcarRealizada = async (alertaId) => {
+    try {
+      await updateDoc(doc(db, "alertas", alertaId), { completada: true });
+    } catch (err) { console.error(err); }
+  };
 
+  // ─── Guardar actividad planeada en alertas ────────────────────────────────────
   const guardarActividadPlaneada = async (e) => {
     e.preventDefault();
     setGuardando(true);
     setExitoMsg("");
-
     try {
       let descripcionObjetivo = "";
-
       if (modoAplicacion === "individual") {
         if (!animalSeleccionado) { alert("Selecciona un animal."); setGuardando(false); return; }
         const animal = animales.find(a => a.id === animalSeleccionado);
@@ -133,7 +135,6 @@ export default function CalendarioAlertas({ usuario }) {
         const partesGrupo = filtroGrupo !== "Todos" ? ` · Grupo: ${filtroGrupo}` : "";
         descripcionObjetivo = `${partesPotrero}${partesGrupo}`;
       }
-
       const titulo = `${datosEvento.tipo}${datosEvento.resultado ? ` (${datosEvento.resultado})` : ""} — ${descripcionObjetivo}`;
 
       await addDoc(collection(db, "alertas"), {
@@ -162,12 +163,6 @@ export default function CalendarioAlertas({ usuario }) {
     setGuardando(false);
   };
 
-  const marcarCompletada = async (id) => {
-    try {
-      await updateDoc(doc(db, "alertas", id), { completada: true });
-    } catch (e) { console.error("Error al marcar como completada:", e); }
-  };
-
   const animalesFiltrados = animales.filter(a =>
     a.arete?.toLowerCase().includes(busquedaAnimal.toLowerCase()) ||
     a.tipo?.toLowerCase().includes(busquedaAnimal.toLowerCase()) ||
@@ -175,20 +170,24 @@ export default function CalendarioAlertas({ usuario }) {
   );
 
   // ─── Lista compacta filtrada ──────────────────────────────────────────────────
-
-  const hoy = new Date();
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
   const alertasFiltradas = alertasPlaneadas.filter(a => {
     if (filtroMesLista === "todos") return true;
     if (filtroMesLista === "proximos7") {
       const f = new Date(a.fechaProgramada + "T00:00:00");
       return !isBefore(f, hoy) && isBefore(f, addDays(hoy, 7));
     }
-    // filtro por "YYYY-MM"
     return a.fechaProgramada?.startsWith(filtroMesLista);
   });
 
-  // Generar opciones de meses con alertas
   const mesesConAlertas = [...new Set(alertasPlaneadas.map(a => a.fechaProgramada?.slice(0, 7)))].filter(Boolean).sort();
+
+  const getEstadoAlerta = (alerta) => {
+    if (alerta.completada) return { label: "Realizada", bg: "#dcfce7", color: "#166534", icon: <CheckCircle2 size={13} /> };
+    const fecha = new Date(alerta.fechaProgramada + "T00:00:00");
+    if (isBefore(fecha, hoy)) return { label: "No realizada", bg: "#fee2e2", color: "#dc2626", icon: <AlertCircle size={13} /> };
+    return { label: "Pendiente", bg: "#fef9c3", color: "#854d0e", icon: <Clock size={13} /> };
+  };
 
   const inputStyle = {
     width: "100%", padding: "10px 12px", border: "1px solid #d1d5db",
@@ -212,8 +211,15 @@ export default function CalendarioAlertas({ usuario }) {
         </button>
       </div>
 
-      {/* ── Calendario visual ─────────────────────────────────────────────────── */}
-      <div className="login-card" style={{ maxWidth: "100%", width: "100%", margin: "0 0 20px 0", padding: "24px", boxSizing: "border-box", height: "580px" }}>
+      {/* ── Calendario visual minimalista ──────────────────────────────────────── */}
+      <div className="login-card" style={{ maxWidth: "100%", width: "100%", margin: "0 0 20px 0", padding: "24px", boxSizing: "border-box", height: "520px" }}>
+        <style>{`
+          .rbc-event { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; }
+          .rbc-event.rbc-selected { background: transparent !important; outline: none !important; }
+          .rbc-day-slot .rbc-event { display: none; }
+          .rbc-show-more { font-size: 11px; color: #3b82f6; font-weight: 600; }
+          .rbc-toolbar button { font-size: 13px; }
+        `}</style>
         <Calendar
           localizer={localizer}
           events={eventosCalendario}
@@ -221,8 +227,9 @@ export default function CalendarioAlertas({ usuario }) {
           endAccessor="end"
           style={{ height: "100%" }}
           culture="es"
-          messages={{ next: "Sig", previous: "Ant", today: "Hoy", month: "Mes", week: "Semana", day: "Día" }}
+          messages={{ next: "Sig", previous: "Ant", today: "Hoy", month: "Mes", week: "Semana", day: "Día", showMore: total => `+${total} más` }}
           eventPropGetter={estiloDeEventos}
+          components={{ event: EventoMinimalista }}
           view={vista}
           onView={setVista}
           date={fechaActual}
@@ -232,7 +239,6 @@ export default function CalendarioAlertas({ usuario }) {
             setMostrarModal(true);
           }}
           selectable={true}
-          components={{ event: EventoMinimalista }}
         />
       </div>
 
@@ -277,25 +283,29 @@ export default function CalendarioAlertas({ usuario }) {
           ) : (
             <div>
               {alertasFiltradas.map(alerta => {
-                const esPasada = isBefore(new Date(alerta.fechaProgramada + "T00:00:00"), hoy);
+                const estado = getEstadoAlerta(alerta);
+                const esPasada = !alerta.completada && isBefore(new Date(alerta.fechaProgramada + "T00:00:00"), hoy);
                 return (
                   <div key={alerta.id} style={{
-                    display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
                     padding: "12px 0", borderBottom: "1px solid #f3f4f6",
                   }}>
-                    <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
+                    {/* Fecha */}
+                    <div style={{ display: "flex", gap: "12px", alignItems: "center", flex: 1 }}>
                       <div style={{
-                        minWidth: "50px", textAlign: "center", backgroundColor: esPasada ? "#fef2f2" : "#f0fdf4",
-                        borderRadius: "8px", padding: "6px 4px",
+                        minWidth: "50px", textAlign: "center",
+                        backgroundColor: alerta.completada ? "#f0fdf4" : esPasada ? "#fef2f2" : "#eff6ff",
+                        borderRadius: "8px", padding: "6px 4px", flexShrink: 0,
                       }}>
-                        <div style={{ fontSize: "18px", fontWeight: "700", color: esPasada ? "#dc2626" : "#166534" }}>
+                        <div style={{ fontSize: "18px", fontWeight: "700", color: alerta.completada ? "#166534" : esPasada ? "#dc2626" : "#1d4ed8" }}>
                           {alerta.fechaProgramada?.slice(8)}
                         </div>
-                        <div style={{ fontSize: "10px", color: esPasada ? "#dc2626" : "#166534", textTransform: "uppercase" }}>
+                        <div style={{ fontSize: "10px", color: alerta.completada ? "#166534" : esPasada ? "#dc2626" : "#1d4ed8", textTransform: "uppercase" }}>
                           {format(new Date(alerta.fechaProgramada + "T00:00:00"), "MMM", { locale: es })}
                         </div>
                       </div>
-                      <div>
+                      {/* Detalle */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: "600", fontSize: "14px", color: "#111827" }}>{alerta.tipo}</div>
                         {alerta.resultado && <div style={{ fontSize: "12px", color: "#6b7280" }}>{alerta.resultado}</div>}
                         {alerta.titulo && (
@@ -305,25 +315,28 @@ export default function CalendarioAlertas({ usuario }) {
                         )}
                       </div>
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-end" }}>
+
+                    {/* Estado + Botón Marcar Realizada */}
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px", flexShrink: 0, marginLeft: "10px" }}>
                       <span style={{
+                        display: "inline-flex", alignItems: "center", gap: "4px",
                         fontSize: "11px", fontWeight: "600", padding: "3px 8px", borderRadius: "12px",
-                        backgroundColor: alerta.completada ? "#dcfce7" : (esPasada ? "#fef2f2" : "#fef9c3"),
-                        color: alerta.completada ? "#166534" : (esPasada ? "#dc2626" : "#854d0e"),
-                        whiteSpace: "nowrap",
+                        backgroundColor: estado.bg, color: estado.color, whiteSpace: "nowrap",
                       }}>
-                        {alerta.completada ? "Realizada" : (esPasada ? "No realizada (Vencida)" : "Pendiente")}
+                        {estado.icon} {estado.label}
                       </span>
                       {!alerta.completada && (
-                        <button 
-                          onClick={() => marcarCompletada(alerta.id)}
+                        <button
+                          onClick={() => marcarRealizada(alerta.id)}
                           style={{
-                            fontSize: "11px", backgroundColor: "#f3f4f6", border: "1px solid #d1d5db",
-                            color: "#374151", padding: "4px 8px", borderRadius: "4px", cursor: "pointer",
-                            whiteSpace: "nowrap"
+                            fontSize: "11px", fontWeight: "600", padding: "4px 10px",
+                            borderRadius: "8px", border: "1px solid #10b981",
+                            backgroundColor: "#f0fdf4", color: "#059669",
+                            cursor: "pointer", whiteSpace: "nowrap",
+                            display: "flex", alignItems: "center", gap: "4px",
                           }}
                         >
-                          Marcar Realizada
+                          <CheckCircle2 size={12} /> Marcar Realizada
                         </button>
                       )}
                     </div>
