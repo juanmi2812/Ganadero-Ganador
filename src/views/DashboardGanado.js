@@ -6,7 +6,7 @@ import { db } from "../firebase";
 import Header from "../components/Header";
 import { CATALOGO_EVENTOS, TIPOS_EVENTO } from "../catalogoEventos";
 
-export default function DashboardGanado({ usuario }) {
+export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, setAbrirModalTratamientoMasivo }) {
   // --- ESTADOS ---
   const [inventario, setInventario] = useState([]);
   const [busqueda, setBusqueda] = useState("");
@@ -32,11 +32,18 @@ export default function DashboardGanado({ usuario }) {
   
   // Tratamiento Masivo
   const [mostrarModalMasivo, setMostrarModalMasivo] = useState(false);
-  const [datosMasivos, setDatosMasivos] = useState({ tipo: "Vacunación", resultado: "", fecha: new Date().toISOString().split("T")[0], costo: "" });
+  const [datosMasivos, setDatosMasivos] = useState({ tipo: "Desparasitante", resultado: "", fecha: new Date().toISOString().split("T")[0], costo: "" });
   const [filtroPotreroMasivo, setFiltroPotreroMasivo] = useState("Todos");
   const [filtroGrupoMasivo, setFiltroGrupoMasivo] = useState("Todos");
   const [guardandoMasivo, setGuardandoMasivo] = useState(false);
   const [exitoMasivo, setExitoMasivo] = useState("");
+
+  useEffect(() => {
+    if (abrirModalTratamientoMasivo) {
+      setMostrarModalMasivo(true);
+      if (setAbrirModalTratamientoMasivo) setAbrirModalTratamientoMasivo(false);
+    }
+  }, [abrirModalTratamientoMasivo, setAbrirModalTratamientoMasivo]);
 
   // --- EFECTOS AUTOMÁTICOS (OPCIÓN A) ---
   useEffect(() => {

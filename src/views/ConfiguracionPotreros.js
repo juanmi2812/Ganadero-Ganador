@@ -7,7 +7,7 @@ import { CATALOGO_EVENTOS, TIPOS_EVENTO } from "../catalogoEventos";
 const inputStyle = { width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #d1d5db", boxSizing: "border-box" };
 const labelStyle = { display: "block", fontSize: "12px", fontWeight: "bold", marginBottom: "4px", color: "#4b5563" };
 
-export default function ConfiguracionPotreros({ usuario }) {
+export default function ConfiguracionPotreros({ usuario, onCargarTratamiento }) {
   const [potreros, setPotreros] = useState([]);
   const [formActivo, setFormActivo] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
@@ -191,12 +191,21 @@ export default function ConfiguracionPotreros({ usuario }) {
 
   return (
     <div className="dashboard-container">
-      <div className="header" style={{ marginBottom: "20px" }}>
-        <h1 style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <Map size={28} color="var(--verde-medio)" />
-          Mi Rancho
-        </h1>
-        <p>Administra los Potreros, Divisiones Internas y Grupos de Manejo de tu rancho.</p>
+      <div className="header" style={{ marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h1 style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <Map size={28} color="var(--verde-medio)" />
+            Mi Rancho
+          </h1>
+          <p>Administra los Potreros, Divisiones Internas y Grupos de Manejo de tu rancho.</p>
+        </div>
+        <button 
+          className="btn-primary" 
+          onClick={onCargarTratamiento}
+          style={{ margin: 0, display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#16a34a", borderColor: "#16a34a", whiteSpace: "nowrap" }}
+        >
+          💊 Cargar Tratamiento
+        </button>
       </div>
 
       {/* ══ TABLA DE POTREROS ══════════════════════════════════════════════════ */}

@@ -733,7 +733,7 @@ export default function ImportadorMasivo({ usuario }) {
       )}
 
       {/* Generador de Demo */}
-      {usuario?.rol === "Administrador" && (
+      {usuario?.rol === "admin" && (
         <>
           {!demoYaGenerada ? (
         <div style={{ marginTop: "50px", paddingTop: "30px", borderTop: "2px dashed #e5e7eb", textAlign: "center" }}>
@@ -779,6 +779,25 @@ export default function ImportadorMasivo({ usuario }) {
           >
             <RefreshCw size={16} />
             {cargandoDemo ? "Limpiando base de datos..." : "Resetear y Regenerar Demo"}
+          </button>
+
+          <button
+            className="btn-outline"
+            style={{ borderColor: "#3b82f6", color: "#3b82f6", display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", marginLeft: "10px" }}
+            onClick={async () => {
+              try {
+                const snap = await getDocs(query(collection(db, "animales"), where("ranchoId", "==", usuario?.ranchoId)));
+                const data = snap.docs.map(doc => doc.data());
+                if (data.length === 0) return alert("No hay datos para exportar.");
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Inventario");
+                XLSX.writeFile(wb, "Base_Prueba_Ganado.xlsx");
+              } catch (e) { console.error(e); }
+            }}
+          >
+            <Download size={16} />
+            Descargar Base en Excel
           </button>
         </div>
       )}

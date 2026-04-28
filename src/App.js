@@ -17,6 +17,7 @@ export default function App() {
   const [usuario, setUsuario] = useState(null);   // null = no auth, objeto = perfil cargado
   const [cargandoAuth, setCargandoAuth] = useState(true);
   const [vistaActiva, setVistaActiva] = useState("dashboard");
+  const [abrirModalTratamientoMasivo, setAbrirModalTratamientoMasivo] = useState(false);
 
   // Detecta sesión activa al arrancar (persistencia automática de Firebase)
   useEffect(() => {
@@ -96,13 +97,13 @@ export default function App() {
 
       {/* === PAGE CONTENT === */}
       <div className="page-wrapper">
-        {vistaActiva === "dashboard" && <DashboardGanado usuario={usuario} />}
+        {vistaActiva === "dashboard" && <DashboardGanado usuario={usuario} abrirModalTratamientoMasivo={abrirModalTratamientoMasivo} setAbrirModalTratamientoMasivo={setAbrirModalTratamientoMasivo} />}
         {vistaActiva === "nuevo" && <NuevoAnimal onTerminar={() => setVistaActiva("dashboard")} usuario={usuario} />}
         {vistaActiva === "calendario" && <CalendarioAlertas usuario={usuario} />}
         {vistaActiva === "reportes" && <ReportesBI usuario={usuario} />}
         {vistaActiva === "importar" && <ImportadorMasivo usuario={usuario} />}
         {vistaActiva === "finanzas" && <ConfiguracionFinanciera />}
-        {vistaActiva === "rancho" && <ConfiguracionPotreros usuario={usuario} />}
+        {vistaActiva === "rancho" && <ConfiguracionPotreros usuario={usuario} onCargarTratamiento={() => { setVistaActiva("dashboard"); setAbrirModalTratamientoMasivo(true); }} />}
       </div>
 
       {/* === FAB — Registrar Animal === */}
