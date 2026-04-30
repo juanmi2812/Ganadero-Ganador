@@ -160,7 +160,10 @@ export default function ConfiguracionPotreros({ usuario, onCargarTratamiento }) 
   const guardarGrupo = async (e) => {
     e.preventDefault();
     try {
-      const grupoData = { nombre: datosFormGrupo.nombre };
+      const grupoData = { 
+        nombre: datosFormGrupo.nombre,
+        ranchoId: usuario?.ranchoId || null
+      };
       if (editandoGrupoId) {
         await updateDoc(doc(db, "grupos", editandoGrupoId), grupoData);
       } else {
