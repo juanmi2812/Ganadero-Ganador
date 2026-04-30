@@ -7,7 +7,7 @@ import { CATALOGO_EVENTOS, TIPOS_EVENTO } from "../catalogoEventos";
 const inputStyle = { width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #d1d5db", boxSizing: "border-box" };
 const labelStyle = { display: "block", fontSize: "12px", fontWeight: "bold", marginBottom: "4px", color: "#4b5563" };
 
-export default function ConfiguracionPotreros({ usuario, onCargarTratamiento }) {
+export default function ConfiguracionPotreros({ usuario }) {
   const [potreros, setPotreros] = useState([]);
   const [formActivo, setFormActivo] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
@@ -35,6 +35,14 @@ export default function ConfiguracionPotreros({ usuario, onCargarTratamiento }) 
   const [modalHistorial, setModalHistorial] = useState(false);
   const [historialPotrero, setHistorialPotrero] = useState([]);
   const [cargandoHistorial, setCargandoHistorial] = useState(false);
+
+  // Tratamiento Masivo (Rancho)
+  const [modalTratamientoRancho, setModalTratamientoRancho] = useState(false);
+  const [datosTratamientoRancho, setDatosTratamientoRancho] = useState({
+    potreroId: "Todos", tipo: "Herbicida", resultado: "", fecha: new Date().toISOString().split("T")[0], costo: ""
+  });
+  const [guardandoTratRancho, setGuardandoTratRancho] = useState(false);
+  const [exitoTratRancho, setExitoTratRancho] = useState("");
 
   useEffect(() => {
     if (!usuario?.ranchoId) return;
@@ -155,6 +163,37 @@ export default function ConfiguracionPotreros({ usuario, onCargarTratamiento }) 
     } catch (err) { console.error(err); setCargandoHistorial(false); }
   };
 
+  const guardarTratamientoRancho = async (e) => {
+    e.preventDefault();
+    setGuardandoTratRancho(true);
+    try {
+      const potrerosAfectados = datosTratamientoRancho.potreroId === "Todos" 
+        ? potreros 
+        : potreros.filter(p => p.id === datosTratamientoRancho.potreroId);
+
+      if (potrerosAfectados.length === 0) {
+        alert("No hay potreros registrados.");
+        setGuardandoTratRancho(false);
+        return;
+      }
+
+      for (const pot of potrerosAfectados) {
+        await addDoc(collection(db, "eventosPotreros"), {
+          potreroId: pot.id,
+          potreroNombre: pot.nombre,
+          tipo: datosTratamientoRancho.tipo,
+          resultado: datosTratamientoRancho.resultado,
+          fecha: datosTratamientoRancho.fecha,
+          costo: Number(datosTratamientoRancho.costo) || 0,
+          ranchoId: usuario?.ranchoId || null
+        });
+      }
+      setExitoTratRancho(`✅ Tratamiento registrado en ${potrerosAfectados.length} potreros.`);
+      setTimeout(() => { setExitoTratRancho(""); setModalTratamientoRancho(false); }, 2000);
+    } catch (err) { console.error(err); }
+    setGuardandoTratRancho(false);
+  };
+
   // ─── Grupos ───────────────────────────────────────────────────────────────────
 
   const guardarGrupo = async (e) => {
@@ -204,7 +243,11 @@ export default function ConfiguracionPotreros({ usuario, onCargarTratamiento }) 
         </div>
         <button 
           className="btn-primary" 
-          onClick={onCargarTratamiento}
+          onClick={() => {
+            setDatosTratamientoRancho({ potreroId: "Todos", tipo: "Herbicida", resultado: "", fecha: new Date().toISOString().split("T")[0], costo: "" });
+            setExitoTratRancho("");
+            setModalTratamientoRancho(true);
+          }}
           style={{ margin: 0, width: "auto", display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#16a34a", borderColor: "#16a34a", padding: "10px 20px" }}
         >
           💊 Cargar Tratamiento
@@ -552,6 +595,88 @@ export default function ConfiguracionPotreros({ usuario, onCargarTratamiento }) 
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ══ MODAL TRATAMIENTO MASIVO (RANCHO) ══════════════════════════════════════════ */}
+      {modalTratamientoRancho && (
+        <div className="modal-overlay" onClick={() => setModalTratamientoRancho(false)}>
+          <div className="modal-content" style={{ maxWidth: "480px" }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h2 style={{ margin: 0, fontSize: "18px", color: "#111827" }}>💊 Tratamiento a Potreros</h2>
+                <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: "13px" }}>Aplica insumos directamente al suelo o pasto.</p>
+              </div>
+              <button onClick={() => setModalTratamientoRancho(false)} style={{ background: "none", border: "none", cursor: "pointer" }}>
+                <X size={22} color="#9ca3af" />
+              </button>
+            </div>
+
+            {exitoTratRancho && (
+              <div className="file-status status-success" style={{ marginBottom: "14px" }}><span>{exitoTratRancho}</span></div>
+            )}
+
+            <form onSubmit={guardarTratamientoRancho}>
+              <div style={{ marginBottom: "14px" }}>
+                <label style={labelStyle}>Seleccionar Potrero(s)</label>
+                <select value={datosTratamientoRancho.potreroId}
+                  onChange={e => setDatosTratamientoRancho({ ...datosTratamientoRancho, potreroId: e.target.value })}
+                  style={{ ...inputStyle, padding: "10px 12px" }}>
+                  <option value="Todos">Todos los Potreros</option>
+                  {potreros.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                </select>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "14px" }}>
+                <div>
+                  <label style={labelStyle}>Tipo de Actividad</label>
+                  <select value={datosTratamientoRancho.tipo}
+                    onChange={e => setDatosTratamientoRancho({ ...datosTratamientoRancho, tipo: e.target.value, resultado: "" })}
+                    style={{ ...inputStyle, padding: "10px 12px" }}>
+                    {TIPOS_EVENTO.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={labelStyle}>Fecha</label>
+                  <input type="date" value={datosTratamientoRancho.fecha}
+                    onChange={e => setDatosTratamientoRancho({ ...datosTratamientoRancho, fecha: e.target.value })}
+                    style={{ ...inputStyle, padding: "10px 12px" }} required />
+                </div>
+              </div>
+
+              {CATALOGO_EVENTOS[datosTratamientoRancho.tipo]?.length > 0 ? (
+                <div style={{ marginBottom: "14px" }}>
+                  <label style={labelStyle}>Insumo / Tipo Específico</label>
+                  <select value={datosTratamientoRancho.resultado}
+                    onChange={e => setDatosTratamientoRancho({ ...datosTratamientoRancho, resultado: e.target.value })}
+                    style={{ ...inputStyle, padding: "10px 12px", border: "1px solid #3b82f6", backgroundColor: "#eff6ff" }} required>
+                    <option value="">-- Selecciona --</option>
+                    {CATALOGO_EVENTOS[datosTratamientoRancho.tipo].map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              ) : (
+                <div style={{ marginBottom: "14px" }}>
+                  <label style={labelStyle}>Detalle / Resultado</label>
+                  <input type="text" placeholder="Ej: Observación, producto usado..."
+                    value={datosTratamientoRancho.resultado}
+                    onChange={e => setDatosTratamientoRancho({ ...datosTratamientoRancho, resultado: e.target.value })}
+                    style={{ ...inputStyle, padding: "10px 12px" }} required />
+                </div>
+              )}
+
+              <div style={{ marginBottom: "18px" }}>
+                <label style={labelStyle}>Costo ($) total</label>
+                <input type="number" step="0.5" placeholder="$0.00"
+                  value={datosTratamientoRancho.costo}
+                  onChange={e => setDatosTratamientoRancho({ ...datosTratamientoRancho, costo: e.target.value })}
+                  style={{ ...inputStyle, padding: "10px 12px" }} />
+              </div>
+
+              <button type="submit" className="btn-primary" style={{ width: "100%", marginTop: 0 }} disabled={guardandoTratRancho}>
+                {guardandoTratRancho ? "Guardando..." : "Registrar Tratamiento"}
+              </button>
+            </form>
           </div>
         </div>
       )}

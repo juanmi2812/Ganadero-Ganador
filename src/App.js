@@ -103,7 +103,7 @@ export default function App() {
         {vistaActiva === "reportes" && <ReportesBI usuario={usuario} />}
         {vistaActiva === "importar" && <ImportadorMasivo usuario={usuario} />}
         {vistaActiva === "finanzas" && <ConfiguracionFinanciera />}
-        {vistaActiva === "rancho" && <ConfiguracionPotreros usuario={usuario} onCargarTratamiento={() => { setVistaActiva("dashboard"); setAbrirModalTratamientoMasivo(true); }} />}
+        {vistaActiva === "rancho" && <ConfiguracionPotreros usuario={usuario} />}
       </div>
 
       {/* === FAB — Registrar Animal === */}

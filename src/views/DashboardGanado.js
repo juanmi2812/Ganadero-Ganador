@@ -33,7 +33,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   // Tratamiento Masivo
   const [mostrarModalMasivo, setMostrarModalMasivo] = useState(false);
   const [datosMasivos, setDatosMasivos] = useState({ tipo: "Desparasitante", resultado: "", fecha: new Date().toISOString().split("T")[0], costo: "" });
-  const [filtroPotreroMasivo, setFiltroPotreroMasivo] = useState("Todos");
   const [filtroGrupoMasivo, setFiltroGrupoMasivo] = useState("Todos");
   const [guardandoMasivo, setGuardandoMasivo] = useState(false);
   const [exitoMasivo, setExitoMasivo] = useState("");
@@ -278,7 +277,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     try {
       const animalesAfectados = inventario.filter(a => {
         if (a.estado?.includes('Baja')) return false;
-        if (filtroPotreroMasivo !== "Todos" && (a.potrero || a.hectarea) !== filtroPotreroMasivo) return false;
         if (filtroGrupoMasivo !== "Todos" && a.grupo !== filtroGrupoMasivo) return false;
         return true;
       });
@@ -302,9 +300,8 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
       }
       // Crear recordatorio en Calendario si el usuario lo activó
       if (crearRecordatorio && fechaRecordatorio) {
-        const partePotrero = filtroPotreroMasivo !== "Todos" ? `Potrero: ${filtroPotreroMasivo}` : "Todos los potreros";
-        const parteGrupo = filtroGrupoMasivo !== "Todos" ? ` · Grupo: ${filtroGrupoMasivo}` : "";
-        const tituloRecord = `${datosMasivos.tipo}${datosMasivos.resultado ? ` (${datosMasivos.resultado})` : ""} — ${partePotrero}${parteGrupo}`;
+        const parteGrupo = filtroGrupoMasivo !== "Todos" ? `Grupo: ${filtroGrupoMasivo}` : "Todos los grupos";
+        const tituloRecord = `${datosMasivos.tipo}${datosMasivos.resultado ? ` (${datosMasivos.resultado})` : ""} — ${parteGrupo}`;
         await addDoc(collection(db, "alertas"), {
           fechaProgramada: fechaRecordatorio,
           titulo: tituloRecord,
@@ -312,7 +309,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
           resultado: datosMasivos.resultado,
           costo: 0,
           modoAplicacion: "masivo",
-          filtroPotrero: filtroPotreroMasivo,
           filtroGrupo: filtroGrupoMasivo,
           completada: false,
           origen: "planeado",
@@ -761,31 +757,20 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                 
                 <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{ display: "block", fontSize: "12px", marginBottom: "4px", fontWeight: "600" }}>Por Potrero</label>
-                    <select 
-                      value={filtroPotreroMasivo} 
-                      onChange={(e) => setFiltroPotreroMasivo(e.target.value)}
-                      style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #d1d5db" }}
-                    >
-                      <option value="Todos">Todos los Potreros</option>
-                      {listaPotreros.filter(p => p !== "Todos").map(p => <option key={p} value={p}>{p}</option>)}
-                    </select>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ display: "block", fontSize: "12px", marginBottom: "4px", fontWeight: "600" }}>Por Grupo</label>
+                    <label style={{ display: "block", fontSize: "12px", marginBottom: "4px", fontWeight: "600" }}>Por Grupo de Manejo</label>
                     <select 
                       value={filtroGrupoMasivo} 
                       onChange={(e) => setFiltroGrupoMasivo(e.target.value)}
                       style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #d1d5db" }}
                     >
-                      <option value="Todos">Todos los Grupos</option>
+                      <option value="Todos">Todos los Animales Activos</option>
                       {listaGrupos.filter(g => g !== "Todos").map(g => <option key={g} value={g}>{g}</option>)}
                     </select>
                   </div>
                 </div>
 
                 <div style={{ fontSize: "12px", color: "#166534", backgroundColor: "#dcfce7", padding: "8px", borderRadius: "6px" }}>
-                  <strong>Animales afectados:</strong> {inventario.filter(a => !a.estado?.includes('Baja') && (filtroPotreroMasivo === "Todos" || (a.potrero || a.hectarea) === filtroPotreroMasivo) && (filtroGrupoMasivo === "Todos" || a.grupo === filtroGrupoMasivo)).length} cabezas.
+                  <strong>Vacas/Animales afectados:</strong> {inventario.filter(a => !a.estado?.includes('Baja') && (filtroGrupoMasivo === "Todos" || a.grupo === filtroGrupoMasivo)).length} cabezas.
                 </div>
               </div>
 
