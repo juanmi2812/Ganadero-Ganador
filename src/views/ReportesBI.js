@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { collection, onSnapshot, doc, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { PieChart, Pie, Cell, Tooltip as RTTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LabelList } from "recharts";
-import { AlertCircle, DollarSign, Activity, TrendingUp, Download, FileText, FileSpreadsheet } from "lucide-react";
+import { AlertCircle, DollarSign, Activity, TrendingUp, Download, FileText, FileSpreadsheet, Info, X } from "lucide-react";
 import Header from "../components/Header";
 import {
   generarPDFVientres, generarExcelVientres,
@@ -40,6 +40,9 @@ export default function ReportesBI({ usuario }) {
   
   // Toggle Financiero
   const [vistaFinanciera, setVistaFinanciera] = useState(false);
+  
+  // Modal Info KPIs
+  const [infoKpi, setInfoKpi] = useState(null);
   
   // Módulo Productividad
   const [reporteProd, setReporteProd] = useState("");
@@ -120,14 +123,23 @@ export default function ReportesBI({ usuario }) {
   });
 
   const cabezasTotales = datosFiltrados.length;
-  const costoTotalInventario = datosFiltrados.reduce((sum, a) => sum + a.costoTotal, 0);
   
   const novillonasTotales = inventarioEnriquecido.filter(a => a.tipo === "Novillona").length;
   const novillonasAlerta = inventarioEnriquecido.filter(a => a.tipo === "Novillona" && a.estado === "Alerta: Revisión de Fertilidad").length;
   const porcentajeAlerta = novillonasTotales > 0 ? Math.round((novillonasAlerta / novillonasTotales) * 100) : 0;
 
-  const toretesVenta = inventarioEnriquecido.filter(a => a.estado === "Disponible para Venta").length;
-  const ventasProyectadas = (config && toretesVenta > 0) ? (toretesVenta * config.pesoPromedioVentaTorete * config.precioKiloMercado) : 0;
+  // --- NUEVAS MÉTRICAS ---
+  const totalVientres = inventarioEnriquecido.filter(a => a.tipo === "Vaca" || a.tipo === "Novillona").length;
+  const vientresGestantes = inventarioEnriquecido.filter(a => (a.tipo === "Vaca" || a.tipo === "Novillona") && a.estado === "Gestante").length;
+  const tasaPrenez = totalVientres > 0 ? Math.round((vientresGestantes / totalVientres) * 100) : 0;
+
+  const metricas = calcularMetricasProductividad(animales, eventos);
+  const muertesCount = metricas.mortalidad.conteoM_D + metricas.mortalidad.conteoM_V;
+  const baseMortalidad = cabezasTotales + muertesCount; // Aproximación al inventario anual
+  const tasaMortalidadGeneral = baseMortalidad > 0 ? ((muertesCount / baseMortalidad) * 100).toFixed(1) : 0;
+
+  const totalHectareas = potreros.reduce((sum, p) => sum + (parseFloat(p.hectareas) || 0), 0);
+  const cargaAnimalGlobal = totalHectareas > 0 ? (cabezasTotales / totalHectareas).toFixed(1) : 0;
 
   const procesarGraficaMetrica = () => {
      const distMap = {};
@@ -172,8 +184,6 @@ export default function ReportesBI({ usuario }) {
 
   const paletaActiva = vistaFinanciera ? COLORES_FINANZAS : COLORES_INVENTARIO;
 
-  const metricas = calcularMetricasProductividad(animales, eventos);
-
   const manejarBusquedaIndividual = (e) => {
     if(e) e.preventDefault();
     const a = animales.find(a => a.arete?.toLowerCase() === areteBusqueda.toLowerCase());
@@ -197,7 +207,7 @@ export default function ReportesBI({ usuario }) {
 
   return (
     <div className="dashboard-container" style={{ padding: "0 16px", maxWidth: "1200px", margin: "0 auto", paddingBottom: "50px" }}>
-      <Header subtitle="Filtra visualizaciones de conteo de inventario cruzadas con algoritmos financieros." />
+      <Header subtitle="Filtra visualizaciones de conteo de inventario." />
 
       <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", backgroundColor: "white", padding: "16px", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", marginBottom: "20px" }}>
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
@@ -235,25 +245,70 @@ export default function ReportesBI({ usuario }) {
         {/* Toggle oculto por peticion del usuario */}
       </div>
 
+      {/* MODAL DE INFORMACIÓN DE KPIS */}
+      {infoKpi && (
+          <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+              <div style={{ backgroundColor: "white", padding: "24px", borderRadius: "12px", maxWidth: "400px", width: "100%", position: "relative" }}>
+                  <button onClick={() => setInfoKpi(null)} style={{ position: "absolute", top: "16px", right: "16px", background: "none", border: "none", cursor: "pointer", color: "#6b7280" }}><X size={20}/></button>
+                  <h3 style={{ marginTop: 0, color: "#111827", display: "flex", alignItems: "center", gap: "8px" }}><Info size={20} color="#3b82f6"/> {infoKpi.titulo}</h3>
+                  <div style={{ color: "#4b5563", fontSize: "14px", lineHeight: "1.6", marginTop: "12px" }}>
+                      <p style={{ margin: "0 0 8px 0" }}><strong>Descripción:</strong> {infoKpi.descripcion}</p>
+                      <p style={{ margin: "0" }}><strong>Cálculo:</strong> {infoKpi.calculo}</p>
+                  </div>
+                  <button onClick={() => setInfoKpi(null)} className="btn-primary" style={{ width: "100%", marginTop: "20px" }}>Entendido</button>
+              </div>
+          </div>
+      )}
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", marginBottom: "24px" }}>
-        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #3b82f6", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
+        
+        {/* KPI 1: Volumen */}
+        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #3b82f6", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
+            <button onClick={() => setInfoKpi({titulo: "Volumen Filtrado", descripcion: "Muestra el número total de cabezas de ganado que coinciden con los filtros aplicados arriba.", calculo: "Conteo directo de animales activos en el inventario según categoría, estatus y género."})} style={{ position: "absolute", top: "12px", right: "12px", background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}><Info size={16}/></button>
             <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><Activity size={16}/> VOLUMEN FILTRADO</div>
             <div style={{ fontSize: "28px", fontWeight: "bold", color: "#111827", marginTop: "8px" }}>{cabezasTotales} <span style={{ fontSize:"14px", color: "#9ca3af"}}>cabezas</span></div>
         </div>
-        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #10b981", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
-            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><DollarSign size={16}/> COSTO DEL GRUPO</div>
-            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#111827", marginTop: "8px" }}>${Math.round(costoTotalInventario).toLocaleString()}</div>
+
+        {/* KPI 2: Tasa de Preñez */}
+        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #10b981", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
+            <button onClick={() => setInfoKpi({titulo: "Tasa de Preñez (Natalidad)", descripcion: "Mide la eficiencia reproductiva del hato, indicando qué proporción de las hembras están preñadas.", calculo: "(Vientres Gestantes / Total de Vientres en el rancho) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}><Info size={16}/></button>
+            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><TrendingUp size={16}/> TASA DE PREÑEZ</div>
+            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#10b981", marginTop: "8px" }}>{tasaPrenez}%</div>
+            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>{vientresGestantes} de {totalVientres} vientres gestantes</div>
         </div>
-        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #ef4444", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
+
+        {/* KPI 3: Tasa de Infertilidad */}
+        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #ef4444", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
+            <button onClick={() => setInfoKpi({titulo: "Tasa de Infertilidad", descripcion: "Identifica la proporción de novillonas con posible infertilidad debido a su edad avanzada sin reportar crías.", calculo: "(Novillonas ≥ 48m de edad sin parto / Total de Novillonas) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}><Info size={16}/></button>
             <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><AlertCircle size={16}/> TASA DE INFERTILIDAD</div>
             <div style={{ fontSize: "28px", fontWeight: "bold", color: "#ef4444", marginTop: "8px" }}>{porcentajeAlerta}%</div>
             <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>Novillonas ≥ 48m sin parto ({novillonasAlerta})</div>
         </div>
-        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #f59e0b", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
-            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><TrendingUp size={16}/> PROYECCIÓN DE VENTA</div>
-            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#f59e0b", marginTop: "8px" }}>${Math.round(ventasProyectadas).toLocaleString()}</div>
-            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>Por {toretesVenta} machos comerciales</div>
+
+        {/* KPI 4: Mortalidad General */}
+        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #f97316", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
+            <button onClick={() => setInfoKpi({titulo: "Índice de Bajas (Mortalidad)", descripcion: "Evalúa las pérdidas del rancho por muerte. Mantener este número bajo es vital para la rentabilidad.", calculo: "(Cabezas perdidas por muerte / Inventario base estimado) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}><Info size={16}/></button>
+            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><Activity size={16}/> ÍNDICE DE BAJAS</div>
+            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#f97316", marginTop: "8px" }}>{tasaMortalidadGeneral}%</div>
+            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>{muertesCount} bajas registradas</div>
         </div>
+
+        {/* KPI 5: Carga Animal */}
+        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #8b5cf6", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
+            <button onClick={() => setInfoKpi({titulo: "Carga Animal (Promedio)", descripcion: "Indica cuántos animales tienes pastando en promedio por cada hectárea de tu rancho.", calculo: "Total de Cabezas / Total de Hectáreas en los potreros."})} style={{ position: "absolute", top: "12px", right: "12px", background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}><Info size={16}/></button>
+            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><Activity size={16}/> CARGA ANIMAL</div>
+            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#8b5cf6", marginTop: "8px" }}>{cargaAnimalGlobal}</div>
+            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>Cabezas por hectárea</div>
+        </div>
+
+        {/* KPI 6: Desecho */}
+        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #eab308", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
+            <button onClick={() => setInfoKpi({titulo: "Tasa de Desecho (Culling)", descripcion: "Mide el porcentaje de vientres improductivos que fueron retirados o vendidos.", calculo: "(Ventas por Desecho / Total de Vacas actuales) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}><Info size={16}/></button>
+            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><AlertCircle size={16}/> TASA DE DESECHO</div>
+            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#eab308", marginTop: "8px" }}>{metricas.desecho}%</div>
+            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>{metricas.conteoDesecho} vacas de desecho</div>
+        </div>
+
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "24px" }}>
