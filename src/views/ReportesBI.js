@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { collection, onSnapshot, doc, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { PieChart, Pie, Cell, Tooltip as RTTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LabelList } from "recharts";
-import { AlertCircle, DollarSign, Activity, TrendingUp, Download, FileText, FileSpreadsheet, Info, X } from "lucide-react";
+import { AlertCircle, DollarSign, Activity, TrendingUp, Download, FileText, FileSpreadsheet, Info, X, AlertTriangle, Archive } from "lucide-react";
 import Header from "../components/Header";
 import {
   generarPDFVientres, generarExcelVientres,
@@ -264,14 +264,14 @@ export default function ReportesBI({ usuario }) {
         
         {/* KPI 1: Volumen */}
         <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #3b82f6", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
-            <button onClick={() => setInfoKpi({titulo: "Volumen Filtrado", descripcion: "Muestra el número total de cabezas de ganado que coinciden con los filtros aplicados arriba.", calculo: "Conteo directo de animales activos en el inventario según categoría, estatus y género."})} style={{ position: "absolute", top: "12px", right: "12px", background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}><Info size={16}/></button>
+            <button onClick={() => setInfoKpi({titulo: "Volumen Filtrado", descripcion: "Muestra el número total de cabezas de ganado que coinciden con los filtros aplicados arriba.", calculo: "Conteo directo de animales activos en el inventario según categoría, estatus y género."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
             <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><Activity size={16}/> VOLUMEN FILTRADO</div>
             <div style={{ fontSize: "28px", fontWeight: "bold", color: "#111827", marginTop: "8px" }}>{cabezasTotales} <span style={{ fontSize:"14px", color: "#9ca3af"}}>cabezas</span></div>
         </div>
 
         {/* KPI 2: Tasa de Preñez */}
         <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #10b981", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
-            <button onClick={() => setInfoKpi({titulo: "Tasa de Preñez (Natalidad)", descripcion: "Mide la eficiencia reproductiva del hato, indicando qué proporción de las hembras están preñadas.", calculo: "(Vientres Gestantes / Total de Vientres en el rancho) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}><Info size={16}/></button>
+            <button onClick={() => setInfoKpi({titulo: "Tasa de Preñez (Natalidad)", descripcion: "Mide la eficiencia reproductiva del hato, indicando qué proporción de las hembras están preñadas.", calculo: "(Vientres Gestantes / Total de Vientres en el rancho) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
             <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><TrendingUp size={16}/> TASA DE PREÑEZ</div>
             <div style={{ fontSize: "28px", fontWeight: "bold", color: "#10b981", marginTop: "8px" }}>{tasaPrenez}%</div>
             <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>{vientresGestantes} de {totalVientres} vientres gestantes</div>
@@ -279,15 +279,15 @@ export default function ReportesBI({ usuario }) {
 
         {/* KPI 3: Tasa de Infertilidad */}
         <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #ef4444", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
-            <button onClick={() => setInfoKpi({titulo: "Tasa de Infertilidad", descripcion: "Identifica la proporción de novillonas con posible infertilidad debido a su edad avanzada sin reportar crías.", calculo: "(Novillonas ≥ 48m de edad sin parto / Total de Novillonas) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}><Info size={16}/></button>
-            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><AlertCircle size={16}/> TASA DE INFERTILIDAD</div>
+            <button onClick={() => setInfoKpi({titulo: "Tasa de Infertilidad", descripcion: "Identifica la proporción de novillonas con posible infertilidad debido a su edad avanzada sin reportar crías.", calculo: "(Novillonas ≥ 48m de edad sin parto / Total de Novillonas) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
+            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><AlertTriangle size={16}/> TASA DE INFERTILIDAD</div>
             <div style={{ fontSize: "28px", fontWeight: "bold", color: "#ef4444", marginTop: "8px" }}>{porcentajeAlerta}%</div>
             <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>Novillonas ≥ 48m sin parto ({novillonasAlerta})</div>
         </div>
 
         {/* KPI 4: Mortalidad General */}
         <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #f97316", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
-            <button onClick={() => setInfoKpi({titulo: "Índice de Bajas (Mortalidad)", descripcion: "Evalúa las pérdidas del rancho por muerte. Mantener este número bajo es vital para la rentabilidad.", calculo: "(Cabezas perdidas por muerte / Inventario base estimado) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}><Info size={16}/></button>
+            <button onClick={() => setInfoKpi({titulo: "Índice de Bajas (Mortalidad)", descripcion: "Evalúa las pérdidas del rancho por muerte. Mantener este número bajo es vital para la rentabilidad.", calculo: "(Cabezas perdidas por muerte / Inventario base estimado) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
             <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><Activity size={16}/> ÍNDICE DE BAJAS</div>
             <div style={{ fontSize: "28px", fontWeight: "bold", color: "#f97316", marginTop: "8px" }}>{tasaMortalidadGeneral}%</div>
             <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>{muertesCount} bajas registradas</div>
@@ -295,7 +295,7 @@ export default function ReportesBI({ usuario }) {
 
         {/* KPI 5: Carga Animal */}
         <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #8b5cf6", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
-            <button onClick={() => setInfoKpi({titulo: "Carga Animal (Promedio)", descripcion: "Indica cuántos animales tienes pastando en promedio por cada hectárea de tu rancho.", calculo: "Total de Cabezas / Total de Hectáreas en los potreros."})} style={{ position: "absolute", top: "12px", right: "12px", background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}><Info size={16}/></button>
+            <button onClick={() => setInfoKpi({titulo: "Carga Animal (Promedio)", descripcion: "Indica cuántos animales tienes pastando en promedio por cada hectárea de tu rancho.", calculo: "Total de Cabezas / Total de Hectáreas en los potreros."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
             <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><Activity size={16}/> CARGA ANIMAL</div>
             <div style={{ fontSize: "28px", fontWeight: "bold", color: "#8b5cf6", marginTop: "8px" }}>{cargaAnimalGlobal}</div>
             <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>Cabezas por hectárea</div>
@@ -303,8 +303,8 @@ export default function ReportesBI({ usuario }) {
 
         {/* KPI 6: Desecho */}
         <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #eab308", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
-            <button onClick={() => setInfoKpi({titulo: "Tasa de Desecho (Culling)", descripcion: "Mide el porcentaje de vientres improductivos que fueron retirados o vendidos.", calculo: "(Ventas por Desecho / Total de Vacas actuales) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}><Info size={16}/></button>
-            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><AlertCircle size={16}/> TASA DE DESECHO</div>
+            <button onClick={() => setInfoKpi({titulo: "Tasa de Desecho (Culling)", descripcion: "Mide el porcentaje de vientres improductivos que fueron retirados o vendidos.", calculo: "(Ventas por Desecho / Total de Vacas actuales) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
+            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><Archive size={16}/> TASA DE DESECHO</div>
             <div style={{ fontSize: "28px", fontWeight: "bold", color: "#eab308", marginTop: "8px" }}>{metricas.desecho}%</div>
             <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>{metricas.conteoDesecho} vacas de desecho</div>
         </div>

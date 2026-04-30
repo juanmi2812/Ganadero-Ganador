@@ -26,7 +26,7 @@ export default function ConfiguracionPotreros({ usuario }) {
   const [modalTratamiento, setModalTratamiento] = useState(false);
   const [potreroActivo, setPotreroActivo] = useState(null);
   const [datosTratamiento, setDatosTratamiento] = useState({
-    tipo: "Desparasitante", resultado: "", fecha: new Date().toISOString().split("T")[0], costo: ""
+    tipo: "Desparasitante", resultado: "", fecha: new Date().toISOString().split("T")[0]
   });
   const [guardandoTrat, setGuardandoTrat] = useState(false);
   const [exitoTrat, setExitoTrat] = useState("");
@@ -39,8 +39,10 @@ export default function ConfiguracionPotreros({ usuario }) {
   // Tratamiento Masivo (Rancho)
   const [modalTratamientoRancho, setModalTratamientoRancho] = useState(false);
   const [datosTratamientoRancho, setDatosTratamientoRancho] = useState({
-    potreroId: "Todos", tipo: "Herbicida", resultado: "", fecha: new Date().toISOString().split("T")[0], costo: ""
+    potreroId: "Todos", tipo: "Herbicida", resultado: "", fecha: new Date().toISOString().split("T")[0]
   });
+  const [crearRecordatorio, setCrearRecordatorio] = useState(false);
+  const [fechaRecordatorio, setFechaRecordatorio] = useState("");
   const [guardandoTratRancho, setGuardandoTratRancho] = useState(false);
   const [exitoTratRancho, setExitoTratRancho] = useState("");
 
@@ -137,11 +139,10 @@ export default function ConfiguracionPotreros({ usuario }) {
         tipo: datosTratamiento.tipo,
         resultado: datosTratamiento.resultado,
         fecha: datosTratamiento.fecha,
-        costo: Number(datosTratamiento.costo) || 0,
         ranchoId: usuario?.ranchoId || null
       });
       setExitoTrat(`✅ Tratamiento registrado en ${potreroActivo.nombre}`);
-      setDatosTratamiento({ tipo: "Desparasitante", resultado: "", fecha: new Date().toISOString().split("T")[0], costo: "" });
+      setDatosTratamiento({ tipo: "Desparasitante", resultado: "", fecha: new Date().toISOString().split("T")[0] });
       setTimeout(() => { setExitoTrat(""); setModalTratamiento(false); }, 2000);
     } catch (err) { console.error(err); }
     setGuardandoTrat(false);
@@ -184,11 +185,30 @@ export default function ConfiguracionPotreros({ usuario }) {
           tipo: datosTratamientoRancho.tipo,
           resultado: datosTratamientoRancho.resultado,
           fecha: datosTratamientoRancho.fecha,
-          costo: Number(datosTratamientoRancho.costo) || 0,
           ranchoId: usuario?.ranchoId || null
         });
       }
+
+      if (crearRecordatorio && fechaRecordatorio) {
+        const partePotrero = datosTratamientoRancho.potreroId !== "Todos" 
+            ? `Potrero: ${potreros.find(p => p.id === datosTratamientoRancho.potreroId)?.nombre || "Desconocido"}` 
+            : "Todos los potreros";
+        const tituloRecord = `${datosTratamientoRancho.tipo}${datosTratamientoRancho.resultado ? ` (${datosTratamientoRancho.resultado})` : ""} — ${partePotrero}`;
+        await addDoc(collection(db, "alertas"), {
+          fechaProgramada: fechaRecordatorio,
+          titulo: tituloRecord,
+          tipo: datosTratamientoRancho.tipo,
+          resultado: datosTratamientoRancho.resultado,
+          modoAplicacion: "masivo_potreros",
+          completada: false,
+          origen: "planeado",
+          ranchoId: usuario?.ranchoId || null
+        });
+      }
+
       setExitoTratRancho(`✅ Tratamiento registrado en ${potrerosAfectados.length} potreros.`);
+      setCrearRecordatorio(false);
+      setFechaRecordatorio("");
       setTimeout(() => { setExitoTratRancho(""); setModalTratamientoRancho(false); }, 2000);
     } catch (err) { console.error(err); }
     setGuardandoTratRancho(false);
@@ -244,7 +264,7 @@ export default function ConfiguracionPotreros({ usuario }) {
         <button 
           className="btn-primary" 
           onClick={() => {
-            setDatosTratamientoRancho({ potreroId: "Todos", tipo: "Herbicida", resultado: "", fecha: new Date().toISOString().split("T")[0], costo: "" });
+            setDatosTratamientoRancho({ potreroId: "Todos", tipo: "Herbicida", resultado: "", fecha: new Date().toISOString().split("T")[0] });
             setExitoTratRancho("");
             setModalTratamientoRancho(true);
           }}
@@ -547,13 +567,7 @@ export default function ConfiguracionPotreros({ usuario }) {
                 </div>
               )}
 
-              <div style={{ marginBottom: "18px" }}>
-                <label style={labelStyle}>Costo ($)</label>
-                <input type="number" step="0.5" placeholder="$0.00"
-                  value={datosTratamiento.costo}
-                  onChange={e => setDatosTratamiento({ ...datosTratamiento, costo: e.target.value })}
-                  style={{ ...inputStyle, padding: "10px 12px" }} />
-              </div>
+
 
               <button type="submit" className="btn-primary" style={{ width: "100%", marginTop: 0 }} disabled={guardandoTrat}>
                 {guardandoTrat ? "Guardando..." : "Registrar Tratamiento"}
@@ -665,12 +679,36 @@ export default function ConfiguracionPotreros({ usuario }) {
                 </div>
               )}
 
-              <div style={{ marginBottom: "18px" }}>
-                <label style={labelStyle}>Costo ($) total</label>
-                <input type="number" step="0.5" placeholder="$0.00"
-                  value={datosTratamientoRancho.costo}
-                  onChange={e => setDatosTratamientoRancho({ ...datosTratamientoRancho, costo: e.target.value })}
-                  style={{ ...inputStyle, padding: "10px 12px" }} />
+              <div style={{ marginBottom: "15px", padding: "10px", backgroundColor: "#f0fdf4", borderRadius: "8px", border: "1px solid #bbf7d0" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px", color: "#166534" }}>
+                  <input
+                    type="checkbox"
+                    checked={crearRecordatorio}
+                    onChange={e => setCrearRecordatorio(e.target.checked)}
+                    style={{ width: "16px", height: "16px", accentColor: "#16a34a" }}
+                  />
+                  📅 Programar recordatorio en el Calendario
+                </label>
+                {crearRecordatorio && (
+                  <div style={{ marginTop: "10px" }}>
+                    <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#14532d" }}>Fecha del Recordatorio</label>
+                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      <input
+                        type="date"
+                        value={fechaRecordatorio}
+                        onChange={e => setFechaRecordatorio(e.target.value)}
+                        style={{ flex: 1, padding: "8px", border: "1px solid #22c55e", borderRadius: "6px" }}
+                      />
+                      <button type="button" onClick={() => {
+                        const d = new Date(datosTratamientoRancho.fecha + "T00:00:00");
+                        d.setDate(d.getDate() - 1);
+                        setFechaRecordatorio(d.toISOString().split("T")[0]);
+                      }} style={{ fontSize: "11px", padding: "6px 10px", border: "1px solid #22c55e", borderRadius: "6px", backgroundColor: "#dcfce7", color: "#15803d", cursor: "pointer", whiteSpace: "nowrap" }}>
+                        1 día antes
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button type="submit" className="btn-primary" style={{ width: "100%", marginTop: 0 }} disabled={guardandoTratRancho}>

@@ -732,7 +732,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                 <div key={ev.id} style={{ padding: "8px", borderBottom: "1px solid #eee", fontSize: "13px", display: "flex", justifyContent: "space-between" }}>
                   <span>
                     <strong>{ev.tipo}:</strong> {ev.resultado} {ev.tipo === "Repeso" ? "kg" : ""}
-                    {ev.costo > 0 && <span style={{ color: "#ef4444", marginLeft: "8px", fontSize: "11px" }}>($ {ev.costo})</span>}
                   </span>
                   <span style={{ color: "#9ca3af" }}>{ev.fecha}</span>
                 </div>
