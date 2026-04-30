@@ -21,3 +21,17 @@ export const CATALOGO_EVENTOS = {
 };
 
 export const TIPOS_EVENTO = Object.keys(CATALOGO_EVENTOS);
+
+// Tipos exclusivos para tratamientos de GANADO (excluye insumos de campo)
+export const TIPOS_EVENTO_GANADO = TIPOS_EVENTO.filter(
+  t => !["Herbicida", "Fertilizante", "Plaguicida"].includes(t)
+);
+
+// Tipos exclusivos para tratamientos de POTREROS
+export const CATALOGO_EVENTOS_POTRERO = {
+  "Herbicida": ["Picloram", "24D", "Paraquat"],
+  "Fertilizante": ["Urea", "DAP", "Sulfato de amonio", "Triple 17"],
+  "Plaguicida": ["Cipermetrina"],
+  "Riego": [],
+};
+export const TIPOS_EVENTO_POTRERO = Object.keys(CATALOGO_EVENTOS_POTRERO);

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, Map, ShieldAlert, X, ClipboardList } from "lucide-react";
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where } from "firebase/firestore";
 import { db } from "../firebase";
-import { CATALOGO_EVENTOS, TIPOS_EVENTO } from "../catalogoEventos";
+import { CATALOGO_EVENTOS_POTRERO, TIPOS_EVENTO_POTRERO } from "../catalogoEventos";
 
 const inputStyle = { width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #d1d5db", boxSizing: "border-box" };
 const labelStyle = { display: "block", fontSize: "12px", fontWeight: "bold", marginBottom: "4px", color: "#4b5563" };
@@ -536,7 +536,7 @@ export default function ConfiguracionPotreros({ usuario }) {
                   <select value={datosTratamiento.tipo}
                     onChange={e => setDatosTratamiento({ ...datosTratamiento, tipo: e.target.value, resultado: "" })}
                     style={{ ...inputStyle, padding: "10px 12px" }}>
-                    {TIPOS_EVENTO.map(t => <option key={t} value={t}>{t}</option>)}
+                    {TIPOS_EVENTO_POTRERO.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
@@ -547,14 +547,14 @@ export default function ConfiguracionPotreros({ usuario }) {
                 </div>
               </div>
 
-              {CATALOGO_EVENTOS[datosTratamiento.tipo]?.length > 0 ? (
+              {CATALOGO_EVENTOS_POTRERO[datosTratamiento.tipo]?.length > 0 ? (
                 <div style={{ marginBottom: "14px" }}>
                   <label style={labelStyle}>Insumo / Tipo Específico</label>
                   <select value={datosTratamiento.resultado}
                     onChange={e => setDatosTratamiento({ ...datosTratamiento, resultado: e.target.value })}
                     style={{ ...inputStyle, padding: "10px 12px", border: "1px solid #3b82f6", backgroundColor: "#eff6ff" }} required>
                     <option value="">-- Selecciona --</option>
-                    {CATALOGO_EVENTOS[datosTratamiento.tipo].map(s => <option key={s} value={s}>{s}</option>)}
+                    {CATALOGO_EVENTOS_POTRERO[datosTratamiento.tipo].map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
               ) : (
@@ -648,7 +648,7 @@ export default function ConfiguracionPotreros({ usuario }) {
                   <select value={datosTratamientoRancho.tipo}
                     onChange={e => setDatosTratamientoRancho({ ...datosTratamientoRancho, tipo: e.target.value, resultado: "" })}
                     style={{ ...inputStyle, padding: "10px 12px" }}>
-                    {TIPOS_EVENTO.map(t => <option key={t} value={t}>{t}</option>)}
+                    {TIPOS_EVENTO_POTRERO.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
@@ -659,14 +659,14 @@ export default function ConfiguracionPotreros({ usuario }) {
                 </div>
               </div>
 
-              {CATALOGO_EVENTOS[datosTratamientoRancho.tipo]?.length > 0 ? (
+              {CATALOGO_EVENTOS_POTRERO[datosTratamientoRancho.tipo]?.length > 0 ? (
                 <div style={{ marginBottom: "14px" }}>
                   <label style={labelStyle}>Insumo / Tipo Específico</label>
                   <select value={datosTratamientoRancho.resultado}
                     onChange={e => setDatosTratamientoRancho({ ...datosTratamientoRancho, resultado: e.target.value })}
                     style={{ ...inputStyle, padding: "10px 12px", border: "1px solid #3b82f6", backgroundColor: "#eff6ff" }} required>
                     <option value="">-- Selecciona --</option>
-                    {CATALOGO_EVENTOS[datosTratamientoRancho.tipo].map(s => <option key={s} value={s}>{s}</option>)}
+                    {CATALOGO_EVENTOS_POTRERO[datosTratamientoRancho.tipo].map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
               ) : (

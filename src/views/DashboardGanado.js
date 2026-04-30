@@ -4,7 +4,7 @@ import { collection, onSnapshot, addDoc, query, where, doc, updateDoc, getDocs }
 import { differenceInMonths } from "date-fns";
 import { db } from "../firebase";
 import Header from "../components/Header";
-import { CATALOGO_EVENTOS, TIPOS_EVENTO } from "../catalogoEventos";
+import { CATALOGO_EVENTOS, TIPOS_EVENTO_GANADO } from "../catalogoEventos";
 
 export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, setAbrirModalTratamientoMasivo }) {
   // --- ESTADOS ---
@@ -694,7 +694,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
             {mostrandoFormulario && (
               <form onSubmit={guardarEvento} style={{ padding: "15px", background: "#f9fafb", borderRadius: "8px", marginBottom: "15px" }}>
                 <select value={datosEvento.tipo} onChange={(e) => setDatosEvento({...datosEvento, tipo: e.target.value, resultado: ""})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }}>
-                  {TIPOS_EVENTO.map(t => <option key={t} value={t}>{t}</option>)}
+                  {TIPOS_EVENTO_GANADO.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
 
                 {CATALOGO_EVENTOS[datosEvento.tipo]?.length > 0 && (
@@ -775,7 +775,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
 
               {/* Formulario del evento */}
               <select value={datosMasivos.tipo} onChange={(e) => setDatosMasivos({...datosMasivos, tipo: e.target.value, resultado: ""})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #16a34a", borderRadius: "4px", backgroundColor: "#f0fdf4" }} required>
-                {TIPOS_EVENTO.map(t => <option key={t} value={t}>{t}</option>)}
+                {TIPOS_EVENTO_GANADO.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
 
               {CATALOGO_EVENTOS[datosMasivos.tipo]?.length > 0 && (
