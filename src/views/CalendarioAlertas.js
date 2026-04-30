@@ -12,20 +12,27 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 const locales = { es: es };
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
 
-// ── Render minimalista de eventos en el calendario ────────────────────────────
-function EventoMinimalista({ event }) {
+// ── Chip clickeable de eventos en el calendario ───────────────────────────────
+function EventoChip({ event }) {
   const hoy = new Date(); hoy.setHours(0,0,0,0);
-  const color = event.completada ? "#10b981"
+  const bg = event.completada ? "#dcfce7"
+    : isBefore(event.start, hoy) ? "#fee2e2"
+    : "#dbeafe";
+  const color = event.completada ? "#166534"
+    : isBefore(event.start, hoy) ? "#b91c1c"
+    : "#1e40af";
+  const dot = event.completada ? "#10b981"
     : isBefore(event.start, hoy) ? "#ef4444"
     : "#3b82f6";
   return (
-    <div title={event.title} style={{ display: "flex", alignItems: "center", gap: "4px", padding: "2px 4px" }}>
-      <span style={{
-        display: "inline-block", width: "8px", height: "8px",
-        borderRadius: "50%", backgroundColor: color, flexShrink: 0,
-      }} />
-      <span style={{ fontSize: "11px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#1f2937" }}>
-        {event.title}
+    <div title={event.title} style={{
+      display: "flex", alignItems: "center", gap: "4px",
+      backgroundColor: bg, borderRadius: "4px",
+      padding: "2px 6px", margin: "1px 0", cursor: "pointer",
+    }}>
+      <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: dot, flexShrink: 0 }} />
+      <span style={{ fontSize: "11px", fontWeight: "600", color, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {event.tipo || event.title}
       </span>
     </div>
   );
@@ -34,6 +41,7 @@ function EventoMinimalista({ event }) {
 export default function CalendarioAlertas({ usuario }) {
   const [eventosCalendario, setEventosCalendario] = useState([]);
   const [alertasPlaneadas, setAlertasPlaneadas] = useState([]);
+  const [alertaDetalle, setAlertaDetalle] = useState(null);
   const [vista, setVista] = useState("month");
   const [fechaActual, setFechaActual] = useState(new Date());
 
@@ -85,12 +93,18 @@ export default function CalendarioAlertas({ usuario }) {
           return {
             id: a.id,
             title: a.titulo || a.tipo || "Actividad",
+            tipo: a.tipo,
+            resultado: a.resultado,
+            modoAplicacion: a.modoAplicacion,
+            animalId: a.animalId,
+            filtroPotrero: a.filtroPotrero,
+            filtroGrupo: a.filtroGrupo,
             start: new Date(y, m - 1, d),
             end: new Date(y, m - 1, d),
             allDay: true,
-            tipo: "alerta",
             completada: a.completada,
             origen: a.origen,
+            rawId: a.id,
           };
         });
 
@@ -249,11 +263,15 @@ export default function CalendarioAlertas({ usuario }) {
           culture="es"
           messages={{ next: "Sig", previous: "Ant", today: "Hoy", month: "Mes", week: "Semana", day: "Día", showMore: total => `+${total} más` }}
           eventPropGetter={estiloDeEventos}
-          components={{ event: EventoMinimalista }}
+          components={{ event: EventoChip }}
           view={vista}
           onView={setVista}
           date={fechaActual}
           onNavigate={setFechaActual}
+          onSelectEvent={(event) => {
+            const alerta = alertasPlaneadas.find(a => a.id === event.rawId);
+            if (alerta) setAlertaDetalle(alerta);
+          }}
           onSelectSlot={(slotInfo) => {
             setDatosEvento(d => ({ ...d, fecha: slotInfo.start.toISOString().split("T")[0] }));
             setMostrarModal(true);
@@ -367,6 +385,49 @@ export default function CalendarioAlertas({ usuario }) {
           )
         )}
       </div>
+
+      {/* ══ MODAL DETALLE ACTIVIDAD ══════════════════════════════════════════════ */}
+      {alertaDetalle && (() => {
+        const hoyD = new Date(); hoyD.setHours(0,0,0,0);
+        const fechaD = new Date(alertaDetalle.fechaProgramada + "T00:00:00");
+        const estadoD = alertaDetalle.completada ? { label: "Realizada", bg: "#dcfce7", color: "#166534" }
+          : isBefore(fechaD, hoyD) ? { label: "No realizada", bg: "#fee2e2", color: "#dc2626" }
+          : { label: "Pendiente", bg: "#fef9c3", color: "#854d0e" };
+        const objetivo = alertaDetalle.modoAplicacion === "individual"
+          ? (alertaDetalle.titulo?.split("—")[1]?.trim() || "")
+          : alertaDetalle.filtroPotrero && alertaDetalle.filtroPotrero !== "Todos"
+            ? `Potrero: ${alertaDetalle.filtroPotrero}`
+            : alertaDetalle.filtroGrupo && alertaDetalle.filtroGrupo !== "Todos"
+              ? `Grupo: ${alertaDetalle.filtroGrupo}`
+              : "Todo el hato";
+        return (
+          <div className="modal-overlay" onClick={() => setAlertaDetalle(null)}>
+            <div className="modal-content" style={{ maxWidth: "400px" }} onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2 style={{ margin: 0, fontSize: "18px" }}>📋 Detalle de Actividad</h2>
+                <button onClick={() => setAlertaDetalle(null)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={22} color="#9ca3af" /></button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "4px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: "20px", fontWeight: "700", color: "#111827" }}>{alertaDetalle.tipo}</span>
+                  <span style={{ fontSize: "12px", fontWeight: "600", padding: "4px 10px", borderRadius: "12px", backgroundColor: estadoD.bg, color: estadoD.color }}>{estadoD.label}</span>
+                </div>
+                {alertaDetalle.resultado && <div style={{ backgroundColor: "#f9fafb", borderRadius: "8px", padding: "10px 12px", fontSize: "14px", color: "#374151" }}><strong>Insumo:</strong> {alertaDetalle.resultado}</div>}
+                <div style={{ backgroundColor: "#f9fafb", borderRadius: "8px", padding: "10px 12px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  <div><div style={{ fontSize: "11px", color: "#6b7280", fontWeight: "600" }}>FECHA</div><div style={{ fontSize: "14px", fontWeight: "600", color: "#111827" }}>{alertaDetalle.fechaProgramada}</div></div>
+                  <div><div style={{ fontSize: "11px", color: "#6b7280", fontWeight: "600" }}>OBJETIVO</div><div style={{ fontSize: "14px", fontWeight: "600", color: "#111827" }}>{objetivo || "—"}</div></div>
+                </div>
+                {!alertaDetalle.completada && (
+                  <button onClick={async () => { await marcarRealizada(alertaDetalle.id); setAlertaDetalle(null); }}
+                    className="btn-primary" style={{ width: "100%", marginTop: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                    <CheckCircle2 size={18} /> Marcar como Realizada
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ══ MODAL PLANEAR ACTIVIDAD ══════════════════════════════════════════════ */}
       {mostrarModal && (
