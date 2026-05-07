@@ -281,16 +281,25 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     } catch (error) { console.error(error); }
   };
 
+  const obtenerAnimalesAfectadosMasivo = (tipoEvento, grupo) => {
+    return inventario.filter(a => {
+      if (a.estado?.includes('Baja')) return false;
+      if (grupo !== "Todos" && a.grupo !== grupo) return false;
+      
+      // Filtros Inteligentes: Solo hembras para eventos reproductivos
+      const soloHembras = ["Palpación", "Parto", "Inseminación"].includes(tipoEvento);
+      if (soloHembras && a.sexo?.toLowerCase() !== "hembra") return false;
+      
+      return true;
+    });
+  };
+
   const guardarEventoMasivo = async (e) => {
     e.preventDefault();
     setGuardandoMasivo(true);
     setExitoMasivo("");
     try {
-      const animalesAfectados = inventario.filter(a => {
-        if (a.estado?.includes('Baja')) return false;
-        if (filtroGrupoMasivo !== "Todos" && a.grupo !== filtroGrupoMasivo) return false;
-        return true;
-      });
+      const animalesAfectados = obtenerAnimalesAfectadosMasivo(datosMasivos.tipo, filtroGrupoMasivo);
 
       if (animalesAfectados.length === 0) {
         alert("No hay animales que coincidan con estos filtros.");
@@ -795,7 +804,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                 </div>
 
                 <div style={{ fontSize: "12px", color: "#166534", backgroundColor: "#dcfce7", padding: "8px", borderRadius: "6px" }}>
-                  <strong>Vacas/Animales afectados:</strong> {inventario.filter(a => !a.estado?.includes('Baja') && (filtroGrupoMasivo === "Todos" || a.grupo === filtroGrupoMasivo)).length} cabezas.
+                  <strong>{["Palpación", "Parto", "Inseminación"].includes(datosMasivos.tipo) ? "Vientres/Hembras" : "Animales"} afectados:</strong> {obtenerAnimalesAfectadosMasivo(datosMasivos.tipo, filtroGrupoMasivo).length} cabezas.
                 </div>
               </div>
 
