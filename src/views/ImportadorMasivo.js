@@ -501,73 +501,77 @@ export default function ImportadorMasivo({ usuario }) {
       return d.toISOString().split('T')[0];
     };
 
-    const potrerosDemo = [
-      { nombre: "Potrero Norte", hectareas: 50, tipoPastoNombre: "Bermudas", porcentajePasto: 85, tipoPastoTamano: "corto", divisiones: ["Sección A", "Sección B"] },
-      { nombre: "Potrero Sur", hectareas: 100, tipoPastoNombre: "Estrella", porcentajePasto: 90, tipoPastoTamano: "mediano", divisiones: ["Sección 1", "Sección 2", "Sección 3"] },
-      { nombre: "Potrero Maternidad", hectareas: 20, tipoPastoNombre: "Pangola", porcentajePasto: 95, tipoPastoTamano: "corto", divisiones: ["Lote Único"] },
-      { nombre: "Corral Engorda", hectareas: 5, tipoPastoNombre: "Taiwán", porcentajePasto: 100, tipoPastoTamano: "corte", divisiones: ["Corral 1", "Corral 2"] },
-      { nombre: "Pradera Abierta", hectareas: 200, tipoPastoNombre: "Mombasa", porcentajePasto: 80, tipoPastoTamano: "alto", divisiones: ["Este", "Oeste", "Norte"] }
-    ];
+    const potrerosDemo = [];
+    const tiposPasto = ["Bermudas", "Estrella", "Pangola", "Taiwán", "Mombasa", "Brachiaria", "Guinea"];
+    for (let i = 1; i <= 38; i++) {
+      potrerosDemo.push({
+        nombre: `Potrero #${i.toString().padStart(2, '0')}`,
+        hectareas: getRandomInt(5, 40),
+        tipoPastoNombre: getRandom(tiposPasto),
+        porcentajePasto: getRandomInt(60, 95),
+        tipoPastoTamano: getRandom(["corto", "mediano", "alto", "corte"]),
+        divisiones: i % 5 === 0 ? ["Lote A", "Lote B"] : ["Lote Único"]
+      });
+    }
     const potrerosNombres = potrerosDemo.map(p => p.nombre);
 
     const gruposDemo = [
-      { nombre: "Vacas" },
-      { nombre: "Crías Lactantes" },
-      { nombre: "Desarrollo" },
-      { nombre: "Engorda" },
-      { nombre: "Sementales" }
+      { nombre: "Vacas de Cría" },
+      { nombre: "Novillonas Reemplazo" },
+      { nombre: "Lote Engorda" },
+      { nombre: "Lote Desarrollo" },
+      { nombre: "Sementales" },
+      { nombre: "Maternidad" }
     ];
 
     const animalesAGenerar = [];
 
-    for(let i=0; i<70; i++){
+    // 112 animales totales (75% de 150)
+    for(let i=0; i<50; i++){
       animalesAGenerar.push({
         arete: `VC-${getRandomInt(1000, 9999)}`,
         tipo: "Vaca", sexo: "Hembra", raza: getRandom(razas),
-        fechaNacimiento: restarMesesAFecha(getRandomInt(50, 120)),
-        pesoActual: getRandomInt(400, 650),
-        estado: Math.random() > 0.05 ? "Sano" : "Desecho",
-        potrero: getRandom(potrerosNombres), grupo: "Vacas",
-        fechaRegistro: new Date().toISOString().split('T')[0],
-        ranchoId: usuario?.ranchoId
-      });
-    }
-    for(let i=0; i<20; i++){
-      const meses = getRandomInt(14, 52);
-      animalesAGenerar.push({
-        arete: `NV-${getRandomInt(1000, 9999)}`,
-        tipo: "Novillona", sexo: "Hembra", raza: getRandom(razas),
-        fechaNacimiento: restarMesesAFecha(meses),
-        pesoActual: getRandomInt(280, 420),
-        estado: meses >= 48 ? "Alerta: Revisión de Fertilidad" : "Sano",
-        potrero: getRandom(potrerosNombres), grupo: "Desarrollo",
-        madre: `VC-${getRandomInt(1000, 9999)}`, padre: `SM-${getRandomInt(100, 999)}`,
+        fechaNacimiento: restarMesesAFecha(getRandomInt(48, 120)),
+        pesoActual: getRandomInt(450, 600),
+        estado: "Sano",
+        potrero: getRandom(potrerosNombres), grupo: "Vacas de Cría",
         fechaRegistro: new Date().toISOString().split('T')[0],
         ranchoId: usuario?.ranchoId
       });
     }
     for(let i=0; i<15; i++){
       animalesAGenerar.push({
-        arete: `TR-${getRandomInt(1000, 9999)}`,
-        tipo: "Torete", sexo: "Macho", raza: getRandom(razas),
-        fechaNacimiento: restarMesesAFecha(getRandomInt(12, 30)),
-        pesoActual: getRandomInt(350, 500),
-        estado: Math.random() > 0.2 ? "Disponible para Venta" : "Sano",
-        potrero: getRandom(potrerosNombres), grupo: "Engorda",
+        arete: `NV-${getRandomInt(1000, 9999)}`,
+        tipo: "Novillona", sexo: "Hembra", raza: getRandom(razas),
+        fechaNacimiento: restarMesesAFecha(getRandomInt(18, 30)),
+        pesoActual: getRandomInt(320, 420),
+        estado: "Sano",
+        potrero: getRandom(potrerosNombres), grupo: "Novillonas Reemplazo",
         fechaRegistro: new Date().toISOString().split('T')[0],
         ranchoId: usuario?.ranchoId
       });
     }
-    for(let i=0; i<40; i++){
+    for(let i=0; i<12; i++){
+      animalesAGenerar.push({
+        arete: `TR-${getRandomInt(1000, 9999)}`,
+        tipo: "Torete", sexo: "Macho", raza: getRandom(razas),
+        fechaNacimiento: restarMesesAFecha(getRandomInt(14, 24)),
+        pesoActual: getRandomInt(380, 550),
+        estado: "Sano",
+        potrero: getRandom(potrerosNombres), grupo: "Lote Engorda",
+        fechaRegistro: new Date().toISOString().split('T')[0],
+        ranchoId: usuario?.ranchoId
+      });
+    }
+    for(let i=0; i<30; i++){
       const esMacho = Math.random() > 0.5;
       animalesAGenerar.push({
         arete: `CR-${getRandomInt(1000, 9999)}`,
         tipo: esMacho ? "Becerro" : "Becerra", sexo: esMacho ? "Macho" : "Hembra", raza: getRandom(razas),
-        fechaNacimiento: restarMesesAFecha(getRandomInt(2, 11)),
-        pesoActual: getRandomInt(80, 220),
+        fechaNacimiento: restarMesesAFecha(getRandomInt(4, 12)),
+        pesoActual: getRandomInt(120, 250),
         estado: "Sano",
-        potrero: getRandom(potrerosNombres), grupo: "Crías Lactantes",
-        madre: `VC-${getRandomInt(1000, 9999)}`, padre: `SM-${getRandomInt(100, 999)}`,
+        potrero: getRandom(potrerosNombres), grupo: "Lote Desarrollo",
         fechaRegistro: new Date().toISOString().split('T')[0],
         ranchoId: usuario?.ranchoId
       });
@@ -577,7 +581,7 @@ export default function ImportadorMasivo({ usuario }) {
         arete: `SM-${getRandomInt(100, 999)}`,
         tipo: "Semental", sexo: "Macho", raza: getRandom(razas),
         fechaNacimiento: restarMesesAFecha(getRandomInt(60, 100)),
-        pesoActual: getRandomInt(800, 1100),
+        pesoActual: getRandomInt(850, 1050),
         estado: "Sano",
         potrero: getRandom(potrerosNombres), grupo: "Sementales",
         fechaRegistro: new Date().toISOString().split('T')[0],
@@ -612,55 +616,57 @@ export default function ImportadorMasivo({ usuario }) {
         const animal  = animalesAGenerar[i];
         const misPromesas = [];
 
+        // Historial de Peso (Mínimo 2 pesajes para GDP)
         if (["Becerro","Becerra","Novillona","Torete"].includes(animal.tipo)) {
           misPromesas.push(addDoc(collection(db, "eventos"), {
             animalId, tipo: "Repeso",
-            resultado: `${getRandomInt(animal.pesoActual - 40, animal.pesoActual - 10)} kg`,
-            fecha: restarMesesAFecha(getRandomInt(2, 4)), costo: 0, ranchoId: usuario?.ranchoId
+            resultado: `${getRandomInt(animal.pesoActual - 60, animal.pesoActual - 40)} kg`,
+            fecha: restarMesesAFecha(6), costo: 0, ranchoId: usuario?.ranchoId
+          }));
+          misPromesas.push(addDoc(collection(db, "eventos"), {
+            animalId, tipo: "Repeso",
+            resultado: `${getRandomInt(animal.pesoActual - 30, animal.pesoActual - 15)} kg`,
+            fecha: restarMesesAFecha(3), costo: 0, ranchoId: usuario?.ranchoId
           }));
         }
-        for(let j=0; j<getRandomInt(2,5); j++) {
+
+        // Otros eventos médicos aleatorios
+        for(let j=0; j<getRandomInt(1,3); j++) {
           const tipoEv = getRandom(tiposEvento);
           const resultado = tipoEv === "Vacunación"  ? getRandom(vacunas) :
-                            tipoEv === "Repeso"      ? `${getRandomInt(animal.pesoActual - 10, animal.pesoActual + 15)} kg` :
+                            tipoEv === "Repeso"      ? `${getRandomInt(animal.pesoActual - 5, animal.pesoActual + 10)} kg` :
                             tipoEv === "Tratamiento" ? getRandom(tratamientos) : "Ivermectina 1%";
           misPromesas.push(addDoc(collection(db, "eventos"), {
             animalId, tipo: tipoEv, resultado,
-            fecha: generarFechaAleatoria(j === 0 ? 1 : 10), costo: getRandomInt(50, 400), ranchoId: usuario?.ranchoId
+            fecha: generarFechaAleatoria(j === 0 ? 1 : 12), costo: getRandomInt(50, 400), ranchoId: usuario?.ranchoId
           }));
         }
-        if (["Vaca","Novillona"].includes(animal.tipo) && Math.random() > 0.3) {
-          const resultadosPalp = ["Gestante","Vacía - Fresca","Vacía - Ciclando","Vacía - Anestro"];
-          const resElegido = getRandom(resultadosPalp);
-          misPromesas.push(addDoc(collection(db, "eventos"), {
-            animalId, tipo: "Palpación", resultado: resElegido,
-            fecha: generarFechaAleatoria(10), costo: 100, ranchoId: usuario?.ranchoId
-          }));
-          if (resElegido === "Gestante") {
-            misPromesas.push(updateDoc(doc(db, "animales", animalId), { estado: "Gestante" }));
-          }
-        }
-        if (animal.tipo === "Vaca" && Math.random() > 0.4) {
-          const fP1 = restarMesesAFecha(getRandomInt(22, 28));
-          const fP2 = restarMesesAFecha(getRandomInt(8, 12));
-          const fIn = format(new Date(new Date(fP1+"T00:00:00").getTime() + (getRandomInt(70,110)*86400000)), "yyyy-MM-dd");
-          misPromesas.push(addDoc(collection(db, "eventos"), { animalId, tipo: "Parto", resultado: "Cría sana", fecha: fP1, costo: 0, ranchoId: usuario?.ranchoId }));
-          misPromesas.push(addDoc(collection(db, "eventos"), { animalId, tipo: "Inseminación", resultado: "IA Directa", fecha: fIn, costo: 0, ranchoId: usuario?.ranchoId }));
-          misPromesas.push(addDoc(collection(db, "eventos"), { animalId, tipo: "Parto", resultado: "Cría sana", fecha: fP2, costo: 0, ranchoId: usuario?.ranchoId }));
-          if (Math.random() > 0.5) {
-            const resG = `Gestante ${getRandomInt(2,7)} meses`;
+
+        // Reproducción realista para Vacas y Novillonas
+        if (["Vaca","Novillona"].includes(animal.tipo)) {
+          const rand = Math.random();
+          if (rand > 0.4) { // 60% probabilidad de estar gestante en la demo
+            const meses = getRandomInt(2, 7);
+            const resG = `Gestante ${meses} meses`;
             misPromesas.push(addDoc(collection(db, "eventos"), {
-              animalId, tipo: "Palpación",
-              resultado: resG,
+              animalId, tipo: "Palpación", resultado: resG,
               fecha: format(new Date(), "yyyy-MM-dd"), costo: 100, ranchoId: usuario?.ranchoId
             }));
             misPromesas.push(updateDoc(doc(db, "animales", animalId), { estado: "Gestante" }));
+          } else {
+            misPromesas.push(addDoc(collection(db, "eventos"), {
+              animalId, tipo: "Palpación", resultado: "Vacía - Ciclando",
+              fecha: generarFechaAleatoria(2), costo: 100, ranchoId: usuario?.ranchoId
+            }));
           }
-        } else if (animal.tipo === "Novillona" && Math.random() > 0.5) {
-          misPromesas.push(addDoc(collection(db, "eventos"), {
-            animalId, tipo: "Inseminación", resultado: "IA",
-            fecha: restarMesesAFecha(getRandomInt(1, 4)), costo: 0, ranchoId: usuario?.ranchoId
-          }));
+          
+          if (animal.tipo === "Vaca") {
+            // Un parto reciente para alimentar KPIs de productividad
+            const fechaParto = restarMesesAFecha(getRandomInt(3, 10));
+            misPromesas.push(addDoc(collection(db, "eventos"), { 
+              animalId, tipo: "Parto", resultado: "Cría sana", fecha: fechaParto, costo: 0, ranchoId: usuario?.ranchoId 
+            }));
+          }
         }
         await Promise.all(misPromesas);
       }
