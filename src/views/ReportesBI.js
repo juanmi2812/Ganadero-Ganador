@@ -124,9 +124,9 @@ export default function ReportesBI({ usuario }) {
 
   const cabezasTotales = datosFiltrados.length;
   
-  const novillonasTotales = inventarioEnriquecido.filter(a => a.tipo === "Novillona").length;
-  const novillonasAlerta = inventarioEnriquecido.filter(a => a.tipo === "Novillona" && a.estado === "Alerta: Revisión de Fertilidad").length;
-  const porcentajeAlerta = novillonasTotales > 0 ? Math.round((novillonasAlerta / novillonasTotales) * 100) : 0;
+  const vientresTotales = inventarioEnriquecido.filter(a => a.tipo === "Vaca" || a.tipo === "Novillona").length;
+  const vientresInfertiles = inventarioEnriquecido.filter(a => a.estado === "Alerta: Revisión de Fertilidad").length;
+  const porcentajeInfertilidad = vientresTotales > 0 ? Math.round((vientresInfertiles / vientresTotales) * 100) : 0;
 
   // --- NUEVAS MÉTRICAS ---
   const totalVientres = inventarioEnriquecido.filter(a => a.tipo === "Vaca" || a.tipo === "Novillona").length;
@@ -290,10 +290,10 @@ export default function ReportesBI({ usuario }) {
 
         {/* KPI 3: Tasa de Infertilidad */}
         <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #ef4444", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
-            <button onClick={() => setInfoKpi({titulo: "Tasa de Infertilidad", descripcion: "Identifica la proporción de novillonas con posible infertilidad debido a su edad avanzada sin reportar crías.", calculo: "(Novillonas ≥ 48m de edad sin parto / Total de Novillonas) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
+            <button onClick={() => setInfoKpi({titulo: "Tasa de Infertilidad", descripcion: "Identifica la proporción de vientres con posible infertilidad debido a su edad avanzada sin reportar crías.", calculo: "(Vientres ≥ 48m de edad sin parto / Total de Vientres) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
             <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><AlertTriangle size={16}/> TASA DE INFERTILIDAD</div>
-            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#ef4444", marginTop: "8px" }}>{porcentajeAlerta}%</div>
-            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>Novillonas ≥ 48m sin parto ({novillonasAlerta})</div>
+            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#ef4444", marginTop: "8px" }}>{porcentajeInfertilidad}%</div>
+            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>Vientres ≥ 48m sin parto ({vientresInfertiles})</div>
         </div>
 
         {/* KPI 4: Mortalidad General */}

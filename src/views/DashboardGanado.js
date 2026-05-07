@@ -102,9 +102,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
             } else if (sexo === "macho") {
               if (mesesDeEdad >= 12 && animal.tipo !== "Semental") {
                 nuevaCategoria = "Torete";
-                if (!nuevoEstado.includes('Baja') && nuevoEstado !== "Disponible para Venta") {
-                   nuevoEstado = "Disponible para Venta"; 
-                }
               }
             }
 
@@ -430,10 +427,10 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
 
   const conteos = {
     Todos: inventario.filter(a => !a.estado?.includes('Baja')).length,
-    Vaca: inventario.filter(a => a.tipo === "Vaca" && !a.estado?.includes('Baja') && a.estado !== "Disponible para Venta" && a.estado !== "Desecho").length,
+    Vaca: inventario.filter(a => a.tipo === "Vaca" && !a.estado?.includes('Baja')).length,
     Novillona: inventario.filter(a => a.tipo === "Novillona" && !a.estado?.includes('Baja')).length,
     Semental: inventario.filter(a => a.tipo === "Semental" && !a.estado?.includes('Baja')).length,
-    Torete: inventario.filter(a => a.tipo === "Torete" && !a.estado?.includes('Baja') && a.estado !== "Disponible para Venta" && a.estado !== "Desecho").length,
+    Torete: inventario.filter(a => a.tipo === "Torete" && !a.estado?.includes('Baja')).length,
     "En Venta": inventario.filter(a => a.estado === "Disponible para Venta" || a.estado === "Desecho").length,
     Bajas: inventario.filter(a => a.estado?.includes('Baja')).length,
   };
