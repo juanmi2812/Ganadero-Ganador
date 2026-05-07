@@ -141,6 +141,9 @@ export default function ReportesBI({ usuario }) {
   const totalHectareas = potreros.reduce((sum, p) => sum + (parseFloat(p.hectareas) || 0), 0);
   const cargaAnimalGlobal = totalHectareas > 0 ? (cabezasTotales / totalHectareas).toFixed(1) : 0;
 
+  const dataProyeccion = prepararDatosProyeccionPartos(animales, eventos);
+  const avgIEP = dataProyeccion.stats.avgIEP;
+
   const procesarGraficaMetrica = () => {
      const distMap = {};
      const razaMap = {};
@@ -275,6 +278,14 @@ export default function ReportesBI({ usuario }) {
             <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><TrendingUp size={16}/> TASA DE PREÑEZ</div>
             <div style={{ fontSize: "28px", fontWeight: "bold", color: "#10b981", marginTop: "8px" }}>{tasaPrenez}%</div>
             <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>{vientresGestantes} de {totalVientres} vientres gestantes</div>
+        </div>
+
+        {/* KPI: IEP - Intervalo Entre Partos */}
+        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #c026d3", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
+            <button onClick={() => setInfoKpi({titulo: "Intervalo Entre Partos (IEP)", descripcion: "Promedio de días transcurridos entre dos partos consecutivos de la misma vaca. Es el indicador de oro de la eficiencia reproductiva.", calculo: "Suma de días entre partos / Conteo de intervalos válidos (365-410 días es la meta)."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
+            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><Activity size={16}/> INT. ENTRE PARTOS</div>
+            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#c026d3", marginTop: "8px" }}>{avgIEP || "--"} <span style={{ fontSize: "14px", color: "#9ca3af" }}>días</span></div>
+            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>Eficiencia reproductiva del hato</div>
         </div>
 
         {/* KPI 3: Tasa de Infertilidad */}

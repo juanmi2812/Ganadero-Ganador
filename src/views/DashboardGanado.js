@@ -39,6 +39,11 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   const [crearRecordatorio, setCrearRecordatorio] = useState(false);
   const [fechaRecordatorio, setFechaRecordatorio] = useState("");
 
+  // Palpación Masiva
+  const [mostrarModalPalpacion, setMostrarModalPalpacion] = useState(false);
+  const [vientresPalpacion, setVientresPalpacion] = useState([]);
+  const [guardandoPalpacion, setGuardandoPalpacion] = useState(false);
+
   useEffect(() => {
     if (abrirModalTratamientoMasivo) {
       setMostrarModalMasivo(true);
@@ -90,16 +95,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                   if (!nuevoEstado.includes('Baja') && nuevoEstado !== "Desecho" && nuevoEstado !== "Alerta: Revisión de Fertilidad") {
                     nuevoEstado = "Alerta: Revisión de Fertilidad";
                   }
-                  // Omitimos inyectar alerta en el calendario visual a peticion del usuario, solo se queda el estado de la vaca
-                  /* if (!animalesConAlerta.has(animal.id)) {
-                    await addDoc(collection(db, "alertas"), {
-                      animalId: animal.id,
-                      areteAnimal: animal.arete,
-                      titulo: "Revisión de Fertilidad",
-                      fechaProgramada: hoy.toISOString().split('T')[0],
-                      completada: false
-                    });
-                  } */
                 }
               } else if (mesesDeEdad >= 12 && mesesDeEdad < 48 && !haParido) {
                 nuevaCategoria = "Novillona";
@@ -124,7 +119,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
 
       sincronizarCategorias();
     }
-  }, [inventario, sincronizado]);
+  }, [inventario, sincronizado, usuario?.ranchoId]);
 
   // --- EFECTOS (FIREBASE) ---
   useEffect(() => {
@@ -157,6 +152,22 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     });
     return () => cancelarConfig();
   }, [usuario]);
+
+  useEffect(() => {
+    if (mostrarModalPalpacion) {
+      const vientres = inventario
+        .filter(a => (a.tipo === "Vaca" || a.tipo === "Novillona") && !a.estado?.includes('Baja'))
+        .map(a => ({
+          id: a.id,
+          arete: a.arete,
+          tipo: a.tipo,
+          estadoActual: a.estado || "Sano",
+          resultado: "Gestante",
+          detalle: "3" // default 3 meses si es gestante
+        }));
+      setVientresPalpacion(vientres);
+    }
+  }, [mostrarModalPalpacion, inventario]);
 
   // --- LÓGICA DE NEGOCIO (BI & CALCULOS) ---
   const obtenerEstadisticasPeso = () => {
@@ -239,7 +250,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
         ranchoId: usuario?.ranchoId || null
       });
 
-      // Actualización directa de estado y categoría según el evento
       const updates = {};
       if (datosEvento.tipo === "Parto") {
          updates.estado = "Sano";
@@ -254,28 +264,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
          await updateDoc(doc(db, "animales", animalActivo.id), updates);
       }
 
-      // Omitimos generar alerta en calendario tras crear evento manual (a peticion de usaurio)
-      /* if (datosEvento.recordatorio && datosEvento.recordatorio !== "Ninguno") {
-         const eventDate = new Date(datosEvento.fecha + "T00:00:00");
-         let reminderDate;
-         if (datosEvento.recordatorio === "1 día antes") {
-            eventDate.setDate(eventDate.getDate() - 1);
-            reminderDate = eventDate.toISOString().split('T')[0];
-         } else if (datosEvento.recordatorio === "1 semana antes") {
-            eventDate.setDate(eventDate.getDate() - 7);
-            reminderDate = eventDate.toISOString().split('T')[0];
-         }
-         
-         if (reminderDate) {
-            await addDoc(collection(db, "alertas"), {
-               fechaProgramada: reminderDate,
-               titulo: `${datosEvento.tipo} de arete ${animalActivo.arete}`,
-               areteAnimal: animalActivo.arete,
-               completada: false
-            });
-         }
-      } */
-
       setDatosEvento({ tipo: "Desparasitante", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes", costo: "" });
       setMostrandoFormulario(false);
     } catch (error) { console.error(error); }
@@ -286,7 +274,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
       if (a.estado?.includes('Baja')) return false;
       if (grupo !== "Todos" && a.grupo !== grupo) return false;
       
-      // Filtros Inteligentes: Solo hembras para eventos reproductivos
       const soloHembras = ["Palpación", "Parto", "Inseminación"].includes(tipoEvento);
       if (soloHembras && a.sexo?.toLowerCase() !== "hembra") return false;
       
@@ -318,7 +305,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
           ranchoId: usuario?.ranchoId || null
         });
 
-        // Actualización de estado masivo
         const updates = {};
         if (datosMasivos.tipo === "Palpación" && datosMasivos.resultado.toLowerCase().includes("gestante")) {
            updates.estado = "Gestante";
@@ -333,7 +319,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
            await updateDoc(doc(db, "animales", animal.id), updates);
         }
       }
-      // Crear recordatorio en Calendario si el usuario lo activó
       if (crearRecordatorio && fechaRecordatorio) {
         const parteGrupo = filtroGrupoMasivo !== "Todos" ? `Grupo: ${filtroGrupoMasivo}` : "Todos los grupos";
         const tituloRecord = `${datosMasivos.tipo}${datosMasivos.resultado ? ` (${datosMasivos.resultado})` : ""} — ${parteGrupo}`;
@@ -382,6 +367,51 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     } catch(e) { console.error(e); }
   };
 
+  const guardarPalpacionMasiva = async (e) => {
+    e.preventDefault();
+    setGuardandoPalpacion(true);
+    try {
+      const promesas = vientresPalpacion.map(async (v) => {
+        const resultadoFinal = v.resultado === "Gestante" ? `Gestante ${v.detalle} meses` : v.resultado;
+        
+        await addDoc(collection(db, "eventos"), {
+          animalId: v.id,
+          tipo: "Palpación",
+          resultado: resultadoFinal,
+          fecha: new Date().toISOString().split('T')[0],
+          costo: 0,
+          origen: "realizado",
+          ranchoId: usuario?.ranchoId
+        });
+
+        const updates = { 
+          estado: v.resultado === "Gestante" ? "Gestante" : "Sano" 
+        };
+        if (v.tipo === "Novillona" && v.resultado === "Gestante") {
+          updates.tipo = "Vaca";
+        }
+
+        await updateDoc(doc(db, "animales", v.id), updates);
+      });
+
+      await Promise.all(promesas);
+      setExitoMasivo("¡Palpaciones guardadas con éxito!");
+      setTimeout(() => {
+        setMostrarModalPalpacion(false);
+        setExitoMasivo("");
+      }, 1500);
+    } catch (error) {
+      console.error(error);
+      alert("Error al guardar palpaciones");
+    } finally {
+      setGuardandoPalpacion(false);
+    }
+  };
+
+  const actualizarRenglonPalpacion = (id, campo, valor) => {
+    setVientresPalpacion(prev => prev.map(v => v.id === id ? { ...v, [campo]: valor } : v));
+  };
+
   const hacerSemental = async () => {
     try {
       const animalRef = doc(db, "animales", animalActivo.id);
@@ -398,7 +428,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     } catch (error) { console.error(error); }
   };
 
-  // Conteos para los badges
   const conteos = {
     Todos: inventario.filter(a => !a.estado?.includes('Baja')).length,
     Vaca: inventario.filter(a => a.tipo === "Vaca" && !a.estado?.includes('Baja') && a.estado !== "Disponible para Venta" && a.estado !== "Desecho").length,
@@ -434,16 +463,24 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     <div className="dashboard-container">
       
       <Header subtitle="Control de inventario y análisis de rendimiento.">
-        <button 
-          className="btn-primary" 
-          onClick={() => setMostrarModalMasivo(true)}
-          style={{ margin: 0, width: "auto", display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#16a34a", borderColor: "#16a34a", padding: "10px 20px" }}
-        >
-          💊 Cargar Tratamiento
-        </button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button 
+            className="btn-primary" 
+            onClick={() => setMostrarModalPalpacion(true)}
+            style={{ margin: 0, width: "auto", display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#7c3aed", borderColor: "#7c3aed", padding: "10px 20px" }}
+          >
+            🔍 Cargar Palpación
+          </button>
+          <button 
+            className="btn-primary" 
+            onClick={() => setMostrarModalMasivo(true)}
+            style={{ margin: 0, width: "auto", display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#16a34a", borderColor: "#16a34a", padding: "10px 20px" }}
+          >
+            💊 Cargar Tratamiento
+          </button>
+        </div>
       </Header>
 
-      {/* KPIs PRINCIPALES */}
       <div className="kpi-grid">
         <div className="kpi-card" onClick={() => setFiltroActivo("Todos")} style={{cursor: "pointer", border: filtroActivo === "Todos" ? "2px solid var(--verde-primario)" : "1px solid #e5e7eb"}}>
           <div style={{ fontSize: "22px", marginBottom: "6px" }}>🐄</div>
@@ -467,7 +504,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
         </div>
       </div>
 
-      {/* FILTROS CON BADGES */}
       <div className="filter-bar">
         {["Todos", "Vaca", "Novillona", "Semental", "Torete", "En Venta", "Bajas"].map((tipo) => (
           <button 
@@ -485,7 +521,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
         ))}
       </div>
 
-      {/* BUSCADOR Y FILTROS */}
       <div className="search-bar" style={{ gap: "10px", alignItems: "center" }}>
         <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "10px", backgroundColor: "#f9fafb", padding: "0 12px", borderRadius: "8px", border: "1px solid #d1d5db" }}>
           <Search size={20} color="#9ca3af" />
@@ -516,7 +551,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
         </select>
       </div>
 
-      {/* LISTA DE ANIMALES */}
       <div style={{ paddingBottom: "40px" }}>
         {ganadoFiltrado.length === 0 && (
           <div style={{ textAlign: "center", padding: "40px 16px", color: "var(--gris-400)" }}>
@@ -550,7 +584,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
         ))}
       </div>
 
-      {/* MODAL EXPEDIENTE (BI + GENEALOGÍA) */}
       {animalActivo && (
         <div className="modal-overlay" onClick={() => setAnimalActivo(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -559,7 +592,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
               <button onClick={() => setAnimalActivo(null)} style={{ background: "none", border: "none" }}><X size={24} /></button>
             </div>
             
-            {/* PANEL DE KPIs DE PESO */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "20px" }}>
               <div style={{ backgroundColor: "#f0fdf4", padding: "12px", borderRadius: "8px", border: "1px solid #bbf7d0" }}>
                 <div style={{ color: "#166534", fontSize: "11px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "4px" }}>
@@ -575,7 +607,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
               </div>
             </div>
 
-            {/* GENEALOGÍA PADRES Y UBICACIÓN */}
             <div style={{ backgroundColor: "#f9fafb", padding: "12px", borderRadius: "8px", border: "1px solid #e5e7eb", marginBottom: "20px", position: "relative" }}>
               {!editandoUbicacion ? (
                 <button onClick={() => { setEditandoUbicacion(true); setNuevaUbicacion({potrero: animalActivo.potrero || "", grupo: animalActivo.grupo || ""}); }} style={{position: "absolute", right: "12px", top: "12px", background: "none", border: "none", color: "#3b82f6", cursor: "pointer", fontSize: "12px", fontWeight: "bold"}}>✏️ Mover</button>
@@ -626,43 +657,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
               </div>
             </div>
 
-
-            {/* PANEL FINANCIERO (Oculto temporalmente a peticion) */}
-            {false && finanzas && (
-              <div style={{ backgroundColor: "#f9fafb", padding: "12px", borderRadius: "8px", border: "1px solid #e5e7eb", marginBottom: "20px" }}>
-                <h3 style={{ fontSize: "13px", color: "#374151", marginBottom: "8px", borderBottom: "1px solid #e5e7eb", paddingBottom: "6px" }}>Análisis de Rentabilidad Acumulada</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                  <div>
-                    <span style={{ fontSize: "11px", color: "#6b7280" }}>Mantenimiento ({finanzas.diasEnRancho} días):</span>
-                    <div style={{ fontWeight: "600", color: "#374151", fontSize: "14px" }}>${Math.round(finanzas.costoMantenimiento).toLocaleString()}</div>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: "11px", color: "#6b7280" }}>Insumos Médicos:</span>
-                    <div style={{ fontWeight: "600", color: "#374151", fontSize: "14px" }}>${Math.round(finanzas.costoMedicoTotal).toLocaleString()}</div>
-                  </div>
-                </div>
-                <div style={{ 
-                  marginTop: "10px", width: "100%", textAlign: "center", fontSize: "15px", padding: "8px", borderRadius: "6px",
-                  backgroundColor: animalActivo.estado?.includes('Fertilidad') ? "#fee2e2" : "#e0e7ff",
-                  color: animalActivo.estado?.includes('Fertilidad') ? "#b91c1c" : "#4338ca",
-                  border: `1px solid ${animalActivo.estado?.includes('Fertilidad') ? '#f87171' : '#818cf8'}`
-                }}>
-                  <strong>Inversión: ${Math.round(finanzas.costoTotalInvertido).toLocaleString()}</strong>
-                  {animalActivo.estado?.includes('Fertilidad') && <div style={{ fontSize: "11px", marginTop: "4px" }}>Pérdida por infertilidad (Descarte recomendado).</div>}
-                </div>
-                {animalActivo.estado === "Disponible para Venta" && config && (
-                  <div style={{ marginTop: "10px", backgroundColor: "#ecfdf5", padding: "8px", borderRadius: "6px", border: "1px solid #6ee7b7" }}>
-                    <div style={{ fontSize: "11px", color: "#047857" }}>Venta Estimada ({config.pesoPromedioVentaTorete} kg x ${config.precioKiloMercado}): <strong>${(config.pesoPromedioVentaTorete * config.precioKiloMercado).toLocaleString()}</strong></div>
-                    <div style={{ fontSize: "13px", color: "#065f46", fontWeight: "bold", marginTop: "2px" }}>
-                      Utilidad: ${( (config.pesoPromedioVentaTorete * config.precioKiloMercado) - finanzas.costoTotalInvertido ).toLocaleString()}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* GENEALOGÍA (HIJOS) */}
-            {(animalActivo.tipo === "Vientre" || animalActivo.tipo === "Semental") && (
+            {(animalActivo.tipo === "Vaca" || animalActivo.tipo === "Semental" || animalActivo.tipo === "Vientre") && (
               <div style={{ marginBottom: "20px" }}>
                 <h3 style={{ fontSize: "14px", color: "#374151", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
                   <Baby size={16} color="#ec4899" /> Crías Vinculadas ({inventario.filter(a => a.madre === animalActivo.arete || a.padre === animalActivo.arete).length})
@@ -684,7 +679,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
               {animalActivo.madre && <span><strong>Madre:</strong> {animalActivo.madre} | <strong>Padre:</strong> {animalActivo.padre}</span>}
             </div>
 
-            {/* ACCIONES */}
             {!animalActivo.estado?.includes('Baja') && (
               <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
                 <button className="btn-primary" style={{ flex: 1, margin: 0 }} onClick={() => { setMostrandoFormulario(!mostrandoFormulario); setMostrandoBaja(false); }}>+ Evento</button>
@@ -699,7 +693,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
               </div>
             )}
 
-            {/* FORMULARIO BAJA */}
             {mostrandoBaja && (
               <form onSubmit={guardarBaja} style={{ padding: "15px", background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "8px", marginBottom: "15px" }}>
                 <h4 style={{ margin: "0 0 10px 0", color: "#b91c1c", fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}>
@@ -716,7 +709,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                   <input type="date" value={datosBaja.fecha} onChange={(e) => setDatosBaja({...datosBaja, fecha: e.target.value})} style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} required />
                 </div>
 
-                <textarea placeholder="Notas adicionales (Ej: Causa de muerte, comprador, precio especial...)" value={datosBaja.notas} onChange={(e) => setDatosBaja({...datosBaja, notas: e.target.value})} style={{ width: "100%", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px", marginBottom: "10px", boxSizing: "border-box" }} rows="2" />
+                <textarea placeholder="Notas adicionales..." value={datosBaja.notas} onChange={(e) => setDatosBaja({...datosBaja, notas: e.target.value})} style={{ width: "100%", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px", marginBottom: "10px", boxSizing: "border-box" }} rows="2" />
 
                 <div style={{ display: "flex", gap: "8px" }}>
                   <button type="submit" style={{ flex: 1, backgroundColor: "#ef4444", color: "white", padding: "8px", borderRadius: "6px", border: "none", fontWeight: "bold", cursor: "pointer" }}>Confirmar Baja</button>
@@ -725,7 +718,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
               </form>
             )}
 
-            {/* FORMULARIO EVENTO */}
             {mostrandoFormulario && (
               <form onSubmit={guardarEvento} style={{ padding: "15px", background: "#f9fafb", borderRadius: "8px", marginBottom: "15px" }}>
                 <select value={datosEvento.tipo} onChange={(e) => setDatosEvento({...datosEvento, tipo: e.target.value, resultado: ""})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }}>
@@ -740,7 +732,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                 )}
 
                 {(!CATALOGO_EVENTOS[datosEvento.tipo] || CATALOGO_EVENTOS[datosEvento.tipo].length === 0) && (
-                  <input type="text" placeholder="Resultado (Ej: 350 kg, Cría hembra sana...)" value={datosEvento.resultado} onChange={(e) => setDatosEvento({...datosEvento, resultado: e.target.value})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px", boxSizing: "border-box" }} required />
+                  <input type="text" placeholder="Resultado..." value={datosEvento.resultado} onChange={(e) => setDatosEvento({...datosEvento, resultado: e.target.value})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px", boxSizing: "border-box" }} required />
                 )}
 
                 <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
@@ -748,15 +740,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                   <input type="number" placeholder="Costo ($)" value={datosEvento.costo} onChange={(e) => setDatosEvento({...datosEvento, costo: e.target.value})} style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} />
                 </div>
                 
-                <div style={{ marginBottom: "15px" }}>
-                  <label style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px", display: "block", fontWeight: "bold" }}>Recordatorio:</label>
-                  <select value={datosEvento.recordatorio} onChange={(e) => setDatosEvento({...datosEvento, recordatorio: e.target.value})} style={{ width: "100%", padding: "8px", border: "1px solid #86efac", borderRadius: "4px", backgroundColor: "#f0fdf4", color: "#166534", fontWeight: "600" }}>
-                    <option value="Ninguno">Sin recordatorio</option>
-                    <option value="1 día antes">1 día antes</option>
-                    <option value="1 semana antes">1 semana antes (Recomendado)</option>
-                  </select>
-                </div>
-
                 <button type="submit" className="btn-primary" style={{ width: "100%" }}>Guardar Evento</button>
               </form>
             )}
@@ -775,7 +758,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
           </div>
         </div>
       )}
-      {/* === MODAL TRATAMIENTO MASIVO === */}
+
       {mostrarModalMasivo && (
         <div className="modal-overlay" onClick={() => setMostrarModalMasivo(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "500px" }}>
@@ -785,30 +768,21 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
             </div>
             
             <form onSubmit={guardarEventoMasivo}>
-              {/* Filtros de aplicación */}
               <div style={{ backgroundColor: "#f9fafb", padding: "12px", borderRadius: "8px", marginBottom: "15px", border: "1px solid #e5e7eb" }}>
                 <h4 style={{ margin: "0 0 10px 0", fontSize: "14px", color: "#374151" }}>Filtros de Aplicación</h4>
-                
-                <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ display: "block", fontSize: "12px", marginBottom: "4px", fontWeight: "600" }}>Por Grupo de Manejo</label>
-                    <select 
-                      value={filtroGrupoMasivo} 
-                      onChange={(e) => setFiltroGrupoMasivo(e.target.value)}
-                      style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #d1d5db" }}
-                    >
-                      <option value="Todos">Todos los Animales Activos</option>
-                      {listaGrupos.filter(g => g !== "Todos").map(g => <option key={g} value={g}>{g}</option>)}
-                    </select>
-                  </div>
-                </div>
-
-                <div style={{ fontSize: "12px", color: "#166534", backgroundColor: "#dcfce7", padding: "8px", borderRadius: "6px" }}>
-                  <strong>{["Palpación", "Parto", "Inseminación"].includes(datosMasivos.tipo) ? "Vientres/Hembras" : "Animales"} afectados:</strong> {obtenerAnimalesAfectadosMasivo(datosMasivos.tipo, filtroGrupoMasivo).length} cabezas.
+                <select 
+                  value={filtroGrupoMasivo} 
+                  onChange={(e) => setFiltroGrupoMasivo(e.target.value)}
+                  style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #d1d5db" }}
+                >
+                  <option value="Todos">Todos los Animales Activos</option>
+                  {listaGrupos.filter(g => g !== "Todos").map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+                <div style={{ fontSize: "12px", color: "#166534", backgroundColor: "#dcfce7", padding: "8px", borderRadius: "6px", marginTop: "10px" }}>
+                  <strong>Animales afectados:</strong> {obtenerAnimalesAfectadosMasivo(datosMasivos.tipo, filtroGrupoMasivo).length} cabezas.
                 </div>
               </div>
 
-              {/* Formulario del evento */}
               <select value={datosMasivos.tipo} onChange={(e) => setDatosMasivos({...datosMasivos, tipo: e.target.value, resultado: ""})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #16a34a", borderRadius: "4px", backgroundColor: "#f0fdf4" }} required>
                 {TIPOS_EVENTO_GANADO.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
@@ -820,54 +794,101 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                 </select>
               )}
 
-              {(!CATALOGO_EVENTOS[datosMasivos.tipo] || CATALOGO_EVENTOS[datosMasivos.tipo].length === 0) && (
-                <input type="text" placeholder="Resultado o Medicina aplicada..." value={datosMasivos.resultado} onChange={(e) => setDatosMasivos({...datosMasivos, resultado: e.target.value})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px", boxSizing: "border-box" }} required />
-              )}
+              <input type="date" value={datosMasivos.fecha} onChange={(e) => setDatosMasivos({...datosMasivos, fecha: e.target.value})} style={{ width: "100%", marginBottom: "15px", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} required />
 
-              <div style={{ marginBottom: "15px" }}>
-                <label style={{ display: "block", fontSize: "12px", marginBottom: "4px", fontWeight: "600" }}>Fecha</label>
-                <input type="date" value={datosMasivos.fecha} onChange={(e) => setDatosMasivos({...datosMasivos, fecha: e.target.value})} style={{ width: "100%", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px", boxSizing: "border-box" }} required />
-              </div>
-
-              {/* Sección de Recordatorio Futuro */}
-              <div style={{ backgroundColor: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: "8px", padding: "12px", marginBottom: "15px" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px", color: "#0369a1" }}>
-                  <input
-                    type="checkbox"
-                    checked={crearRecordatorio}
-                    onChange={e => setCrearRecordatorio(e.target.checked)}
-                    style={{ width: "16px", height: "16px", accentColor: "#0ea5e9" }}
-                  />
-                  📅 Programar recordatorio en el Calendario
-                </label>
-                {crearRecordatorio && (
-                  <div style={{ marginTop: "10px" }}>
-                    <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#374151" }}>Fecha del Recordatorio</label>
-                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                      <input
-                        type="date"
-                        value={fechaRecordatorio}
-                        onChange={e => setFechaRecordatorio(e.target.value)}
-                        style={{ flex: 1, padding: "8px", border: "1px solid #0ea5e9", borderRadius: "6px" }}
-                      />
-                      <button type="button" onClick={() => {
-                        const d = new Date(datosMasivos.fecha + "T00:00:00");
-                        d.setDate(d.getDate() - 1);
-                        setFechaRecordatorio(d.toISOString().split("T")[0]);
-                      }} style={{ fontSize: "11px", padding: "6px 10px", border: "1px solid #0ea5e9", borderRadius: "6px", backgroundColor: "#e0f2fe", color: "#0369a1", cursor: "pointer", whiteSpace: "nowrap" }}>
-                        1 día antes
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {exitoMasivo && <div style={{ color: "#166534", backgroundColor: "#dcfce7", padding: "10px", borderRadius: "6px", marginBottom: "10px", textAlign: "center", fontWeight: "bold" }}>{exitoMasivo}</div>}
+              {exitoMasivo && <div style={{ color: "#166534", backgroundColor: "#dcfce7", padding: "10px", borderRadius: "6px", marginBottom: "10px", textAlign: "center" }}>{exitoMasivo}</div>}
 
               <button type="submit" className="btn-primary" style={{ width: "100%", backgroundColor: "#16a34a", borderColor: "#16a34a" }} disabled={guardandoMasivo}>
                 {guardandoMasivo ? "Guardando..." : "Aplicar a Todos"}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {mostrarModalPalpacion && (
+        <div className="modal-overlay" onClick={() => setMostrarModalPalpacion(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "800px", width: "95%" }}>
+            <div className="modal-header">
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span style={{ fontSize: "24px" }}>🔍</span>
+                <div>
+                  <h2 style={{ margin: 0 }}>Cargar Palpación Masiva</h2>
+                  <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>Registra rápidamente el estado reproductivo de tus vientres.</p>
+                </div>
+              </div>
+              <button onClick={() => setMostrarModalPalpacion(false)} style={{ background: "none", border: "none" }}><X size={24} /></button>
+            </div>
+
+            <div style={{ maxHeight: "60vh", overflowY: "auto", marginBottom: "20px", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
+                <thead style={{ position: "sticky", top: 0, backgroundColor: "#f9fafb", borderBottom: "2px solid #e5e7eb", zIndex: 10 }}>
+                  <tr>
+                    <th style={{ padding: "12px", textAlign: "left" }}>Arete</th>
+                    <th style={{ padding: "12px", textAlign: "left" }}>Estado Actual</th>
+                    <th style={{ padding: "12px", textAlign: "left" }}>Resultado</th>
+                    <th style={{ padding: "12px", textAlign: "left" }}>Detalle</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {vientresPalpacion.map((v) => (
+                    <tr key={v.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                      <td style={{ padding: "12px", fontWeight: "bold" }}>
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          <span>{v.arete}</span>
+                          <small style={{ color: "#9ca3af", fontWeight: "normal" }}>{v.tipo}</small>
+                        </div>
+                      </td>
+                      <td style={{ padding: "12px" }}>
+                        <span className={`status-badge ${v.estadoActual === "Gestante" ? "status-gestante" : "status-sano"}`} style={{ fontSize: "11px", padding: "2px 8px" }}>
+                          {v.estadoActual}
+                        </span>
+                      </td>
+                      <td style={{ padding: "12px" }}>
+                        <select 
+                          value={v.resultado} 
+                          onChange={(e) => actualizarRenglonPalpacion(v.id, "resultado", e.target.value)}
+                          style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #d1d5db" }}
+                        >
+                          <option value="Gestante">Gestante</option>
+                          <option value="Vacía - Fresca">Vacía - Fresca</option>
+                          <option value="Vacía - Ciclando">Vacía - Ciclando</option>
+                          <option value="Vacía - Anestro">Vacía - Anestro</option>
+                          <option value="Dudosa">Dudosa</option>
+                        </select>
+                      </td>
+                      <td style={{ padding: "12px" }}>
+                        {v.resultado === "Gestante" ? (
+                          <select 
+                            value={v.detalle} 
+                            onChange={(e) => actualizarRenglonPalpacion(v.id, "detalle", e.target.value)}
+                            style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #d1d5db", backgroundColor: "#f0fdf4" }}
+                          >
+                            {[1,2,3,4,5,6,7,8,9].map(m => <option key={m} value={m}>{m} meses</option>)}
+                          </select>
+                        ) : (
+                          <span style={{ color: "#9ca3af", fontSize: "12px" }}>N/A (Vacía)</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {exitoMasivo && <div style={{ color: "#166534", backgroundColor: "#dcfce7", padding: "10px", borderRadius: "6px", marginBottom: "15px", textAlign: "center", fontWeight: "bold" }}>{exitoMasivo}</div>}
+
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button onClick={() => setMostrarModalPalpacion(false)} className="btn-secondary" style={{ flex: 1 }}>Cancelar</button>
+              <button 
+                onClick={guardarPalpacionMasiva} 
+                className="btn-primary" 
+                style={{ flex: 2, backgroundColor: "#7c3aed", borderColor: "#7c3aed" }}
+                disabled={guardandoPalpacion}
+              >
+                {guardandoPalpacion ? "Guardando..." : `Guardar ${vientresPalpacion.length} Palpaciones`}
+              </button>
+            </div>
           </div>
         </div>
       )}
