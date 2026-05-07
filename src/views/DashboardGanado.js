@@ -21,8 +21,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   const [mostrandoBaja, setMostrandoBaja] = useState(false);
   const [editandoUbicacion, setEditandoUbicacion] = useState(false);
   const [nuevaUbicacion, setNuevaUbicacion] = useState({ potrero: "", grupo: "" });
-  const [editandoArete, setEditandoArete] = useState(false);
-  const [nuevoArete, setNuevoArete] = useState("");
   
   const [datosEvento, setDatosEvento] = useState({ 
     tipo: "Desparasitante", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes", costo: ""
@@ -45,6 +43,10 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   const [mostrarModalPalpacion, setMostrarModalPalpacion] = useState(false);
   const [vientresPalpacion, setVientresPalpacion] = useState([]);
   const [guardandoPalpacion, setGuardandoPalpacion] = useState(false);
+
+  // Cambio de Arete
+  const [mostrarModalArete, setMostrarModalArete] = useState(false);
+  const [nuevoArete, setNuevoArete] = useState("");
 
   useEffect(() => {
     if (abrirModalTratamientoMasivo) {
@@ -268,6 +270,34 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     } catch (error) { console.error(error); }
   };
 
+  const guardarCambioArete = async (e) => {
+    e.preventDefault();
+    if (!nuevoArete.trim()) return;
+    try {
+      await addDoc(collection(db, "eventos"), {
+        animalId: animalActivo.id,
+        tipo: "Cambio de Arete",
+        resultado: `Anterior: ${animalActivo.arete} -> Nuevo: ${nuevoArete}`,
+        fecha: new Date().toISOString().split('T')[0],
+        costo: 0,
+        origen: "realizado",
+        ranchoId: usuario?.ranchoId || null
+      });
+
+      await updateDoc(doc(db, "animales", animalActivo.id), {
+        arete: nuevoArete
+      });
+
+      setAnimalActivo({...animalActivo, arete: nuevoArete});
+      setMostrarModalArete(false);
+      setNuevoArete("");
+    } catch (error) {
+      console.error(error);
+      alert("Error al cambiar el arete.");
+    }
+  };
+
+
   const obtenerAnimalesAfectadosMasivo = (tipoEvento, grupo) => {
     return inventario.filter(a => {
       if (a.estado?.includes('Baja')) return false;
@@ -364,27 +394,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
       setAnimalActivo({...animalActivo, potrero: nuevaUbicacion.potrero, grupo: nuevaUbicacion.grupo});
       setEditandoUbicacion(false);
     } catch(e) { console.error(e); }
-  };
-
-  const guardarCambioArete = async () => {
-    if (!nuevoArete.trim()) { alert("Escribe el nuevo número de arete."); return; }
-    try {
-      const areteAnterior = animalActivo.arete;
-      await updateDoc(doc(db, "animales", animalActivo.id), { arete: nuevoArete.trim() });
-      // Registrar evento de trazabilidad
-      await addDoc(collection(db, "eventos"), {
-        animalId: animalActivo.id,
-        tipo: "Cambio de Arete",
-        resultado: `${areteAnterior} → ${nuevoArete.trim()}`,
-        fecha: new Date().toISOString().split('T')[0],
-        costo: 0,
-        origen: "realizado",
-        ranchoId: usuario?.ranchoId
-      });
-      setAnimalActivo({ ...animalActivo, arete: nuevoArete.trim() });
-      setEditandoArete(false);
-      setNuevoArete("");
-    } catch (error) { console.error(error); alert("Error al cambiar arete."); }
   };
 
   const guardarPalpacionMasiva = async (e) => {
@@ -608,9 +617,23 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
         <div className="modal-overlay" onClick={() => setAnimalActivo(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Arete: {animalActivo.arete}</h2>
-              <button onClick={() => setAnimalActivo(null)} style={{ background: "none", border: "none" }}><X size={24} /></button>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <h2>Arete: {animalActivo.arete}</h2>
+                <button onClick={() => { setNuevoArete(animalActivo.arete); setMostrarModalArete(true); }} style={{ fontSize: "11px", padding: "4px 8px", backgroundColor: "#f3f4f6", border: "1px solid #d1d5db", borderRadius: "4px", cursor: "pointer", color: "#4b5563" }}>🔄 Cambiar Arete</button>
+              </div>
+              <button onClick={() => { setAnimalActivo(null); setMostrarModalArete(false); }} style={{ background: "none", border: "none" }}><X size={24} /></button>
             </div>
+            
+            {mostrarModalArete && (
+              <div style={{ backgroundColor: "#fef2f2", padding: "16px", borderRadius: "8px", border: "1px solid #fecaca", marginBottom: "20px" }}>
+                <h4 style={{ margin: "0 0 10px 0", color: "#991b1b" }}>Cambio de Arete</h4>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <input type="text" value={nuevoArete} onChange={e => setNuevoArete(e.target.value)} placeholder="Nuevo Arete" style={{ flex: 1, padding: "8px", borderRadius: "6px", border: "1px solid #fca5a5" }} />
+                  <button onClick={guardarCambioArete} style={{ backgroundColor: "#dc2626", color: "white", border: "none", padding: "8px 16px", borderRadius: "6px", cursor: "pointer" }}>Guardar</button>
+                  <button onClick={() => setMostrarModalArete(false)} style={{ backgroundColor: "white", color: "#4b5563", border: "1px solid #d1d5db", padding: "8px 16px", borderRadius: "6px", cursor: "pointer" }}>Cancelar</button>
+                </div>
+              </div>
+            )}
             
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "20px" }}>
               <div style={{ backgroundColor: "#f0fdf4", padding: "12px", borderRadius: "8px", border: "1px solid #bbf7d0" }}>
@@ -710,24 +733,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                   <button className="btn-outline" style={{ flex: 1, margin: 0, borderColor: "#f59e0b", color: "#f59e0b" }} onClick={marcarDesecho}>🗑️ Descartar</button>
                 )}
                 <button className="btn-outline" style={{ color: "#ef4444", borderColor: "#ef4444" }} onClick={() => { setMostrandoBaja(!mostrandoBaja); setMostrandoFormulario(false); }}><AlertTriangle size={18} /></button>
-              </div>
-            )}
-
-            {!animalActivo.estado?.includes('Baja') && (
-              <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
-                <button className="btn-outline" style={{ flex: 1, margin: 0, borderColor: "#6366f1", color: "#6366f1", fontSize: "13px" }} onClick={() => { setEditandoArete(!editandoArete); setNuevoArete(""); }}>🏷️ Cambio de Arete</button>
-              </div>
-            )}
-
-            {editandoArete && (
-              <div style={{ padding: "15px", background: "#eef2ff", border: "1px solid #a5b4fc", borderRadius: "8px", marginBottom: "15px" }}>
-                <h4 style={{ margin: "0 0 10px 0", color: "#4338ca", fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}>🏷️ Cambio de Arete</h4>
-                <p style={{ fontSize: "12px", color: "#6b7280", margin: "0 0 10px 0" }}>Arete actual: <strong>{animalActivo.arete}</strong></p>
-                <input type="text" placeholder="Nuevo número de arete..." value={nuevoArete} onChange={(e) => setNuevoArete(e.target.value)} style={{ width: "100%", padding: "8px", border: "1px solid #a5b4fc", borderRadius: "4px", marginBottom: "10px", boxSizing: "border-box" }} />
-                <div style={{ display: "flex", gap: "8px" }}>
-                  <button onClick={guardarCambioArete} style={{ flex: 1, backgroundColor: "#6366f1", color: "white", padding: "8px", borderRadius: "6px", border: "none", fontWeight: "bold", cursor: "pointer" }}>Confirmar Cambio</button>
-                  <button onClick={() => setEditandoArete(false)} style={{ flex: 1, backgroundColor: "#fff", color: "#6b7280", padding: "8px", borderRadius: "6px", border: "1px solid #d1d5db", fontWeight: "bold", cursor: "pointer" }}>Cancelar</button>
-                </div>
               </div>
             )}
 
