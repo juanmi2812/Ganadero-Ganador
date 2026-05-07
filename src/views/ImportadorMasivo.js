@@ -534,7 +534,7 @@ export default function ImportadorMasivo({ usuario }) {
       });
     }
     for(let i=0; i<20; i++){
-      const meses = i < 2 ? 52 : getRandomInt(14, 30); // 2 novillonas viejas para el KPI de infertilidad
+      const meses = i < 5 ? 60 : getRandomInt(14, 30); // 5 novillonas de 5 años para activar el KPI de Infertilidad
       animalesAGenerar.push({
         arete: `NV-${getRandomInt(1000, 9999)}`,
         tipo: "Novillona", sexo: "Hembra", raza: getRandom(razas),
@@ -550,7 +550,7 @@ export default function ImportadorMasivo({ usuario }) {
       animalesAGenerar.push({
         arete: `TR-${getRandomInt(1000, 9999)}`,
         tipo: "Torete", sexo: "Macho", raza: getRandom(razas),
-        fechaNacimiento: restarMesesAFecha(getRandomInt(12, 30)),
+        fechaNacimiento: restarMesesAFecha(getRandomInt(13, 20)), // Edad perfecta para ser Torete (1-2 años)
         pesoActual: getRandomInt(350, 500),
         estado: "Sano",
         potrero: getRandom(potrerosNombres), grupo: "Engorda",
