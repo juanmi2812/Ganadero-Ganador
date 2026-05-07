@@ -13,7 +13,8 @@ import {
   generarPDFCalendario, generarExcelCalendario, prepararDatosCalendario,
   calcularMetricasProductividad, generarPDFFichaIndividual,
   prepararDatosVientres, prepararDatosReproduccion, prepararDatosProyeccionPartos, prepararDatosPotreros,
-  generarPDFTratamientos, generarExcelTratamientos, prepararDatosTratamientos
+  generarPDFTratamientos, generarExcelTratamientos, prepararDatosTratamientos,
+  prepararDatosIEP, generarPDFIEP, generarExcelIEP
 } from "../reportes";
 import { TIPOS_EVENTO } from "../catalogoEventos";
 
@@ -405,6 +406,7 @@ export default function ReportesBI({ usuario }) {
                     <option value="vientres">🐄 Reporte de Vientres</option>
                     <option value="reproduccion">📈 Reporte de Reproducción</option>
                     <option value="proyeccion">📅 Proyección de Partos</option>
+                    <option value="iep">🟣 Detalle de Intervalo Entre Partos (IEP)</option>
                     <option value="hectareas">🚩 Producción por Hectárea</option>
                     <option value="desarrollo">📈 Desarrollo (GDP)</option>
                     <option value="calendario">📅 Calendario de Manejo</option>
@@ -455,6 +457,7 @@ export default function ReportesBI({ usuario }) {
                                 if (reporteAvanzado === "vientres") generarPDFVientres(animales, eventos, config, f);
                                 else if (reporteAvanzado === "reproduccion") generarPDFReproduccion(eventos, f);
                                 else if (reporteAvanzado === "proyeccion") generarPDFProyeccionPartos(animales, eventos, f);
+                                else if (reporteAvanzado === "iep") generarPDFIEP(animales, eventos);
                                 else if (reporteAvanzado === "potreros") generarPDFPotreros(animales, potreros, f);
                                 else if (reporteAvanzado === "desarrollo") generarPDFDesarrollo(animales, eventos, f);
                                 else if (reporteAvanzado === "calendario") generarPDFCalendario(animales, eventos, alertas, f);
@@ -469,6 +472,7 @@ export default function ReportesBI({ usuario }) {
                                 if (reporteAvanzado === "vientres") generarExcelVientres(animales, eventos, config, f);
                                 else if (reporteAvanzado === "reproduccion") generarExcelReproduccion(eventos, f);
                                 else if (reporteAvanzado === "proyeccion") generarExcelProyeccionPartos(animales, eventos, f);
+                                else if (reporteAvanzado === "iep") generarExcelIEP(animales, eventos);
                                 else if (reporteAvanzado === "potreros") generarExcelPotreros(animales, potreros, f);
                                 else if (reporteAvanzado === "desarrollo") generarExcelDesarrollo(animales, eventos, f);
                                 else if (reporteAvanzado === "calendario") generarExcelCalendario(animales, eventos, alertas, f);
@@ -484,9 +488,10 @@ export default function ReportesBI({ usuario }) {
                 <div style={{ overflowX: "auto", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", textAlign: "left", whiteSpace: "nowrap" }}>
                         <thead style={{ backgroundColor: "#f9fafb", borderBottom: "2px solid #e5e7eb" }}>
-                            {reporteAvanzado === "vientres" && <tr><th style={{padding:"8px"}}>Arete</th><th style={{padding:"8px"}}>Categoría</th><th style={{padding:"8px"}}>Partos</th><th style={{padding:"8px"}}>Último Evento</th><th style={{padding:"8px"}}>Inversión</th></tr>}
+                            {reporteAvanzado === "vientres" && <tr><th style={{padding:"8px"}}>Arete</th><th style={{padding:"8px"}}>Categoría</th><th style={{padding:"8px"}}>Partos</th><th style={{padding:"8px"}}>ltimo Evento</th><th style={{padding:"8px"}}>Inversión</th></tr>}
                             {reporteAvanzado === "reproduccion" && <tr><th style={{padding:"8px"}}>Mes</th><th style={{padding:"8px"}}>Palpadas</th><th style={{padding:"8px"}}>Gestantes</th><th style={{padding:"8px"}}>Anestro</th><th style={{padding:"8px"}}>% Preñez</th></tr>}
                             {reporteAvanzado === "proyeccion" && <tr><th style={{padding:"8px"}}>Mes Proyectado</th><th style={{padding:"8px"}}>Partos Esperados</th><th style={{padding:"8px"}}>Aretes</th></tr>}
+                            {reporteAvanzado === "iep" && <tr><th style={{padding:"8px"}}>Arete</th><th style={{padding:"8px"}}>Tipo</th><th style={{padding:"8px"}}>Penltimo Parto</th><th style={{padding:"8px"}}>ltimo Parto</th><th style={{padding:"8px"}}>Das Abiertos</th><th style={{padding:"8px"}}>IEP (Das)</th><th style={{padding:"8px"}}>IEP (Meses)</th><th style={{padding:"8px"}}>Clasificación</th></tr>}
                             {reporteAvanzado === "potreros" && <tr><th style={{padding:"8px"}}>Potrero</th><th style={{padding:"8px"}}>Carga (Cab/Ha)</th><th style={{padding:"8px"}}>Biomasa Total</th><th style={{padding:"8px"}}>Prod (Kg/Ha)</th></tr>}
                             {reporteAvanzado === "desarrollo" && <tr><th style={{padding:"8px"}}>Categoría</th><th style={{padding:"8px"}}>Cantidad</th><th style={{padding:"8px"}}>GDP Promedio</th><th style={{padding:"8px"}}>Días Período</th></tr>}
                             {reporteAvanzado === "calendario" && <tr><th style={{padding:"8px"}}>Categoría</th><th style={{padding:"8px"}}>Mes Actual</th><th style={{padding:"8px"}}>Actividades Realizadas</th></tr>}
@@ -501,6 +506,18 @@ export default function ReportesBI({ usuario }) {
                             ))}
                             {reporteAvanzado === "proyeccion" && prepararDatosProyeccionPartos(animales, eventos, filtrosActuales).proyeccion.slice(0, 8).map((d, i) => (
                                 <tr key={i} style={{ borderBottom: "1px solid #e5e7eb" }}><td style={{padding:"8px"}}>{d.label}</td><td style={{padding:"8px",fontWeight:"bold",color:d.conteo>0?"#166534":"#9ca3af"}}>{d.conteo}</td><td style={{padding:"8px"}}>{d.detalles.join(", ")||"---"}</td></tr>
+                            ))}
+                            {reporteAvanzado === "iep" && prepararDatosIEP(animales, eventos).slice(0, 10).map((d, i) => (
+                                <tr key={i} style={{ borderBottom: "1px solid #e5e7eb", backgroundColor: d.clasificacion === "Mejorar" ? "#fef2f2" : d.clasificacion === "Excelente" ? "#f0fdf4" : "white" }}>
+                                    <td style={{padding:"8px",fontWeight:"bold"}}>{d.arete}</td>
+                                    <td style={{padding:"8px"}}>{d.tipo}</td>
+                                    <td style={{padding:"8px",color:"#6b7280"}}>{d.penultimoParto}</td>
+                                    <td style={{padding:"8px",color:"#6b7280"}}>{d.ultimoParto}</td>
+                                    <td style={{padding:"8px"}}>{d.diasAbiertos} d</td>
+                                    <td style={{padding:"8px",fontWeight:"bold",color:"#7c3aed"}}>{d.iepDias}</td>
+                                    <td style={{padding:"8px"}}>{d.iepMeses}</td>
+                                    <td style={{padding:"8px",fontWeight:"bold",color: d.clasificacion === "Excelente" ? "#166534" : d.clasificacion === "Mejorar" ? "#b91c1c" : "#92400e"}}>{d.clasificacion}</td>
+                                </tr>
                             ))}
                             {reporteAvanzado === "potreros" && prepararDatosPotreros(animales, potreros, filtrosActuales).slice(0, 10).map((d, i) => (
                                 <tr key={i} style={{ borderBottom: "1px solid #e5e7eb" }}><td style={{padding:"8px"}}>{d.nombre} ({d.hectareasOficiales} has)</td><td style={{padding:"8px"}}>{d.cargaAnimalCabezasXHa}</td><td style={{padding:"8px"}}>{d.pesoTotal} kg</td><td style={{padding:"8px"}}>{d.cargaAnimalKilosXHa}</td></tr>

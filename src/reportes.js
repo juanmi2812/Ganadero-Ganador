@@ -1341,3 +1341,563 @@ export function generarPDFFichaIndividual(animal, eventos) {
         alert("Error al generar Ficha Técnica");
     }
 }
+
+// ================================================
+// REPORTE 9: INTERVALO ENTRE PARTOS (IEP)
+// ================================================
+
+// ================================================
+// REPORTE 9: INTERVALO ENTRE PARTOS (IEP)
+// ================================================
+
+export function prepararDatosIEP(animales, eventos) {
+  const hoy = new Date();
+  const filas = [];
+
+  const vacas = animales.filter(a =>
+    ["Vaca", "Novillona"].includes(a.tipo) && !a.estado?.includes("Baja")
+  );
+
+  vacas.forEach(vaca => {
+    const partosOrdenados = eventos
+      .filter(e => e.tipo === "Parto" && e.animalId === vaca.id)
+      .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
+    if (partosOrdenados.length < 2) return;
+
+    const edadMeses = vaca.fechaNacimiento
+      ? differenceInMonths(hoy, new Date(vaca.fechaNacimiento + "T00:00:00"))
+      : "--";
+
+    let totalDias = 0;
+    let conteo = 0;
+
+    for (let i = 1; i < partosOrdenados.length; i++) {
+      const d1 = new Date(partosOrdenados[i - 1].fecha);
+      const d2 = new Date(partosOrdenados[i].fecha);
+      const dias = Math.ceil(Math.abs(d2 - d1) / (1000 * 60 * 60 * 24));
+      if (dias > 250 && dias < 800) { totalDias += dias; conteo++; }
+    }
+
+    if (conteo === 0) return;
+
+    const iepDias = Math.round(totalDias / conteo);
+    const iepMeses = (iepDias / 30.44).toFixed(1);
+    const ultimoParto = partosOrdenados[partosOrdenados.length - 1];
+    const penultimoParto = partosOrdenados[partosOrdenados.length - 2];
+    const diasAbiertos = Math.ceil(Math.abs(hoy - new Date(ultimoParto.fecha)) / (1000 * 60 * 60 * 24));
+
+    let clasificacion;
+    if (iepDias <= 365)      clasificacion = "Excelente";
+    else if (iepDias <= 400) clasificacion = "Bueno";
+    else if (iepDias <= 420) clasificacion = "Aceptable";
+    else                      clasificacion = "Mejorar";
+
+    filas.push({
+      arete: vaca.arete || "--",
+      raza: vaca.raza || "--",
+      tipo: vaca.tipo,
+      edadMeses: edadMeses !== "--" ? `${edadMeses} m` : "--",
+      numPartos: partosOrdenados.length,
+      penultimoParto: penultimoParto.fecha,
+      ultimoParto: ultimoParto.fecha,
+      diasAbiertos,
+      iepDias,
+      iepMeses: `${iepMeses} m`,
+      clasificacion,
+    });
+  });
+
+  filas.sort((a, b) => b.iepDias - a.iepDias);
+  return filas;
+}
+
+export function generarPDFIEP(animales, eventos) {
+  try {
+    const datos = prepararDatosIEP(animales, eventos);
+    const doc = new jsPDF({ orientation: "landscape" });
+    const fechaHoy = format(new Date(), "dd 'de' MMMM yyyy", { locale: es });
+
+    doc.setFillColor(124, 58, 237);
+    doc.rect(0, 0, doc.internal.pageSize.width, 28, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("REPORTE DE INTERVALO ENTRE PARTOS (IEP)", 14, 14);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Eficiencia reproductiva por vientre - ${fechaHoy}`, 14, 22);
+
+    const iepTotal = datos.reduce((s, d) => s + d.iepDias, 0);
+    const iepProm = datos.length > 0 ? Math.round(iepTotal / datos.length) : 0;
+    const excelentes = datos.filter(d => d.clasificacion === "Excelente").length;
+    const aMejorar = datos.filter(d => d.clasificacion === "Mejorar").length;
+
+    doc.setFillColor(245, 240, 255);
+    doc.rect(14, 32, 268, 16, "F");
+    doc.setTextColor(91, 33, 182);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text(
+      `Vacas con IEP: ${datos.length}   |   IEP Promedio: ${iepProm} dias   |   Excelentes: ${excelentes}   |   A Mejorar: ${aMejorar}`,
+      16, 41
+    );
+
+    const colorFila = (c) => {
+      if (c === "Excelente") return [220, 252, 231];
+      if (c === "Bueno")     return [254, 252, 232];
+      if (c === "Aceptable") return [255, 247, 237];
+      return [254, 226, 226];
+    };
+
+    autoTable(doc, {
+      startY: 54,
+      theme: "grid",
+      headStyles: { fillColor: [91, 33, 182], textColor: 255, halign: "center", fontSize: 8 },
+      bodyStyles: { halign: "center", fontSize: 8 },
+      columnStyles: { 0: { fontStyle: "bold", halign: "left" }, 1: { halign: "left" } },
+      head: [[
+        "ARETE", "RAZA", "TIPO", "EDAD", "# PARTOS",
+        "PENULTIMO PARTO", "ULTIMO PARTO", "DIAS ABIERTOS",
+        "IEP (Dias)", "IEP (Meses)", "CLASIFICACION",
+      ]],
+      body: datos.map(d => [
+        d.arete, d.raza, d.tipo, d.edadMeses, d.numPartos,
+        d.penultimoParto, d.ultimoParto, `${d.diasAbiertos} d`,
+        d.iepDias, d.iepMeses, d.clasificacion,
+      ]),
+      didParseCell: (hookData) => {
+        if (hookData.section === "body") {
+          const clasi = datos[hookData.row.index]?.clasificacion;
+          if (clasi) hookData.cell.styles.fillColor = colorFila(clasi);
+          if (hookData.column.index === 10) {
+            if (clasi === "Excelente")      hookData.cell.styles.textColor = [22, 101, 52];
+            else if (clasi === "Bueno")     hookData.cell.styles.textColor = [133, 77, 14];
+            else if (clasi === "Aceptable") hookData.cell.styles.textColor = [194, 65, 12];
+            else                             hookData.cell.styles.textColor = [185, 28, 28];
+          }
+        }
+      }
+    });
+
+    const finalY = doc.lastAutoTable.finalY + 8;
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 100, 100);
+    doc.text("CLASIFICACION: Excelente <=365 dias | Bueno <=400 dias | Aceptable <=420 dias | Mejorar >420 dias", 14, finalY);
+
+    doc.save(`Reporte_IEP_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+  } catch (error) {
+    console.error(error);
+    alert("Error al generar PDF de IEP");
+  }
+}
+
+export function generarExcelIEP(animales, eventos) {
+  try {
+    const datos = prepararDatosIEP(animales, eventos);
+    const fechaHoy = format(new Date(), "yyyy-MM-dd");
+
+    const datosExcel = datos.map(d => ({
+      "ARETE": d.arete,
+      "RAZA": d.raza,
+      "TIPO": d.tipo,
+      "EDAD": d.edadMeses,
+      "# PARTOS": d.numPartos,
+      "PENULTIMO PARTO": d.penultimoParto,
+      "ULTIMO PARTO": d.ultimoParto,
+      "DIAS ABIERTOS": d.diasAbiertos,
+      "IEP (Dias)": d.iepDias,
+      "IEP (Meses)": d.iepMeses,
+      "CLASIFICACION": d.clasificacion,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(datosExcel);
+    ws["!cols"] = [
+      { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 8 }, { wch: 10 },
+      { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 14 },
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "IEP por Vientre");
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    saveAs(blob, `Reporte_IEP_${fechaHoy}.xlsx`);
+  } catch (error) {
+    console.error(error);
+    alert("Error al generar Excel de IEP");
+  }
+}
+
+// ================================================
+// REPORTE 9: INTERVALO ENTRE PARTOS (IEP)
+// ================================================
+
+export function prepararDatosIEP(animales, eventos) {
+  const hoy = new Date();
+  const filas = [];
+
+  const vacas = animales.filter(a =>
+    ["Vaca", "Novillona"].includes(a.tipo) && !a.estado?.includes("Baja")
+  );
+
+  vacas.forEach(vaca => {
+    const partosOrdenados = eventos
+      .filter(e => e.tipo === "Parto" && e.animalId === vaca.id)
+      .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
+    if (partosOrdenados.length < 2) return;
+
+    const edadMeses = vaca.fechaNacimiento
+      ? differenceInMonths(hoy, new Date(vaca.fechaNacimiento + "T00:00:00"))
+      : "--";
+
+    let totalDias = 0;
+    let conteo = 0;
+
+    for (let i = 1; i < partosOrdenados.length; i++) {
+      const d1 = new Date(partosOrdenados[i - 1].fecha);
+      const d2 = new Date(partosOrdenados[i].fecha);
+      const dias = Math.ceil(Math.abs(d2 - d1) / (1000 * 60 * 60 * 24));
+      if (dias > 250 && dias < 800) { totalDias += dias; conteo++; }
+    }
+
+    if (conteo === 0) return;
+
+    const iepDias = Math.round(totalDias / conteo);
+    const iepMeses = (iepDias / 30.44).toFixed(1);
+    const ultimoParto = partosOrdenados[partosOrdenados.length - 1];
+    const penultimoParto = partosOrdenados[partosOrdenados.length - 2];
+    const diasAbiertos = Math.ceil(Math.abs(hoy - new Date(ultimoParto.fecha)) / (1000 * 60 * 60 * 24));
+
+    let clasificacion;
+    if (iepDias <= 365)      clasificacion = "Excelente";
+    else if (iepDias <= 400) clasificacion = "Bueno";
+    else if (iepDias <= 420) clasificacion = "Aceptable";
+    else                      clasificacion = "Mejorar";
+
+    filas.push({
+      arete: vaca.arete || "--",
+      raza: vaca.raza || "--",
+      tipo: vaca.tipo,
+      edadMeses: edadMeses !== "--" ? `${edadMeses} m` : "--",
+      numPartos: partosOrdenados.length,
+      penultimoParto: penultimoParto.fecha,
+      ultimoParto: ultimoParto.fecha,
+      diasAbiertos,
+      iepDias,
+      iepMeses: `${iepMeses} m`,
+      clasificacion,
+    });
+  });
+
+  filas.sort((a, b) => b.iepDias - a.iepDias);
+  return filas;
+}
+
+export function generarPDFIEP(animales, eventos) {
+  try {
+    const datos = prepararDatosIEP(animales, eventos);
+    const doc = new jsPDF({ orientation: "landscape" });
+    const fechaHoy = format(new Date(), "dd 'de' MMMM yyyy", { locale: es });
+
+    doc.setFillColor(124, 58, 237);
+    doc.rect(0, 0, doc.internal.pageSize.width, 28, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("REPORTE DE INTERVALO ENTRE PARTOS (IEP)", 14, 14);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Eficiencia reproductiva por vientre - ${fechaHoy}`, 14, 22);
+
+    const iepTotal = datos.reduce((s, d) => s + d.iepDias, 0);
+    const iepProm = datos.length > 0 ? Math.round(iepTotal / datos.length) : 0;
+    const excelentes = datos.filter(d => d.clasificacion === "Excelente").length;
+    const aMejorar = datos.filter(d => d.clasificacion === "Mejorar").length;
+
+    doc.setFillColor(245, 240, 255);
+    doc.rect(14, 32, 268, 16, "F");
+    doc.setTextColor(91, 33, 182);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text(
+      `Vacas con IEP: ${datos.length}   |   IEP Promedio: ${iepProm} dias   |   Excelentes: ${excelentes}   |   A Mejorar: ${aMejorar}`,
+      16, 41
+    );
+
+    const colorFila = (c) => {
+      if (c === "Excelente") return [220, 252, 231];
+      if (c === "Bueno")     return [254, 252, 232];
+      if (c === "Aceptable") return [255, 247, 237];
+      return [254, 226, 226];
+    };
+
+    autoTable(doc, {
+      startY: 54,
+      theme: "grid",
+      headStyles: { fillColor: [91, 33, 182], textColor: 255, halign: "center", fontSize: 8 },
+      bodyStyles: { halign: "center", fontSize: 8 },
+      columnStyles: { 0: { fontStyle: "bold", halign: "left" }, 1: { halign: "left" } },
+      head: [[
+        "ARETE", "RAZA", "TIPO", "EDAD", "# PARTOS",
+        "PENULTIMO PARTO", "ULTIMO PARTO", "DIAS ABIERTOS",
+        "IEP (Dias)", "IEP (Meses)", "CLASIFICACION",
+      ]],
+      body: datos.map(d => [
+        d.arete, d.raza, d.tipo, d.edadMeses, d.numPartos,
+        d.penultimoParto, d.ultimoParto, `${d.diasAbiertos} d`,
+        d.iepDias, d.iepMeses, d.clasificacion,
+      ]),
+      didParseCell: (hookData) => {
+        if (hookData.section === "body") {
+          const clasi = datos[hookData.row.index]?.clasificacion;
+          if (clasi) hookData.cell.styles.fillColor = colorFila(clasi);
+          if (hookData.column.index === 10) {
+            if (clasi === "Excelente")      hookData.cell.styles.textColor = [22, 101, 52];
+            else if (clasi === "Bueno")     hookData.cell.styles.textColor = [133, 77, 14];
+            else if (clasi === "Aceptable") hookData.cell.styles.textColor = [194, 65, 12];
+            else                             hookData.cell.styles.textColor = [185, 28, 28];
+          }
+        }
+      }
+    });
+
+    const finalY = doc.lastAutoTable.finalY + 8;
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 100, 100);
+    doc.text("CLASIFICACION: Excelente <=365 dias | Bueno <=400 dias | Aceptable <=420 dias | Mejorar >420 dias", 14, finalY);
+
+    doc.save(`Reporte_IEP_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+  } catch (error) {
+    console.error(error);
+    alert("Error al generar PDF de IEP");
+  }
+}
+
+export function generarExcelIEP(animales, eventos) {
+  try {
+    const datos = prepararDatosIEP(animales, eventos);
+    const fechaHoy = format(new Date(), "yyyy-MM-dd");
+
+    const datosExcel = datos.map(d => ({
+      "ARETE": d.arete,
+      "RAZA": d.raza,
+      "TIPO": d.tipo,
+      "EDAD": d.edadMeses,
+      "# PARTOS": d.numPartos,
+      "PENULTIMO PARTO": d.penultimoParto,
+      "ULTIMO PARTO": d.ultimoParto,
+      "DIAS ABIERTOS": d.diasAbiertos,
+      "IEP (Dias)": d.iepDias,
+      "IEP (Meses)": d.iepMeses,
+      "CLASIFICACION": d.clasificacion,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(datosExcel);
+    ws["!cols"] = [
+      { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 8 }, { wch: 10 },
+      { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 14 },
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "IEP por Vientre");
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    saveAs(blob, `Reporte_IEP_${fechaHoy}.xlsx`);
+  } catch (error) {
+    console.error(error);
+    alert("Error al generar Excel de IEP");
+  }
+}
+
+// ================================================
+// REPORTE 9: INTERVALO ENTRE PARTOS (IEP)
+// ================================================
+
+export function prepararDatosIEP(animales, eventos) {
+  const hoy = new Date();
+  const filas = [];
+
+  const vacas = animales.filter(a =>
+    ["Vaca", "Novillona"].includes(a.tipo) && !a.estado?.includes("Baja")
+  );
+
+  vacas.forEach(vaca => {
+    const partosOrdenados = eventos
+      .filter(e => e.tipo === "Parto" && e.animalId === vaca.id)
+      .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
+    if (partosOrdenados.length < 2) return;
+
+    const edadMeses = vaca.fechaNacimiento
+      ? differenceInMonths(hoy, new Date(vaca.fechaNacimiento + "T00:00:00"))
+      : "--";
+
+    let totalDias = 0;
+    let conteo = 0;
+
+    for (let i = 1; i < partosOrdenados.length; i++) {
+      const d1 = new Date(partosOrdenados[i - 1].fecha);
+      const d2 = new Date(partosOrdenados[i].fecha);
+      const dias = Math.ceil(Math.abs(d2 - d1) / (1000 * 60 * 60 * 24));
+      if (dias > 250 && dias < 800) { totalDias += dias; conteo++; }
+    }
+
+    if (conteo === 0) return;
+
+    const iepDias = Math.round(totalDias / conteo);
+    const iepMeses = (iepDias / 30.44).toFixed(1);
+    const ultimoParto = partosOrdenados[partosOrdenados.length - 1];
+    const penultimoParto = partosOrdenados[partosOrdenados.length - 2];
+    const diasAbiertos = Math.ceil(Math.abs(hoy - new Date(ultimoParto.fecha)) / (1000 * 60 * 60 * 24));
+
+    let clasificacion;
+    if (iepDias <= 365)      clasificacion = "Excelente";
+    else if (iepDias <= 400) clasificacion = "Bueno";
+    else if (iepDias <= 420) clasificacion = "Aceptable";
+    else                      clasificacion = "Mejorar";
+
+    filas.push({
+      arete: vaca.arete || "--",
+      raza: vaca.raza || "--",
+      tipo: vaca.tipo,
+      edadMeses: edadMeses !== "--" ? `${edadMeses} m` : "--",
+      numPartos: partosOrdenados.length,
+      penultimoParto: penultimoParto.fecha,
+      ultimoParto: ultimoParto.fecha,
+      diasAbiertos,
+      iepDias,
+      iepMeses: `${iepMeses} m`,
+      clasificacion,
+    });
+  });
+
+  filas.sort((a, b) => b.iepDias - a.iepDias);
+  return filas;
+}
+
+export function generarPDFIEP(animales, eventos) {
+  try {
+    const datos = prepararDatosIEP(animales, eventos);
+    const doc = new jsPDF({ orientation: "landscape" });
+    const fechaHoy = format(new Date(), "dd 'de' MMMM yyyy", { locale: es });
+
+    doc.setFillColor(124, 58, 237);
+    doc.rect(0, 0, doc.internal.pageSize.width, 28, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("REPORTE DE INTERVALO ENTRE PARTOS (IEP)", 14, 14);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Eficiencia reproductiva por vientre - ${fechaHoy}`, 14, 22);
+
+    const iepTotal = datos.reduce((s, d) => s + d.iepDias, 0);
+    const iepProm = datos.length > 0 ? Math.round(iepTotal / datos.length) : 0;
+    const excelentes = datos.filter(d => d.clasificacion === "Excelente").length;
+    const aMejorar = datos.filter(d => d.clasificacion === "Mejorar").length;
+
+    doc.setFillColor(245, 240, 255);
+    doc.rect(14, 32, 268, 16, "F");
+    doc.setTextColor(91, 33, 182);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text(
+      `Vacas con IEP: ${datos.length}   |   IEP Promedio: ${iepProm} dias   |   Excelentes: ${excelentes}   |   A Mejorar: ${aMejorar}`,
+      16, 41
+    );
+
+    const colorFila = (c) => {
+      if (c === "Excelente") return [220, 252, 231];
+      if (c === "Bueno")     return [254, 252, 232];
+      if (c === "Aceptable") return [255, 247, 237];
+      return [254, 226, 226];
+    };
+
+    autoTable(doc, {
+      startY: 54,
+      theme: "grid",
+      headStyles: { fillColor: [91, 33, 182], textColor: 255, halign: "center", fontSize: 8 },
+      bodyStyles: { halign: "center", fontSize: 8 },
+      columnStyles: { 0: { fontStyle: "bold", halign: "left" }, 1: { halign: "left" } },
+      head: [[
+        "ARETE", "RAZA", "TIPO", "EDAD", "# PARTOS",
+        "PENULTIMO PARTO", "ULTIMO PARTO", "DIAS ABIERTOS",
+        "IEP (Dias)", "IEP (Meses)", "CLASIFICACION",
+      ]],
+      body: datos.map(d => [
+        d.arete, d.raza, d.tipo, d.edadMeses, d.numPartos,
+        d.penultimoParto, d.ultimoParto, `${d.diasAbiertos} d`,
+        d.iepDias, d.iepMeses, d.clasificacion,
+      ]),
+      didParseCell: (hookData) => {
+        if (hookData.section === "body") {
+          const clasi = datos[hookData.row.index]?.clasificacion;
+          if (clasi) hookData.cell.styles.fillColor = colorFila(clasi);
+          if (hookData.column.index === 10) {
+            if (clasi === "Excelente")      hookData.cell.styles.textColor = [22, 101, 52];
+            else if (clasi === "Bueno")     hookData.cell.styles.textColor = [133, 77, 14];
+            else if (clasi === "Aceptable") hookData.cell.styles.textColor = [194, 65, 12];
+            else                             hookData.cell.styles.textColor = [185, 28, 28];
+          }
+        }
+      }
+    });
+
+    const finalY = doc.lastAutoTable.finalY + 8;
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 100, 100);
+    doc.text("CLASIFICACION: Excelente <=365 dias | Bueno <=400 dias | Aceptable <=420 dias | Mejorar >420 dias", 14, finalY);
+
+    doc.save(`Reporte_IEP_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+  } catch (error) {
+    console.error(error);
+    alert("Error al generar PDF de IEP");
+  }
+}
+
+export function generarExcelIEP(animales, eventos) {
+  try {
+    const datos = prepararDatosIEP(animales, eventos);
+    const fechaHoy = format(new Date(), "yyyy-MM-dd");
+
+    const datosExcel = datos.map(d => ({
+      "ARETE": d.arete,
+      "RAZA": d.raza,
+      "TIPO": d.tipo,
+      "EDAD": d.edadMeses,
+      "# PARTOS": d.numPartos,
+      "PENULTIMO PARTO": d.penultimoParto,
+      "ULTIMO PARTO": d.ultimoParto,
+      "DIAS ABIERTOS": d.diasAbiertos,
+      "IEP (Dias)": d.iepDias,
+      "IEP (Meses)": d.iepMeses,
+      "CLASIFICACION": d.clasificacion,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(datosExcel);
+    ws["!cols"] = [
+      { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 8 }, { wch: 10 },
+      { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 14 },
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "IEP por Vientre");
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    saveAs(blob, `Reporte_IEP_${fechaHoy}.xlsx`);
+  } catch (error) {
+    console.error(error);
+    alert("Error al generar Excel de IEP");
+  }
+}
+
