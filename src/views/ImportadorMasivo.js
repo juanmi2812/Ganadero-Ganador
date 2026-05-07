@@ -663,20 +663,29 @@ export default function ImportadorMasivo({ usuario }) {
           }
           
           if (animal.tipo === "Vaca") {
-            // Un parto reciente para alimentar KPIs de productividad
-            const mesesAtrasParto1 = getRandomInt(3, 10);
-            const fechaParto1 = restarMesesAFecha(mesesAtrasParto1);
-            misPromesas.push(addDoc(collection(db, "eventos"), { 
-              animalId, tipo: "Parto", resultado: "Cría sana", fecha: fechaParto1, costo: 0, ranchoId: usuario?.ranchoId 
-            }));
+            // Número de partos realista según la edad del animal
+            // Vacas jóvenes (24-47 m) → 1-2 partos
+            // Vacas maduras (48-84 m) → 2-4 partos
+            // Vacas viejas (85+ m)    → 4-7 partos
+            const edadMesesAnimal = (new Date() - new Date(animal.fechaNacimiento + "T00:00:00")) / (1000 * 60 * 60 * 24 * 30.44);
+            let numPartos;
+            if (edadMesesAnimal < 48)      numPartos = getRandomInt(1, 2);
+            else if (edadMesesAnimal < 85) numPartos = getRandomInt(2, 4);
+            else                            numPartos = getRandomInt(4, 7);
 
-            // Segundo parto anterior para habilitar el KPI de IEP (Intervalo Entre Partos)
-            // Calculamos un intervalo realista de entre 12 y 14 meses atrás del primer parto
-            const mesesAtrasParto2 = mesesAtrasParto1 + getRandomInt(12, 14); 
-            const fechaParto2 = restarMesesAFecha(mesesAtrasParto2);
-            misPromesas.push(addDoc(collection(db, "eventos"), { 
-              animalId, tipo: "Parto", resultado: "Cría sana", fecha: fechaParto2, costo: 0, ranchoId: usuario?.ranchoId 
-            }));
+            // Generar partos hacia atrás con intervalos realistas (12-15 meses entre cada uno)
+            let mesesAtrasAcumulado = getRandomInt(2, 8); // último parto fue hace 2-8 meses
+            const resultadosParto = ["Cría sana", "Cría sana", "Cría sana", "Cría macho sano", "Cría hembra sana", "Gemelar - 2 crías sanas", "Cría con dificultades - Sobrevivió"];
+            for (let p = 0; p < numPartos; p++) {
+              const fechaParto = restarMesesAFecha(mesesAtrasAcumulado);
+              misPromesas.push(addDoc(collection(db, "eventos"), {
+                animalId, tipo: "Parto",
+                resultado: getRandom(resultadosParto),
+                fecha: fechaParto, costo: 0, ranchoId: usuario?.ranchoId
+              }));
+              // Siguiente parto fue 12-15 meses antes
+              mesesAtrasAcumulado += getRandomInt(12, 15);
+            }
           }
         }
         await Promise.all(misPromesas);
