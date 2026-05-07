@@ -664,9 +664,18 @@ export default function ImportadorMasivo({ usuario }) {
           
           if (animal.tipo === "Vaca") {
             // Un parto reciente para alimentar KPIs de productividad
-            const fechaParto = restarMesesAFecha(getRandomInt(3, 10));
+            const mesesAtrasParto1 = getRandomInt(3, 10);
+            const fechaParto1 = restarMesesAFecha(mesesAtrasParto1);
             misPromesas.push(addDoc(collection(db, "eventos"), { 
-              animalId, tipo: "Parto", resultado: "Cría sana", fecha: fechaParto, costo: 0, ranchoId: usuario?.ranchoId 
+              animalId, tipo: "Parto", resultado: "Cría sana", fecha: fechaParto1, costo: 0, ranchoId: usuario?.ranchoId 
+            }));
+
+            // Segundo parto anterior para habilitar el KPI de IEP (Intervalo Entre Partos)
+            // Calculamos un intervalo realista de entre 12 y 14 meses atrás del primer parto
+            const mesesAtrasParto2 = mesesAtrasParto1 + getRandomInt(12, 14); 
+            const fechaParto2 = restarMesesAFecha(mesesAtrasParto2);
+            misPromesas.push(addDoc(collection(db, "eventos"), { 
+              animalId, tipo: "Parto", resultado: "Cría sana", fecha: fechaParto2, costo: 0, ranchoId: usuario?.ranchoId 
             }));
           }
         }
