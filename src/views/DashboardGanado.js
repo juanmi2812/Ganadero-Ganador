@@ -21,6 +21,8 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   const [mostrandoBaja, setMostrandoBaja] = useState(false);
   const [editandoUbicacion, setEditandoUbicacion] = useState(false);
   const [nuevaUbicacion, setNuevaUbicacion] = useState({ potrero: "", grupo: "" });
+  const [editandoArete, setEditandoArete] = useState(false);
+  const [nuevoArete, setNuevoArete] = useState("");
   
   const [datosEvento, setDatosEvento] = useState({ 
     tipo: "Desparasitante", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes", costo: ""
@@ -364,6 +366,27 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     } catch(e) { console.error(e); }
   };
 
+  const guardarCambioArete = async () => {
+    if (!nuevoArete.trim()) { alert("Escribe el nuevo número de arete."); return; }
+    try {
+      const areteAnterior = animalActivo.arete;
+      await updateDoc(doc(db, "animales", animalActivo.id), { arete: nuevoArete.trim() });
+      // Registrar evento de trazabilidad
+      await addDoc(collection(db, "eventos"), {
+        animalId: animalActivo.id,
+        tipo: "Cambio de Arete",
+        resultado: `${areteAnterior} → ${nuevoArete.trim()}`,
+        fecha: new Date().toISOString().split('T')[0],
+        costo: 0,
+        origen: "realizado",
+        ranchoId: usuario?.ranchoId
+      });
+      setAnimalActivo({ ...animalActivo, arete: nuevoArete.trim() });
+      setEditandoArete(false);
+      setNuevoArete("");
+    } catch (error) { console.error(error); alert("Error al cambiar arete."); }
+  };
+
   const guardarPalpacionMasiva = async (e) => {
     e.preventDefault();
     setGuardandoPalpacion(true);
@@ -687,6 +710,24 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                   <button className="btn-outline" style={{ flex: 1, margin: 0, borderColor: "#f59e0b", color: "#f59e0b" }} onClick={marcarDesecho}>🗑️ Descartar</button>
                 )}
                 <button className="btn-outline" style={{ color: "#ef4444", borderColor: "#ef4444" }} onClick={() => { setMostrandoBaja(!mostrandoBaja); setMostrandoFormulario(false); }}><AlertTriangle size={18} /></button>
+              </div>
+            )}
+
+            {!animalActivo.estado?.includes('Baja') && (
+              <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
+                <button className="btn-outline" style={{ flex: 1, margin: 0, borderColor: "#6366f1", color: "#6366f1", fontSize: "13px" }} onClick={() => { setEditandoArete(!editandoArete); setNuevoArete(""); }}>🏷️ Cambio de Arete</button>
+              </div>
+            )}
+
+            {editandoArete && (
+              <div style={{ padding: "15px", background: "#eef2ff", border: "1px solid #a5b4fc", borderRadius: "8px", marginBottom: "15px" }}>
+                <h4 style={{ margin: "0 0 10px 0", color: "#4338ca", fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}>🏷️ Cambio de Arete</h4>
+                <p style={{ fontSize: "12px", color: "#6b7280", margin: "0 0 10px 0" }}>Arete actual: <strong>{animalActivo.arete}</strong></p>
+                <input type="text" placeholder="Nuevo número de arete..." value={nuevoArete} onChange={(e) => setNuevoArete(e.target.value)} style={{ width: "100%", padding: "8px", border: "1px solid #a5b4fc", borderRadius: "4px", marginBottom: "10px", boxSizing: "border-box" }} />
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button onClick={guardarCambioArete} style={{ flex: 1, backgroundColor: "#6366f1", color: "white", padding: "8px", borderRadius: "6px", border: "none", fontWeight: "bold", cursor: "pointer" }}>Confirmar Cambio</button>
+                  <button onClick={() => setEditandoArete(false)} style={{ flex: 1, backgroundColor: "#fff", color: "#6b7280", padding: "8px", borderRadius: "6px", border: "1px solid #d1d5db", fontWeight: "bold", cursor: "pointer" }}>Cancelar</button>
+                </div>
               </div>
             )}
 
