@@ -501,77 +501,72 @@ export default function ImportadorMasivo({ usuario }) {
       return d.toISOString().split('T')[0];
     };
 
-    const potrerosDemo = [];
-    const tiposPasto = ["Bermudas", "Estrella", "Pangola", "Taiwán", "Mombasa", "Brachiaria", "Guinea"];
-    for (let i = 1; i <= 38; i++) {
-      potrerosDemo.push({
-        nombre: `Potrero #${i.toString().padStart(2, '0')}`,
-        hectareas: getRandomInt(5, 40),
-        tipoPastoNombre: getRandom(tiposPasto),
-        porcentajePasto: getRandomInt(60, 95),
-        tipoPastoTamano: getRandom(["corto", "mediano", "alto", "corte"]),
-        divisiones: i % 5 === 0 ? ["Lote A", "Lote B"] : ["Lote Único"]
-      });
-    }
+    const potrerosDemo = [
+      { nombre: "Potrero Norte", hectareas: 50, tipoPastoNombre: "Bermudas", porcentajePasto: 85, tipoPastoTamano: "corto", divisiones: ["Sección A", "Sección B"] },
+      { nombre: "Potrero Sur", hectareas: 100, tipoPastoNombre: "Estrella", porcentajePasto: 90, tipoPastoTamano: "mediano", divisiones: ["Sección 1", "Sección 2", "Sección 3"] },
+      { nombre: "Potrero Maternidad", hectareas: 20, tipoPastoNombre: "Pangola", porcentajePasto: 95, tipoPastoTamano: "corto", divisiones: ["Lote Único"] },
+      { nombre: "Corral Engorda", hectareas: 5, tipoPastoNombre: "Taiwán", porcentajePasto: 100, tipoPastoTamano: "corte", divisiones: ["Corral 1", "Corral 2"] },
+      { nombre: "Pradera Abierta", hectareas: 200, tipoPastoNombre: "Mombasa", porcentajePasto: 80, tipoPastoTamano: "alto", divisiones: ["Este", "Oeste", "Norte"] }
+    ];
     const potrerosNombres = potrerosDemo.map(p => p.nombre);
 
     const gruposDemo = [
-      { nombre: "Vacas de Cría" },
-      { nombre: "Novillonas Reemplazo" },
-      { nombre: "Lote Engorda" },
-      { nombre: "Lote Desarrollo" },
-      { nombre: "Sementales" },
-      { nombre: "Maternidad" }
+      { nombre: "Vacas" },
+      { nombre: "Crías Lactantes" },
+      { nombre: "Desarrollo" },
+      { nombre: "Engorda" },
+      { nombre: "Sementales" }
     ];
 
     const animalesAGenerar = [];
 
-    // 112 animales totales (75% de 150)
-    for(let i=0; i<50; i++){
+    // 150 animales totales
+    for(let i=0; i<70; i++){
       animalesAGenerar.push({
         arete: `VC-${getRandomInt(1000, 9999)}`,
         tipo: "Vaca", sexo: "Hembra", raza: getRandom(razas),
-        fechaNacimiento: restarMesesAFecha(getRandomInt(48, 120)),
-        pesoActual: getRandomInt(450, 600),
+        fechaNacimiento: restarMesesAFecha(getRandomInt(50, 120)),
+        pesoActual: getRandomInt(400, 650),
+        estado: Math.random() > 0.1 ? "Sano" : "Desecho", // Casos de desecho
+        potrero: getRandom(potrerosNombres), grupo: "Vacas",
+        fechaRegistro: new Date().toISOString().split('T')[0],
+        ranchoId: usuario?.ranchoId
+      });
+    }
+    for(let i=0; i<20; i++){
+      const meses = i < 2 ? 52 : getRandomInt(14, 30); // 2 novillonas viejas para el KPI de infertilidad
+      animalesAGenerar.push({
+        arete: `NV-${getRandomInt(1000, 9999)}`,
+        tipo: "Novillona", sexo: "Hembra", raza: getRandom(razas),
+        fechaNacimiento: restarMesesAFecha(meses),
+        pesoActual: getRandomInt(280, 420),
         estado: "Sano",
-        potrero: getRandom(potrerosNombres), grupo: "Vacas de Cría",
+        potrero: getRandom(potrerosNombres), grupo: "Desarrollo",
         fechaRegistro: new Date().toISOString().split('T')[0],
         ranchoId: usuario?.ranchoId
       });
     }
     for(let i=0; i<15; i++){
       animalesAGenerar.push({
-        arete: `NV-${getRandomInt(1000, 9999)}`,
-        tipo: "Novillona", sexo: "Hembra", raza: getRandom(razas),
-        fechaNacimiento: restarMesesAFecha(getRandomInt(18, 30)),
-        pesoActual: getRandomInt(320, 420),
-        estado: "Sano",
-        potrero: getRandom(potrerosNombres), grupo: "Novillonas Reemplazo",
-        fechaRegistro: new Date().toISOString().split('T')[0],
-        ranchoId: usuario?.ranchoId
-      });
-    }
-    for(let i=0; i<12; i++){
-      animalesAGenerar.push({
         arete: `TR-${getRandomInt(1000, 9999)}`,
         tipo: "Torete", sexo: "Macho", raza: getRandom(razas),
-        fechaNacimiento: restarMesesAFecha(getRandomInt(14, 24)),
-        pesoActual: getRandomInt(380, 550),
+        fechaNacimiento: restarMesesAFecha(getRandomInt(12, 30)),
+        pesoActual: getRandomInt(350, 500),
         estado: "Sano",
-        potrero: getRandom(potrerosNombres), grupo: "Lote Engorda",
+        potrero: getRandom(potrerosNombres), grupo: "Engorda",
         fechaRegistro: new Date().toISOString().split('T')[0],
         ranchoId: usuario?.ranchoId
       });
     }
-    for(let i=0; i<30; i++){
+    for(let i=0; i<40; i++){
       const esMacho = Math.random() > 0.5;
       animalesAGenerar.push({
         arete: `CR-${getRandomInt(1000, 9999)}`,
         tipo: esMacho ? "Becerro" : "Becerra", sexo: esMacho ? "Macho" : "Hembra", raza: getRandom(razas),
-        fechaNacimiento: restarMesesAFecha(getRandomInt(4, 12)),
-        pesoActual: getRandomInt(120, 250),
+        fechaNacimiento: restarMesesAFecha(getRandomInt(2, 11)),
+        pesoActual: getRandomInt(80, 220),
         estado: "Sano",
-        potrero: getRandom(potrerosNombres), grupo: "Lote Desarrollo",
+        potrero: getRandom(potrerosNombres), grupo: "Crías Lactantes",
         fechaRegistro: new Date().toISOString().split('T')[0],
         ranchoId: usuario?.ranchoId
       });
@@ -581,12 +576,19 @@ export default function ImportadorMasivo({ usuario }) {
         arete: `SM-${getRandomInt(100, 999)}`,
         tipo: "Semental", sexo: "Macho", raza: getRandom(razas),
         fechaNacimiento: restarMesesAFecha(getRandomInt(60, 100)),
-        pesoActual: getRandomInt(850, 1050),
+        pesoActual: getRandomInt(800, 1100),
         estado: "Sano",
         potrero: getRandom(potrerosNombres), grupo: "Sementales",
         fechaRegistro: new Date().toISOString().split('T')[0],
         ranchoId: usuario?.ranchoId
       });
+    }
+
+    // Algunos casos de Baja (Índice de Bajas)
+    for(let i=0; i<4; i++){
+       const a = animalesAGenerar[getRandomInt(0, 149)];
+       a.estado = Math.random() > 0.5 ? "Baja - Muerte" : "Baja - Venta";
+       a.fechaBaja = new Date().toISOString().split('T')[0];
     }
 
     animalesAGenerar.forEach(a => {
