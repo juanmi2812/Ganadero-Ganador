@@ -235,12 +235,23 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
         resultado: datosEvento.resultado,
         fecha: datosEvento.fecha,
         costo: Number(datosEvento.costo) || 0,
-        origen: "realizado"
+        origen: "realizado",
+        ranchoId: usuario?.ranchoId || null
       });
 
-      // Actualización directa si el evento nuevo es un Parto (Sube la categoría de inmediato sin esperar refresh)
-      if (datosEvento.tipo === "Parto" && animalActivo.tipo !== "Vaca") {
-         await updateDoc(doc(db, "animales", animalActivo.id), { tipo: "Vaca" });
+      // Actualización directa de estado y categoría según el evento
+      const updates = {};
+      if (datosEvento.tipo === "Parto") {
+         updates.estado = "Sano";
+         if (animalActivo.tipo !== "Vaca") updates.tipo = "Vaca";
+      } else if (datosEvento.tipo === "Palpación" && datosEvento.resultado.toLowerCase().includes("gestante")) {
+         updates.estado = "Gestante";
+      } else if (datosEvento.tipo === "Palpación" && datosEvento.resultado.toLowerCase().includes("vacía")) {
+         updates.estado = "Sano";
+      }
+
+      if (Object.keys(updates).length > 0) {
+         await updateDoc(doc(db, "animales", animalActivo.id), updates);
       }
 
       // Omitimos generar alerta en calendario tras crear evento manual (a peticion de usaurio)
@@ -297,6 +308,21 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
           origen: "realizado",
           ranchoId: usuario?.ranchoId || null
         });
+
+        // Actualización de estado masivo
+        const updates = {};
+        if (datosMasivos.tipo === "Palpación" && datosMasivos.resultado.toLowerCase().includes("gestante")) {
+           updates.estado = "Gestante";
+        } else if (datosMasivos.tipo === "Palpación" && datosMasivos.resultado.toLowerCase().includes("vacía")) {
+           updates.estado = "Sano";
+        } else if (datosMasivos.tipo === "Parto") {
+           updates.estado = "Sano";
+           if (animal.tipo !== "Vaca") updates.tipo = "Vaca";
+        }
+
+        if (Object.keys(updates).length > 0) {
+           await updateDoc(doc(db, "animales", animal.id), updates);
+        }
       }
       // Crear recordatorio en Calendario si el usuario lo activó
       if (crearRecordatorio && fechaRecordatorio) {

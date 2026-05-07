@@ -403,6 +403,11 @@ export default function ImportadorMasivo({ usuario }) {
           ranchoId:        usuario?.ranchoId || null,
         };
 
+        // Si hay palpación gestante en el Excel, el estado inicial del animal debe ser Gestante
+        if (resultadoPalp === "Gestante") {
+          animal.estado = "Gestante";
+        }
+
         // Construir eventos a crear
         const eventos = [];
 
@@ -626,10 +631,14 @@ export default function ImportadorMasivo({ usuario }) {
         }
         if (["Vaca","Novillona"].includes(animal.tipo) && Math.random() > 0.3) {
           const resultadosPalp = ["Gestante","Vacía - Fresca","Vacía - Ciclando","Vacía - Anestro"];
+          const resElegido = getRandom(resultadosPalp);
           misPromesas.push(addDoc(collection(db, "eventos"), {
-            animalId, tipo: "Palpación", resultado: getRandom(resultadosPalp),
+            animalId, tipo: "Palpación", resultado: resElegido,
             fecha: generarFechaAleatoria(10), costo: 100, ranchoId: usuario?.ranchoId
           }));
+          if (resElegido === "Gestante") {
+            misPromesas.push(updateDoc(doc(db, "animales", animalId), { estado: "Gestante" }));
+          }
         }
         if (animal.tipo === "Vaca" && Math.random() > 0.4) {
           const fP1 = restarMesesAFecha(getRandomInt(22, 28));
@@ -639,11 +648,13 @@ export default function ImportadorMasivo({ usuario }) {
           misPromesas.push(addDoc(collection(db, "eventos"), { animalId, tipo: "Inseminación", resultado: "IA Directa", fecha: fIn, costo: 0, ranchoId: usuario?.ranchoId }));
           misPromesas.push(addDoc(collection(db, "eventos"), { animalId, tipo: "Parto", resultado: "Cría sana", fecha: fP2, costo: 0, ranchoId: usuario?.ranchoId }));
           if (Math.random() > 0.5) {
+            const resG = `Gestante ${getRandomInt(2,7)} meses`;
             misPromesas.push(addDoc(collection(db, "eventos"), {
               animalId, tipo: "Palpación",
-              resultado: `Gestante ${getRandomInt(2,7)} meses`,
+              resultado: resG,
               fecha: format(new Date(), "yyyy-MM-dd"), costo: 100, ranchoId: usuario?.ranchoId
             }));
+            misPromesas.push(updateDoc(doc(db, "animales", animalId), { estado: "Gestante" }));
           }
         } else if (animal.tipo === "Novillona" && Math.random() > 0.5) {
           misPromesas.push(addDoc(collection(db, "eventos"), {
