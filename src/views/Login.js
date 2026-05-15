@@ -12,7 +12,7 @@ import {
 } from "firebase/firestore";
 
 // pantalla: "login" | "elegir-registro" | "registro-admin" | "registro-empleado"
-export default function Login({ alIniciarSesion }) {
+export default function Login({ alIniciarSesion, onVolverALanding }) {
   const [pantalla, setPantalla] = useState("login");
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
@@ -248,6 +248,11 @@ export default function Login({ alIniciarSesion }) {
         {/* ══════════ PANTALLA: LOGIN ══════════ */}
         {pantalla === "login" && (
           <>
+            {onVolverALanding && (
+              <button onClick={onVolverALanding} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", display: "flex", alignItems: "center", gap: "4px", fontSize: "13px", marginBottom: "16px", padding: 0 }}>
+                <ArrowLeft size={14} /> Volver al Inicio
+              </button>
+            )}
             <h2 style={{ margin: "0 0 4px 0", color: "#111827", textAlign: "center" }}>Ganadero Ganador</h2>
             <p style={{ color: "#6b7280", marginBottom: "20px", fontSize: "14px", textAlign: "center" }}>
               Ingresa a tu cuenta para gestionar tu rancho

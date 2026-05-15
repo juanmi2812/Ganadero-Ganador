@@ -1,0 +1,146 @@
+1. SOBRE LA APP
+Nombre y concepto
+¿Cómo se llama la app?
+¿Ya tienes logo o identidad visual?
+
+¿Cuál es la idea principal en una sola frase?
+Ejemplo:
+
+“Conecta personas con trabajadores confiables cerca de ellos.”
+
+2. PROBLEMA QUE RESUELVE
+¿Qué problema real resuelve?
+¿Qué es lo que más le molesta hoy al usuario?
+¿Qué hace tu app diferente a otras?
+¿Qué ventajas tiene frente a grupos de Facebook, WhatsApp o apps similares?
+3. PÚBLICO OBJETIVO
+¿Quién va a usar la app?
+Clientes buscando servicios
+Trabajadores/oficios
+Empresas
+Todos
+¿Qué edad aproximada tienen?
+¿Son personas muy tecnológicas o más sencillas?
+¿La página será enfocada en México solamente por ahora?
+4. FUNCIONES IMPORTANTES
+¿Qué podrá hacer el usuario dentro de la app?
+Marca lo importante:
+Buscar trabajadores
+Ver ubicación
+Calificaciones
+Chat
+Pagos
+Cotizaciones
+Emergencias
+IA
+Agenda
+Verificación de identidad
+Otro
+¿Qué función es la MÁS impresionante o útil?
+5. OBJETIVO DE LA WEB
+¿Qué quieres lograr con la página?
+Puedes elegir varias:
+Conseguir personas interesadas
+Lista de espera
+Conseguir inversionistas
+Conseguir trabajadores
+Validar idea
+Dar confianza
+Mostrar demo
+Otro
+¿Qué quieres que haga el visitante?
+Ejemplos:
+Dejar WhatsApp
+Dejar correo
+Registrarse
+Descargar próximamente
+Agendar llamada
+6. FORMULARIO / CONTACTO
+¿Qué datos quieres pedir?
+Opciones:
+Nombre
+Teléfono
+WhatsApp
+Correo
+Ciudad
+Tipo de oficio
+Comentarios
+¿A dónde quieres que lleguen esos datos?
+Correo
+Google Sheets
+WhatsApp
+CRM
+No sabes aún
+7. ESTILO VISUAL
+¿Qué estilo quieres?
+Ejemplos:
+Moderno tecnológico
+Minimalista
+Muy empresarial
+Tipo startup
+Muy mexicano/popular
+Elegante premium
+Similar a Uber
+Similar a Airbnb
+Similar a MercadoLibre
+¿Qué colores te gustan?
+¿Qué colores NO quieres?
+8. CONTENIDO VISUAL
+¿Ya tienes:
+Logo
+Mockups
+Screenshots
+Video
+Demo
+Nada todavía
+¿Quieres que usemos imágenes tipo:
+Personas trabajando
+Celulares mostrando la app
+Mapas
+IA/tecnología
+Hogares
+Construcción/reparaciones
+9. CONFIANZA Y CREDIBILIDAD
+¿Quieres mostrar:
+“Próximamente”
+Beta privada
+Early access
+Cupos limitados
+Seguridad/verificación
+Garantía
+Casos de uso
+¿Quieres sección FAQ?
+¿Quieres testimonios aunque todavía sean simulados para demo visual?
+10. TECNOLOGÍA Y FUTURO
+¿La página será:
+Solo informativa
+Landing page simple
+Varias secciones
+Multi página
+Blog después
+¿Quieres que esté preparada para:
+SEO (salir en Google)
+Google Analytics
+Facebook Pixel
+WhatsApp botón flotante
+Animaciones modernas
+Modo móvil primero
+11. DOMINIO Y PUBLICACIÓN
+¿Ya tienes dominio?
+¿Dónde piensas publicarla?
+Vercel
+Hostinger
+GoDaddy
+No sabes aún
+¿Quieres que sea rápida y barata de mantener?
+12. EXTRA IMPORTANTE
+¿Cuál es la emoción que quieres transmitir?
+Ejemplos:
+Confianza
+Seguridad
+Rapidez
+Modernidad
+Cercanía
+Profesionalismo
+Si alguien entra 5 segundos a la página… ¿qué debería entender inmediatamente?
+¿Qué es lo MÁS importante que no puede faltar?

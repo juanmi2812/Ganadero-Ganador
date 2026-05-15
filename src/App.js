@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Login from "./views/Login";
+import LandingPage from "./views/LandingPage";
+
 import ImportadorMasivo from "./views/ImportadorMasivo";
 import DashboardGanado from "./views/DashboardGanado";
 import NuevoAnimal from "./views/NuevoAnimal";
@@ -18,6 +20,7 @@ export default function App() {
   const [cargandoAuth, setCargandoAuth] = useState(true);
   const [vistaActiva, setVistaActiva] = useState("dashboard");
   const [abrirModalTratamientoMasivo, setAbrirModalTratamientoMasivo] = useState(false);
+  const [vistaPublica, setVistaPublica] = useState("landing"); // "landing" | "login"
 
   // Detecta sesión activa al arrancar (persistencia automática de Firebase)
   useEffect(() => {
@@ -61,7 +64,10 @@ export default function App() {
   }
 
   if (!usuario) {
-    return <Login alIniciarSesion={setUsuario} />;
+    if (vistaPublica === "landing") {
+      return <LandingPage onLoginClick={() => setVistaPublica("login")} />;
+    }
+    return <Login alIniciarSesion={setUsuario} onVolverALanding={() => setVistaPublica("landing")} />;
   }
 
   const tabs = [
