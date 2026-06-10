@@ -3,3 +3,9 @@ Si al abrir la aplicación ves que empiezas de cero, haz lo siguiente:
 
 Busca el historial de conversaciones y selecciona la que tiene el ID arriba mencionado.
 Si por alguna razón empiezas un chat nuevo, puedes escribirme: "Retoma desde la conversación 429959ad" y yo buscaré automáticamente estos archivos en tu computadora para "ponerme al día" en segundos.
+
+
+14/05:
+- Ganadero: @b07068c7-a636-4291-8a8e-23c760d6d419
+- Farmly: @conversation 408150c9-43e5-4d48-8318-455b25c12962
+- Oficio Seguro: 5e211003-eef7-45e1-a490-0ccbdb7107a5

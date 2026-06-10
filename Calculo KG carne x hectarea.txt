@@ -5,3 +5,5 @@ Para calculo de kg por hectarea:
 3) incremento diario promedio (ponderado): 2 / 1
 4) KG de carne x Hectarea: Kg producidos / Hectáreas
 5) se Analiza los kg de carne por hectarea 
+
+

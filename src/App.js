@@ -15,6 +15,22 @@ import { doc, getDoc } from "firebase/firestore";
 import "./styles.css";
 
 export default function App() {
+  // --- MODO MANTENIMIENTO ---
+  // Cambiar a false cuando queramos volver a encender la app
+  const MODO_MANTENIMIENTO = true; 
+
+  if (MODO_MANTENIMIENTO) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", backgroundColor: "#f0f2f5", padding: "20px", textAlign: "center" }}>
+        <div style={{ fontSize: "64px", marginBottom: "16px" }}>🚧</div>
+        <h1 style={{ color: "#111827", marginBottom: "8px", fontSize: "28px" }}>Sitio en Mantenimiento</h1>
+        <p style={{ color: "#4b5563", maxWidth: "450px", lineHeight: "1.6" }}>
+          Estamos realizando algunas mejoras rápidas en el sistema para ofrecerte un mejor servicio. Volveremos a estar en línea en un momento. ¡Gracias por tu paciencia!
+        </p>
+      </div>
+    );
+  }
+
   const [usuario, setUsuario] = useState(null);   // null = no auth, objeto = perfil cargado
   const [cargandoAuth, setCargandoAuth] = useState(true);
   const [vistaActiva, setVistaActiva] = useState("dashboard");
