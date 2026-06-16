@@ -13,7 +13,7 @@ export default function ConfiguracionPotreros({ usuario }) {
   const [editandoId, setEditandoId] = useState(null);
   const [datosForm, setDatosForm] = useState({
     nombre: "", hectareas: "", tipoPastoNombre: "", porcentajePasto: "",
-    tipoPastoTamano: "", divisiones: []
+    tipoPastoTamano: "", numeroPresas: "", numeroBebederos: "", divisiones: []
   });
   const [nuevaDivision, setNuevaDivision] = useState("");
 
@@ -81,6 +81,8 @@ export default function ConfiguracionPotreros({ usuario }) {
         tipoPastoNombre: datosForm.tipoPastoNombre || "",
         porcentajePasto: Number(datosForm.porcentajePasto) || 0,
         tipoPastoTamano: datosForm.tipoPastoTamano || "",
+        numeroPresas: Number(datosForm.numeroPresas) || 0,
+        numeroBebederos: Number(datosForm.numeroBebederos) || 0,
         divisiones: datosForm.divisiones || [],
         ranchoId: usuario?.ranchoId || null
       };
@@ -97,7 +99,7 @@ export default function ConfiguracionPotreros({ usuario }) {
     setFormActivo(false);
     setEditandoId(null);
     setNuevaDivision("");
-    setDatosForm({ nombre: "", hectareas: "", tipoPastoNombre: "", porcentajePasto: "", tipoPastoTamano: "", divisiones: [] });
+    setDatosForm({ nombre: "", hectareas: "", tipoPastoNombre: "", porcentajePasto: "", tipoPastoTamano: "", numeroPresas: "", numeroBebederos: "", divisiones: [] });
   };
 
   const editarPotrero = (pot) => {
@@ -107,6 +109,8 @@ export default function ConfiguracionPotreros({ usuario }) {
       tipoPastoNombre: pot.tipoPastoNombre || "",
       porcentajePasto: pot.porcentajePasto || "",
       tipoPastoTamano: pot.tipoPastoTamano || "",
+      numeroPresas: pot.numeroPresas || "",
+      numeroBebederos: pot.numeroBebederos || "",
       divisiones: pot.divisiones || [],
     });
     setEditandoId(pot.id);
@@ -339,6 +343,20 @@ export default function ConfiguracionPotreros({ usuario }) {
                   <option value="Corte">Corte (Taiwán, maíz, caña de azúcar)</option>
                 </select>
               </div>
+              {/* Número de Presas */}
+              <div style={{ flex: "1 1 120px" }}>
+                <label style={labelStyle}>Núm. de Presas</label>
+                <input type="number" min="0" placeholder="Ej: 2"
+                  value={datosForm.numeroPresas} onChange={e => setDatosForm({...datosForm, numeroPresas: e.target.value})}
+                  style={inputStyle} />
+              </div>
+              {/* Número de Bebederos */}
+              <div style={{ flex: "1 1 120px" }}>
+                <label style={labelStyle}>Núm. Bebederos</label>
+                <input type="number" min="0" placeholder="Ej: 4"
+                  value={datosForm.numeroBebederos} onChange={e => setDatosForm({...datosForm, numeroBebederos: e.target.value})}
+                  style={inputStyle} />
+              </div>
             </div>
 
             {/* Divisiones Internas */}
@@ -388,6 +406,8 @@ export default function ConfiguracionPotreros({ usuario }) {
                 <th style={{ padding: "10px 8px" }}>Pasto</th>
                 <th style={{ padding: "10px 8px" }}>% Maleza</th>
                 <th style={{ padding: "10px 8px" }}>Tamaño</th>
+                <th style={{ padding: "10px 8px" }}>Presas</th>
+                <th style={{ padding: "10px 8px" }}>Bebederos</th>
                 <th style={{ padding: "10px 8px" }}>Divisiones</th>
                 <th style={{ padding: "10px 8px", textAlign: "center" }}>Acciones</th>
               </tr>
@@ -403,6 +423,8 @@ export default function ConfiguracionPotreros({ usuario }) {
                     <td style={{ padding: "10px 8px", color: "#4b5563" }}>{pot.tipoPastoNombre || "-"}</td>
                     <td style={{ padding: "10px 8px", color: "#4b5563" }}>{pot.porcentajePasto ? `${pot.porcentajePasto}%` : "-"}</td>
                     <td style={{ padding: "10px 8px", color: "#4b5563" }}>{pot.tipoPastoTamano || "-"}</td>
+                    <td style={{ padding: "10px 8px", color: "#4b5563" }}>{pot.numeroPresas || "0"}</td>
+                    <td style={{ padding: "10px 8px", color: "#4b5563" }}>{pot.numeroBebederos || "0"}</td>
                     <td style={{ padding: "10px 8px", color: "#4b5563" }}>
                       {pot.divisiones?.length > 0
                         ? <span title={pot.divisiones.join(", ")}>{pot.divisiones.length} div. ({pot.divisiones.slice(0,2).join(", ")}{pot.divisiones.length > 2 ? "..." : ""})</span>

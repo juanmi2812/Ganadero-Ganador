@@ -10,6 +10,7 @@ export default function NuevoAnimal({ usuario }) {
 
   const [datosFormulario, setDatosFormulario] = useState({
     arete: "",
+    areteRancho: "",
     tipo: "Desarrollo",
     sexo: "Hembra",
     raza: "",
@@ -71,6 +72,7 @@ export default function NuevoAnimal({ usuario }) {
 
     const animalNuevo = {
       arete: datosFormulario.arete,
+      areteRancho: datosFormulario.areteRancho || "",
       tipo: datosFormulario.tipo,
       sexo: datosFormulario.sexo,
       raza: datosFormulario.raza,
@@ -92,6 +94,7 @@ export default function NuevoAnimal({ usuario }) {
         setExito(false);
         setDatosFormulario({
           arete: "",
+          areteRancho: "",
           tipo: "Desarrollo",
           sexo: "Hembra",
           raza: "",
@@ -140,13 +143,23 @@ export default function NuevoAnimal({ usuario }) {
             }}
           >
             <div className="input-group">
-              <label>Número de Arete</label>
+              <label>Arete Oficial (SINIIGA)</label>
               <input
                 type="text"
                 name="arete"
                 value={datosFormulario.arete}
                 onChange={manejarCambio}
                 required
+              />
+            </div>
+
+            <div className="input-group">
+              <label>Arete Rancho</label>
+              <input
+                type="text"
+                name="areteRancho"
+                value={datosFormulario.areteRancho}
+                onChange={manejarCambio}
               />
             </div>
 

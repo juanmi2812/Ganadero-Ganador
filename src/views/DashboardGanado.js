@@ -47,6 +47,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   // Cambio de Arete
   const [mostrarModalArete, setMostrarModalArete] = useState(false);
   const [nuevoArete, setNuevoArete] = useState("");
+  const [nuevoAreteRancho, setNuevoAreteRancho] = useState("");
 
   useEffect(() => {
     if (abrirModalTratamientoMasivo) {
@@ -272,12 +273,12 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
 
   const guardarCambioArete = async (e) => {
     e.preventDefault();
-    if (!nuevoArete.trim()) return;
+    if (!nuevoArete.trim() && !nuevoAreteRancho.trim()) return;
     try {
       await addDoc(collection(db, "eventos"), {
         animalId: animalActivo.id,
         tipo: "Cambio de Arete",
-        resultado: `Anterior: ${animalActivo.arete} -> Nuevo: ${nuevoArete}`,
+        resultado: `SINIIGA: ${animalActivo.arete || "--"} -> ${nuevoArete || "--"} | Rancho: ${animalActivo.areteRancho || "--"} -> ${nuevoAreteRancho || "--"}`,
         fecha: new Date().toISOString().split('T')[0],
         costo: 0,
         origen: "realizado",
@@ -285,12 +286,14 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
       });
 
       await updateDoc(doc(db, "animales", animalActivo.id), {
-        arete: nuevoArete
+        arete: nuevoArete,
+        areteRancho: nuevoAreteRancho
       });
 
-      setAnimalActivo({...animalActivo, arete: nuevoArete});
+      setAnimalActivo({...animalActivo, arete: nuevoArete, areteRancho: nuevoAreteRancho});
       setMostrarModalArete(false);
       setNuevoArete("");
+      setNuevoAreteRancho("");
     } catch (error) {
       console.error(error);
       alert("Error al cambiar el arete.");
@@ -600,7 +603,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
               {getAnimalEmoji(animal.tipo, animal.sexo)}
             </div>
             <div className="animal-info">
-              <div className="animal-arete">{animal.arete}</div>
+              <div className="animal-arete">{animal.arete} {animal.areteRancho ? `(Rancho: ${animal.areteRancho})` : ""}</div>
               <div className="animal-meta">
                 {animal.raza} • {animal.tipo} <br/> 
                 <span style={{ color: "var(--verde-medio)", fontWeight: "600", fontSize: "11px" }}>📍 {animal.potrero || animal.hectarea || "Sin Lote"} {animal.grupo && ` • 🏷️ ${animal.grupo}`}</span>
@@ -616,19 +619,20 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
       {animalActivo && (
         <div className="modal-overlay" onClick={() => setAnimalActivo(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <h2>Arete: {animalActivo.arete}</h2>
-                <button onClick={() => { setNuevoArete(animalActivo.arete); setMostrarModalArete(true); }} style={{ fontSize: "11px", padding: "4px 8px", backgroundColor: "#f3f4f6", border: "1px solid #d1d5db", borderRadius: "4px", cursor: "pointer", color: "#4b5563" }}>🔄 Cambiar Arete</button>
+                <h2>SINIIGA: {animalActivo.arete || "--"} | Rancho: {animalActivo.areteRancho || "--"}</h2>
+                <button onClick={() => { setNuevoArete(animalActivo.arete || ""); setNuevoAreteRancho(animalActivo.areteRancho || ""); setMostrarModalArete(true); }} style={{ fontSize: "11px", padding: "4px 8px", backgroundColor: "#f3f4f6", border: "1px solid #d1d5db", borderRadius: "4px", cursor: "pointer", color: "#4b5563" }}>🔄 Cambiar Arete</button>
               </div>
               <button onClick={() => { setAnimalActivo(null); setMostrarModalArete(false); }} style={{ background: "none", border: "none" }}><X size={24} /></button>
             </div>
             
             {mostrarModalArete && (
-              <div style={{ backgroundColor: "#fef2f2", padding: "16px", borderRadius: "8px", border: "1px solid #fecaca", marginBottom: "20px" }}>
-                <h4 style={{ margin: "0 0 10px 0", color: "#991b1b" }}>Cambio de Arete</h4>
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <input type="text" value={nuevoArete} onChange={e => setNuevoArete(e.target.value)} placeholder="Nuevo Arete" style={{ flex: 1, padding: "8px", borderRadius: "6px", border: "1px solid #fca5a5" }} />
+              <div style={{ backgroundColor: "#fef2f2", padding: "16px", borderRadius: "8px", border: "1px solid #fca5a5", marginBottom: "20px" }}>
+                <h4 style={{ margin: "0 0 10px 0", color: "#991b1b" }}>Cambio de Identificación</h4>
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                  <input type="text" value={nuevoArete} onChange={e => setNuevoArete(e.target.value)} placeholder="Arete Oficial (SINIIGA)" style={{ flex: 1, minWidth: "150px", padding: "8px", borderRadius: "6px", border: "1px solid #fca5a5" }} />
+                  <input type="text" value={nuevoAreteRancho} onChange={e => setNuevoAreteRancho(e.target.value)} placeholder="Arete Rancho" style={{ flex: 1, minWidth: "150px", padding: "8px", borderRadius: "6px", border: "1px solid #fca5a5" }} />
                   <button onClick={guardarCambioArete} style={{ backgroundColor: "#dc2626", color: "white", border: "none", padding: "8px 16px", borderRadius: "6px", cursor: "pointer" }}>Guardar</button>
                   <button onClick={() => setMostrarModalArete(false)} style={{ backgroundColor: "white", color: "#4b5563", border: "1px solid #d1d5db", padding: "8px 16px", borderRadius: "6px", cursor: "pointer" }}>Cancelar</button>
                 </div>
