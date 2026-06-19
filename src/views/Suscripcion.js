@@ -3,7 +3,7 @@ import { CheckCircle2, ShieldCheck, Zap, ArrowRight, LogOut } from "lucide-react
 import { httpsCallable } from "firebase/functions";
 import { functions, signOut, auth } from "../firebase";
 
-export default function Suscripcion({ usuario, setUsuario }) {
+export default function Suscripcion({ usuario, setUsuario, onOmitir }) {
   const [cargando, setCargando] = useState(false);
 
   // Reemplazar con los IDs reales de los precios de Stripe que creaste
@@ -115,8 +115,19 @@ export default function Suscripcion({ usuario, setUsuario }) {
           </div>
         </div>
         
-        <div style={{ marginTop: "40px", color: "#6b7280", fontSize: "13px", display: "flex", alignItems: "center", gap: "6px" }}>
-          <ShieldCheck size={16} /> Pagos seguros procesados por Stripe. Cancela en cualquier momento.
+        <div style={{ marginTop: "40px", color: "#6b7280", fontSize: "13px", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <ShieldCheck size={16} /> Pagos seguros procesados por Stripe. Cancela en cualquier momento.
+          </div>
+          
+          {onOmitir && (
+            <button 
+              onClick={onOmitir} 
+              style={{ background: "none", border: "none", color: "#9ca3af", textDecoration: "underline", cursor: "pointer", fontSize: "12px" }}
+            >
+              Omitir por ahora (Modo Pruebas)
+            </button>
+          )}
         </div>
       </main>
     </div>
