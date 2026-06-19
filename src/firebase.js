@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore"; // 1. ESTA LIBRERÍA ES VITAL
+import { getFunctions } from "firebase/functions";
 import {
   getAuth,
   GoogleAuthProvider,
@@ -27,6 +28,7 @@ const app = initializeApp(firebaseConfig);
 // Exportamos los servicios para usarlos en nuestras pantallas
 export const auth = getAuth(app);
 export const db = getFirestore(app); // Esta es la línea mágica que arregla el error
+export const functions = getFunctions(app);
 export const googleProvider = new GoogleAuthProvider();
 export const appleProvider = new OAuthProvider("apple.com");
 

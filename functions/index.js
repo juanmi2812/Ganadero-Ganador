@@ -98,3 +98,109 @@ exports.actualizarCategoriasGanado = functions.pubsub
     
     return null;
   });
+
+// ==========================================
+// INTEGRACIÓN CON STRIPE (SUSCRIPCIONES)
+// ==========================================
+
+// Para producción o despliegue real, Firebase usa variables de entorno:
+const stripeKey = process.env.STRIPE_SECRET_KEY || "CLAVE_SECRETA_AQUI";
+const stripe = require("stripe")(stripeKey);
+
+exports.createCheckoutSession = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "Debe iniciar sesión");
+
+  const { priceId, successUrl, cancelUrl } = data;
+  const uid = context.auth.uid;
+  
+  // Buscar si ya tiene customer ID
+  const userDoc = await db.collection("usuarios").doc(uid).get();
+  const userData = userDoc.data();
+  let customerId = userData.stripeCustomerId;
+
+  if (!customerId) {
+    const customer = await stripe.customers.create({
+      email: context.auth.token.email,
+      metadata: { firebaseUID: uid }
+    });
+    customerId = customer.id;
+    await userDoc.ref.update({ stripeCustomerId: customerId });
+  }
+
+  const session = await stripe.checkout.sessions.create({
+    customer: customerId,
+    mode: "subscription",
+    payment_method_types: ["card"],
+    line_items: [{ price: priceId, quantity: 1 }],
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    metadata: { firebaseUID: uid }
+  });
+
+  return { sessionId: session.id, url: session.url };
+});
+
+exports.createPortalSession = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "Debe iniciar sesión");
+
+  const uid = context.auth.uid;
+  const userDoc = await db.collection("usuarios").doc(uid).get();
+  const userData = userDoc.data();
+  const customerId = userData.stripeCustomerId;
+
+  if (!customerId) throw new functions.https.HttpsError("failed-precondition", "No hay cliente Stripe");
+
+  const session = await stripe.billingPortal.sessions.create({
+    customer: customerId,
+    return_url: data.returnUrl,
+  });
+
+  return { url: session.url };
+});
+
+exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
+  const sig = req.headers["stripe-signature"];
+  // Por ahora, sin verificar la firma para poder capturar el primer evento.
+  // En producción, aquí va el whsec_...
+  let event = req.body;
+
+  try {
+    // Si viene crudo, parsearlo. Firebase Functions expone req.rawBody para firmas.
+    if (Buffer.isBuffer(req.rawBody)) {
+        event = JSON.parse(req.rawBody.toString());
+    }
+  } catch (err) {
+    console.error("Webhook Error", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  try {
+    switch (event.type) {
+      case "checkout.session.completed":
+      case "invoice.payment_succeeded": {
+        const customerId = event.data.object.customer;
+        // Buscar al usuario por customerId
+        const usersSnap = await db.collection("usuarios").where("stripeCustomerId", "==", customerId).get();
+        if (!usersSnap.empty) {
+          const userRef = usersSnap.docs[0].ref;
+          await userRef.update({ suscripcionActiva: true, estadoSuscripcion: "active" });
+        }
+        break;
+      }
+      case "customer.subscription.deleted":
+      case "customer.subscription.canceled": {
+        const customerId = event.data.object.customer;
+        const usersSnap = await db.collection("usuarios").where("stripeCustomerId", "==", customerId).get();
+        if (!usersSnap.empty) {
+          const userRef = usersSnap.docs[0].ref;
+          await userRef.update({ suscripcionActiva: false, estadoSuscripcion: "canceled" });
+        }
+        break;
+      }
+    }
+    res.json({ received: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).end();
+  }
+});

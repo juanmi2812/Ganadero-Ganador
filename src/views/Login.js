@@ -84,12 +84,16 @@ export default function Login({ alIniciarSesion }) {
         adminUid: cred.user.uid,
         fechaCreacion: new Date().toISOString(),
       });
+      const hoy = new Date();
+      hoy.setDate(hoy.getDate() + 30);
+      
       await setDoc(doc(db, "usuarios", cred.user.uid), {
         nombre: nombre.trim(),
         correo: correo.trim(),
         rol: "admin",
         ranchoId: ranchoRef.id,
         ranchoNombre: nombreRancho.trim(),
+        fechaFinPrueba: hoy.toISOString(),
       });
       alIniciarSesion({
         uid: cred.user.uid,
@@ -175,12 +179,16 @@ export default function Login({ alIniciarSesion }) {
         adminUid: uid,
         fechaCreacion: new Date().toISOString(),
       });
+      const hoy = new Date();
+      hoy.setDate(hoy.getDate() + 30);
+
       const perfil = {
         nombre: nombre || googleUser.displayName || "",
         correo: googleUser.email || "",
         rol: "admin",
         ranchoId: ranchoRef.id,
         ranchoNombre: nombreRancho.trim(),
+        fechaFinPrueba: hoy.toISOString(),
       };
       await setDoc(doc(db, "usuarios", uid), perfil);
       alIniciarSesion({ uid, ...perfil });

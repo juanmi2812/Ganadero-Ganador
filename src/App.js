@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Login from "./views/Login";
+import Suscripcion from "./views/Suscripcion";
 
 import ImportadorMasivo from "./views/ImportadorMasivo";
 import DashboardGanado from "./views/DashboardGanado";
@@ -8,10 +9,11 @@ import CalendarioAlertas from "./views/CalendarioAlertas";
 import ReportesBI from "./views/ReportesBI";
 import ConfiguracionFinanciera from "./views/ConfiguracionFinanciera";
 import ConfiguracionPotreros from "./views/ConfiguracionPotreros";
-import { Home, CalendarDays, BarChart3, Settings, LogOut, Plus, Map } from "lucide-react";
+import { Home, CalendarDays, BarChart3, Settings, LogOut, Plus, Map, CreditCard } from "lucide-react";
 import logoConvivet from "./assets/logo_convivet.jpg";
-import { auth, db, onAuthStateChanged, signOut } from "./firebase";
+import { auth, db, onAuthStateChanged, signOut, functions } from "./firebase";
 import { doc, getDoc } from "firebase/firestore";
+import { httpsCallable } from "firebase/functions";
 import "./styles.css";
 
 export default function App() {
@@ -44,6 +46,18 @@ export default function App() {
     return () => unsub();
   }, []);
 
+  const abrirPortalSuscripcion = async () => {
+    try {
+      const createPortalSession = httpsCallable(functions, 'createPortalSession');
+      const result = await createPortalSession({
+        returnUrl: window.location.href
+      });
+      window.location.assign(result.data.url);
+    } catch (err) {
+      alert("No se pudo abrir el portal de suscripción. Asegúrate de tener una suscripción activa.");
+    }
+  };
+
   const cerrarSesion = async () => {
     await signOut(auth);
     setUsuario(null);
@@ -64,6 +78,16 @@ export default function App() {
 
   if (!usuario) {
     return <Login alIniciarSesion={setUsuario} />;
+  }
+
+  // Lógica de Suscripción / Paywall
+  const tieneSuscripcionActiva = usuario.suscripcionActiva === true;
+  const hoy = new Date();
+  const finPrueba = usuario.fechaFinPrueba ? new Date(usuario.fechaFinPrueba) : new Date(0); // Si no tiene, se venció
+  const enPeriodoDePrueba = hoy <= finPrueba;
+
+  if (!tieneSuscripcionActiva && !enPeriodoDePrueba && usuario.rol !== "admin_super") {
+    return <Suscripcion usuario={usuario} setUsuario={setUsuario} />;
   }
 
   const tabs = [
@@ -91,6 +115,11 @@ export default function App() {
           <div style={{ fontSize: "12px", color: "#e5e7eb", lineHeight: 1.2, textAlign: "right", maxWidth: "100px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {usuario.nombre || usuario.correo}
           </div>
+          {usuario.rol === "admin" && (
+            <button title="Mi Suscripción" onClick={abrirPortalSuscripcion}>
+              <CreditCard size={18} />
+            </button>
+          )}
           <button title="Cerrar sesión" onClick={cerrarSesion}>
             <LogOut size={18} />
           </button>
