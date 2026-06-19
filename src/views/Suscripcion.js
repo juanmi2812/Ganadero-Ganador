@@ -98,7 +98,7 @@ export default function Suscripcion({ usuario, setUsuario, onOmitir }) {
             </div>
             
             <ul style={{ listStyle: "none", padding: 0, margin: "0 0 32px 0", flex: 1, color: "white" }}>
-              {["Todo lo del plan mensual", "2 meses y medio GRATIS", "Acceso prioritario a nuevas funciones"].map((item, i) => (
+              {["Todo lo del plan mensual", "2 meses y medio GRATIS"].map((item, i) => (
                 <li key={i} style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
                   <CheckCircle2 size={18} color="#dcfce7" /> {item}
                 </li>
