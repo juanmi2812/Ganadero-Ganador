@@ -126,15 +126,6 @@ export default function Suscripcion({ usuario, setUsuario, onVolver }) {
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <ShieldCheck size={16} /> Pagos seguros procesados por Stripe. Cancela en cualquier momento.
           </div>
-          
-          {onOmitir && (
-            <button 
-              onClick={onOmitir} 
-              style={{ background: "none", border: "none", color: "#9ca3af", textDecoration: "underline", cursor: "pointer", fontSize: "12px" }}
-            >
-              Omitir por ahora (Modo Pruebas)
-            </button>
-          )}
         </div>
       </main>
     </div>
