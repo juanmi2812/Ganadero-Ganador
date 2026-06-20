@@ -18,6 +18,19 @@ import "./styles.css";
 
 export default function App() {
 
+  // --- MODO MANTENIMIENTO ---
+  const MODO_MANTENIMIENTO = true;
+  if (MODO_MANTENIMIENTO) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", backgroundColor: "#f9fafb", padding: "20px", textAlign: "center" }}>
+        <h1 style={{ fontSize: "24px", color: "#111827", marginBottom: "16px" }}>🚧 Sitio en Mantenimiento</h1>
+        <p style={{ fontSize: "16px", color: "#4b5563", maxWidth: "400px" }}>
+          Estamos realizando algunas mejoras en el sistema. Volveremos a estar en línea muy pronto. Disculpa las molestias.
+        </p>
+      </div>
+    );
+  }
+
   const [usuario, setUsuario] = useState(null);   // null = no auth, objeto = perfil cargado
   const [cargandoAuth, setCargandoAuth] = useState(true);
   const [vistaActiva, setVistaActiva] = useState("dashboard");
