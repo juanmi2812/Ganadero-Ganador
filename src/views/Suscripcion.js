@@ -42,7 +42,6 @@ export default function Suscripcion({ usuario, setUsuario, onVolver }) {
         <h1 style={{ margin: 0, fontSize: "20px", color: "#111827", display: "flex", alignItems: "center", gap: "8px" }}>
           <ShieldCheck size={24} color="#16a34a" /> Ganadero Ganador
         </h1>
-        </h1>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           {onVolver && (
             <button onClick={onVolver} style={{ background: "none", border: "none", cursor: "pointer", color: "#16a34a", fontWeight: "600", fontSize: "14px" }}>
