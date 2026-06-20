@@ -7,8 +7,8 @@ export default function Suscripcion({ usuario, setUsuario, onOmitir }) {
   const [cargando, setCargando] = useState(false);
 
   // Reemplazar con los IDs reales de los precios de Stripe que creaste
-  const PRICE_ID_MENSUAL = "price_1TkB7GGT0cvg4XcjwmpmY7eI"; 
-  const PRICE_ID_ANUAL = "price_1TkB7GGT0cvg4Xcj6Lz7MFcE";
+  const PRICE_ID_MENSUAL = "price_1TkFZLDveqVmu6L4W4IjbROt"; 
+  const PRICE_ID_ANUAL = "price_1TkFZLDveqVmu6L4zQnqPosO";
 
   const iniciarCheckout = async (priceId) => {
     setCargando(true);
