@@ -19,7 +19,7 @@ import "./styles.css";
 export default function App() {
 
   // --- MODO MANTENIMIENTO ---
-  const MODO_MANTENIMIENTO = true;
+  const MODO_MANTENIMIENTO = false;
   if (MODO_MANTENIMIENTO) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", backgroundColor: "#f9fafb", padding: "20px", textAlign: "center" }}>
@@ -35,7 +35,6 @@ export default function App() {
   const [cargandoAuth, setCargandoAuth] = useState(true);
   const [vistaActiva, setVistaActiva] = useState("dashboard");
   const [abrirModalTratamientoMasivo, setAbrirModalTratamientoMasivo] = useState(false);
-  const [omitirPaywall, setOmitirPaywall] = useState(false);
 
   // Detecta sesión activa al arrancar (persistencia automática de Firebase)
   useEffect(() => {
@@ -100,8 +99,8 @@ export default function App() {
   const finPrueba = usuario.fechaFinPrueba ? new Date(usuario.fechaFinPrueba) : new Date(0); // Si no tiene, se venció
   const enPeriodoDePrueba = hoy <= finPrueba;
 
-  if (!tieneSuscripcionActiva && !enPeriodoDePrueba && usuario.rol !== "admin_super" && !omitirPaywall) {
-    return <Suscripcion usuario={usuario} setUsuario={setUsuario} onOmitir={() => setOmitirPaywall(true)} />;
+  if (!tieneSuscripcionActiva && !enPeriodoDePrueba && usuario.rol !== "admin_super") {
+    return <Suscripcion usuario={usuario} setUsuario={setUsuario} />;
   }
 
   const tabs = [
