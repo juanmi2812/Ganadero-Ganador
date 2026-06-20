@@ -102,6 +102,7 @@ export default function Login({ alIniciarSesion }) {
         rol: "admin",
         ranchoId: ranchoRef.id,
         ranchoNombre: nombreRancho.trim(),
+        fechaFinPrueba: hoy.toISOString(),
       });
     } catch (err) {
       setError(mensajeError(err.code || err.message));
