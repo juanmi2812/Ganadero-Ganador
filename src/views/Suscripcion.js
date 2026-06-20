@@ -3,7 +3,7 @@ import { CheckCircle2, ShieldCheck, Zap, ArrowRight, LogOut } from "lucide-react
 import { httpsCallable } from "firebase/functions";
 import { functions, signOut, auth } from "../firebase";
 
-export default function Suscripcion({ usuario, setUsuario, onOmitir }) {
+export default function Suscripcion({ usuario, setUsuario, onVolver }) {
   const [cargando, setCargando] = useState(false);
 
   // Reemplazar con los IDs reales de los precios de Stripe que creaste
@@ -42,18 +42,26 @@ export default function Suscripcion({ usuario, setUsuario, onOmitir }) {
         <h1 style={{ margin: 0, fontSize: "20px", color: "#111827", display: "flex", alignItems: "center", gap: "8px" }}>
           <ShieldCheck size={24} color="#16a34a" /> Ganadero Ganador
         </h1>
-        <button onClick={cerrarSesion} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", display: "flex", alignItems: "center", gap: "6px" }}>
-          <LogOut size={16} /> Cerrar sesión
-        </button>
+        </h1>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          {onVolver && (
+            <button onClick={onVolver} style={{ background: "none", border: "none", cursor: "pointer", color: "#16a34a", fontWeight: "600", fontSize: "14px" }}>
+              Volver a mi Ganado
+            </button>
+          )}
+          <button onClick={cerrarSesion} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", display: "flex", alignItems: "center", gap: "6px" }}>
+            <LogOut size={16} /> Cerrar sesión
+          </button>
+        </div>
       </header>
 
       <main style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
         <div style={{ textAlign: "center", maxWidth: "600px", marginBottom: "40px" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", backgroundColor: "#fef3c7", color: "#92400e", padding: "6px 12px", borderRadius: "20px", fontSize: "13px", fontWeight: "600", marginBottom: "16px" }}>
-            <Zap size={16} /> Tu periodo de prueba ha finalizado
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", backgroundColor: onVolver ? "#dcfce7" : "#fef3c7", color: onVolver ? "#166534" : "#92400e", padding: "6px 12px", borderRadius: "20px", fontSize: "13px", fontWeight: "600", marginBottom: "16px" }}>
+            <Zap size={16} /> {onVolver ? "Asegura tu acceso ilimitado" : "Tu periodo de prueba ha finalizado"}
           </div>
           <h2 style={{ fontSize: "32px", color: "#111827", marginBottom: "16px", marginTop: 0 }}>
-            Continúa usando Ganadero Ganador
+            {onVolver ? "Elige un plan de suscripción" : "Continúa usando Ganadero Ganador"}
           </h2>
           <p style={{ fontSize: "16px", color: "#4b5563", lineHeight: "1.6", margin: 0 }}>
             Para seguir llevando el control total de tu rancho, elige un plan de suscripción. Todos los datos de tu ganado están guardados de forma segura.

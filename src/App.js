@@ -35,6 +35,7 @@ export default function App() {
   const [cargandoAuth, setCargandoAuth] = useState(true);
   const [vistaActiva, setVistaActiva] = useState("dashboard");
   const [abrirModalTratamientoMasivo, setAbrirModalTratamientoMasivo] = useState(false);
+  const [forzarPaywall, setForzarPaywall] = useState(false);
 
   // Detecta sesión activa al arrancar (persistencia automática de Firebase)
   useEffect(() => {
@@ -98,9 +99,10 @@ export default function App() {
   const hoy = new Date();
   const finPrueba = usuario.fechaFinPrueba ? new Date(usuario.fechaFinPrueba) : new Date(0); // Si no tiene, se venció
   const enPeriodoDePrueba = hoy <= finPrueba;
+  const diasRestantesPrueba = Math.ceil((finPrueba - hoy) / (1000 * 60 * 60 * 24));
 
-  if (!tieneSuscripcionActiva && !enPeriodoDePrueba && usuario.rol !== "admin_super") {
-    return <Suscripcion usuario={usuario} setUsuario={setUsuario} />;
+  if ((!tieneSuscripcionActiva && !enPeriodoDePrueba && usuario.rol !== "admin_super") || forzarPaywall) {
+    return <Suscripcion usuario={usuario} setUsuario={setUsuario} onVolver={enPeriodoDePrueba ? () => setForzarPaywall(false) : null} />;
   }
 
   const tabs = [
@@ -128,7 +130,12 @@ export default function App() {
           <div style={{ fontSize: "12px", color: "#e5e7eb", lineHeight: 1.2, textAlign: "right", maxWidth: "100px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {usuario.nombre || usuario.correo}
           </div>
-          {usuario.rol === "admin" && (
+          {usuario.rol === "admin" && !tieneSuscripcionActiva && (
+            <button title="Suscribirme" onClick={() => setForzarPaywall(true)}>
+              <CreditCard size={18} />
+            </button>
+          )}
+          {usuario.rol === "admin" && tieneSuscripcionActiva && (
             <button title="Mi Suscripción" onClick={abrirPortalSuscripcion}>
               <CreditCard size={18} />
             </button>
@@ -139,7 +146,22 @@ export default function App() {
         </div>
       </header>
 
-      {/* === PAGE CONTENT === */}
+      {/* === BANNER DE PRUEBA === */}
+      {!tieneSuscripcionActiva && enPeriodoDePrueba && usuario.rol !== "admin_super" && (
+        <div style={{ backgroundColor: "#fef3c7", padding: "10px 20px", display: "flex", justifyContent: "center", alignItems: "center", gap: "12px", borderBottom: "1px solid #fde68a" }}>
+          <span style={{ color: "#92400e", fontSize: "14px", fontWeight: "500" }}>
+            🐄 ¡Bienvenido a tu periodo de prueba! Te quedan <strong>{Math.max(0, diasRestantesPrueba)} días</strong> de acceso gratuito.
+          </span>
+          <button 
+            onClick={() => setForzarPaywall(true)}
+            style={{ backgroundColor: "#d97706", color: "white", border: "none", padding: "6px 12px", borderRadius: "6px", fontSize: "13px", fontWeight: "bold", cursor: "pointer", transition: "0.2s" }}
+          >
+            Suscribirse ahora
+          </button>
+        </div>
+      )}
+
+      {/* === CONTENIDO PRINCIPAL === */}
       <div className="page-wrapper">
         {vistaActiva === "dashboard" && <DashboardGanado usuario={usuario} abrirModalTratamientoMasivo={abrirModalTratamientoMasivo} setAbrirModalTratamientoMasivo={setAbrirModalTratamientoMasivo} />}
         {vistaActiva === "nuevo" && <NuevoAnimal onTerminar={() => setVistaActiva("dashboard")} usuario={usuario} />}
