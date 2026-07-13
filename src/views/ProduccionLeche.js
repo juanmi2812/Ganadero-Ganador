@@ -177,6 +177,7 @@ export default function ProduccionLeche({ usuario }) {
                     <tr style={{ backgroundColor: "#f3f4f6", color: "#4b5563", textAlign: "left" }}>
                       <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb" }}>Fecha</th>
                       <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb" }}>Vaca (Arete)</th>
+                      <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb" }}>Periodo</th>
                       <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb" }}>Litros</th>
                     </tr>
                   </thead>
@@ -187,6 +188,11 @@ export default function ProduccionLeche({ usuario }) {
                         <td style={{ padding: "12px" }}>
                           <strong>Arete: {r.animalArete || "N/A"}</strong> 
                           {r.animalAreteRancho && <span style={{ color: "#6b7280", marginLeft: "6px", fontSize: "12px" }}>(Rancho: {r.animalAreteRancho})</span>}
+                        </td>
+                        <td style={{ padding: "12px" }}>
+                          <span style={{ backgroundColor: r.periodo && r.periodo !== "Diario" ? "#fef3c7" : "#f3f4f6", color: r.periodo && r.periodo !== "Diario" ? "#92400e" : "#4b5563", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: "500" }}>
+                            {r.periodo || "Diario"}
+                          </span>
                         </td>
                         <td style={{ padding: "12px", fontWeight: "600", color: "#9333ea" }}>{r.litros} L</td>
                       </tr>

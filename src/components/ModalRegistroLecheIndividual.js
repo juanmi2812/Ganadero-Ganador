@@ -10,6 +10,7 @@ export default function ModalRegistroLecheIndividual({ onClose, usuario, onExito
   const [busqueda, setBusqueda] = useState("");
   const [vacaSeleccionada, setVacaSeleccionada] = useState(null);
   const [fecha, setFecha] = useState(new Date().toISOString().split("T")[0]);
+  const [periodo, setPeriodo] = useState("Diario");
   const [litros, setLitros] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
@@ -61,6 +62,7 @@ export default function ModalRegistroLecheIndividual({ onClose, usuario, onExito
         animalArete: vacaSeleccionada.arete || "",
         animalAreteRancho: vacaSeleccionada.areteRancho || "",
         fecha: fecha,
+        periodo: periodo,
         litros: parseFloat(litros),
         fechaRegistro: new Date().toISOString()
       });
@@ -122,6 +124,15 @@ export default function ModalRegistroLecheIndividual({ onClose, usuario, onExito
                   onChange={e => setFecha(e.target.value)} 
                   required 
                 />
+              </div>
+              <div className="input-group" style={{ flex: 1, marginBottom: 0 }}>
+                <label>Periodo</label>
+                <select value={periodo} onChange={e => setPeriodo(e.target.value)} required>
+                  <option value="Diario">Diario</option>
+                  <option value="Semanal">Semanal</option>
+                  <option value="Quincenal">Quincenal</option>
+                  <option value="Mensual">Mensual</option>
+                </select>
               </div>
               <div className="input-group" style={{ flex: 1, marginBottom: 0 }}>
                 <label>Litros Producidos</label>
