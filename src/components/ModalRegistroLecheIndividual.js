@@ -84,61 +84,33 @@ export default function ModalRegistroLecheIndividual({ onClose, usuario, onExito
           {error && <div style={{ color: "#dc2626", backgroundColor: "#fee2e2", padding: "10px", borderRadius: "6px", marginBottom: "16px", fontSize: "14px" }}>{error}</div>}
           
           <form onSubmit={handleGuardar}>
-            {!vacaSeleccionada ? (
-              <div className="input-group" style={{ marginBottom: "20px" }}>
-                <label>Buscar Vaca (Nombre o Arete)</label>
-                <div style={{ position: "relative", marginBottom: "12px" }}>
-                  <Search size={18} style={{ position: "absolute", left: "12px", top: "12px", color: "#6b7280" }} />
-                  <input 
-                    type="text" 
-                    value={busqueda}
-                    onChange={(e) => setBusqueda(e.target.value)}
-                    placeholder="Ej. Lola o 1024"
-                    style={{ paddingLeft: "40px" }}
-                    autoFocus
-                  />
-                </div>
-                
-                {cargando ? (
-                  <p style={{ color: "#6b7280", fontSize: "14px" }}>Cargando vacas...</p>
-                ) : busqueda.length > 0 ? (
-                  <div style={{ maxHeight: "150px", overflowY: "auto", border: "1px solid #e5e7eb", borderRadius: "6px" }}>
-                    {vacasFiltradas.length > 0 ? (
-                      vacasFiltradas.map(v => (
-                        <div 
-                          key={v.id} 
-                          onClick={() => setVacaSeleccionada(v)}
-                          style={{ padding: "10px", borderBottom: "1px solid #e5e7eb", cursor: "pointer", display: "flex", justifyContent: "space-between" }}
-                        >
-                          <strong>{v.nombre || "Sin nombre"}</strong>
-                          <span style={{ color: "#6b7280" }}>Arete: {v.numeroArete || "N/A"}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <div style={{ padding: "10px", color: "#6b7280" }}>No se encontraron vacas.</div>
-                    )}
-                  </div>
-                ) : (
-                  <p style={{ color: "#6b7280", fontSize: "13px" }}>Escribe para buscar una vaca en tu inventario.</p>
-                )}
-              </div>
-            ) : (
-              <div style={{ marginBottom: "20px", backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0", padding: "12px", borderRadius: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <strong style={{ color: "#166534" }}>Vaca Seleccionada:</strong>
-                  <div style={{ fontSize: "15px", color: "#15803d", marginTop: "4px" }}>
-                    {vacaSeleccionada.nombre || "Sin nombre"} (Arete: {vacaSeleccionada.numeroArete || "N/A"})
-                  </div>
-                </div>
-                <button 
-                  type="button" 
-                  onClick={() => { setVacaSeleccionada(null); setBusqueda(""); }}
-                  style={{ background: "none", border: "none", color: "#16a34a", textDecoration: "underline", cursor: "pointer", fontSize: "13px" }}
+            <div className="input-group" style={{ marginBottom: "20px" }}>
+              <label>Seleccionar Vaca</label>
+              {cargando ? (
+                <p style={{ color: "#6b7280", fontSize: "14px", margin: "10px 0" }}>Cargando vacas...</p>
+              ) : (
+                <select 
+                  value={vacaSeleccionada ? vacaSeleccionada.id : ""}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    if (!id) {
+                      setVacaSeleccionada(null);
+                    } else {
+                      const vaca = inventario.find(v => v.id === id);
+                      setVacaSeleccionada(vaca);
+                    }
+                  }}
+                  required
                 >
-                  Cambiar
-                </button>
-              </div>
-            )}
+                  <option value="">-- Elige una vaca --</option>
+                  {inventario.map(v => (
+                    <option key={v.id} value={v.id}>
+                      {v.nombre || "Sin nombre"} (Arete: {v.numeroArete || "N/A"})
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
 
             <div className="form-row" style={{ display: "flex", gap: "16px", marginBottom: "20px" }}>
               <div className="input-group" style={{ flex: 1, marginBottom: 0 }}>
