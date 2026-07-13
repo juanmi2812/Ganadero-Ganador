@@ -62,7 +62,7 @@ export default function ModalRegistroLecheTanque({ onClose, usuario, onExito }) 
           {error && <div style={{ color: "#dc2626", backgroundColor: "#fee2e2", padding: "10px", borderRadius: "6px", marginBottom: "16px", fontSize: "14px" }}>{error}</div>}
           
           <form onSubmit={handleGuardar}>
-            <div style={{ marginBottom: "20px" }}>
+            <div className="input-group" style={{ marginBottom: "20px" }}>
               <label>Fecha de Producción</label>
               <input 
                 type="date" 
@@ -73,7 +73,7 @@ export default function ModalRegistroLecheTanque({ onClose, usuario, onExito }) 
               />
             </div>
 
-            <div style={{ backgroundColor: "#f0f9ff", padding: "16px", borderRadius: "8px", border: "1px solid #bae6fd", marginBottom: "20px" }}>
+            <div className="input-group" style={{ backgroundColor: "#f0f9ff", padding: "16px", borderRadius: "8px", border: "1px solid #bae6fd", marginBottom: "20px" }}>
               <label style={{ color: "#0369a1", fontWeight: "bold" }}>Litros Totales Producidos</label>
               <input 
                 type="number" 
@@ -87,7 +87,7 @@ export default function ModalRegistroLecheTanque({ onClose, usuario, onExito }) 
             </div>
 
             <div className="form-row" style={{ display: "flex", gap: "16px", marginBottom: "20px" }}>
-              <div style={{ flex: 1 }}>
+              <div className="input-group" style={{ flex: 1, marginBottom: 0 }}>
                 <label>Leche para Crías (L)</label>
                 <input 
                   type="number" 
@@ -97,7 +97,7 @@ export default function ModalRegistroLecheTanque({ onClose, usuario, onExito }) 
                   placeholder="Ej. 20"
                 />
               </div>
-              <div style={{ flex: 1 }}>
+              <div className="input-group" style={{ flex: 1, marginBottom: 0 }}>
                 <label>Autoconsumo (L)</label>
                 <input 
                   type="number" 
@@ -117,8 +117,8 @@ export default function ModalRegistroLecheTanque({ onClose, usuario, onExito }) 
             </div>
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "24px" }}>
-              <button type="button" className="btn-secondary" onClick={onClose} disabled={guardando}>Cancelar</button>
-              <button type="submit" className="btn-primary" disabled={guardando || !litrosTotales}>
+              <button type="button" className="btn-outline" onClick={onClose} disabled={guardando}>Cancelar</button>
+              <button type="submit" className="btn-primary" style={{ width: "auto" }} disabled={guardando || !litrosTotales}>
                 {guardando ? "Guardando..." : <><Save size={18} /> Guardar Registro</>}
               </button>
             </div>

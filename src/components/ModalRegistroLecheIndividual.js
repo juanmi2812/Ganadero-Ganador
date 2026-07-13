@@ -85,16 +85,16 @@ export default function ModalRegistroLecheIndividual({ onClose, usuario, onExito
           
           <form onSubmit={handleGuardar}>
             {!vacaSeleccionada ? (
-              <div style={{ marginBottom: "20px" }}>
+              <div className="input-group" style={{ marginBottom: "20px" }}>
                 <label>Buscar Vaca (Nombre o Arete)</label>
                 <div style={{ position: "relative", marginBottom: "12px" }}>
-                  <Search size={18} style={{ position: "absolute", left: "10px", top: "10px", color: "#6b7280" }} />
+                  <Search size={18} style={{ position: "absolute", left: "12px", top: "12px", color: "#6b7280" }} />
                   <input 
                     type="text" 
                     value={busqueda}
                     onChange={(e) => setBusqueda(e.target.value)}
                     placeholder="Ej. Lola o 1024"
-                    style={{ paddingLeft: "36px" }}
+                    style={{ paddingLeft: "40px" }}
                     autoFocus
                   />
                 </div>
@@ -141,7 +141,7 @@ export default function ModalRegistroLecheIndividual({ onClose, usuario, onExito
             )}
 
             <div className="form-row" style={{ display: "flex", gap: "16px", marginBottom: "20px" }}>
-              <div style={{ flex: 1 }}>
+              <div className="input-group" style={{ flex: 1, marginBottom: 0 }}>
                 <label>Fecha de Producción</label>
                 <input 
                   type="date" 
@@ -151,7 +151,7 @@ export default function ModalRegistroLecheIndividual({ onClose, usuario, onExito
                   required 
                 />
               </div>
-              <div style={{ flex: 1 }}>
+              <div className="input-group" style={{ flex: 1, marginBottom: 0 }}>
                 <label>Litros Producidos</label>
                 <input 
                   type="number" 
@@ -165,8 +165,8 @@ export default function ModalRegistroLecheIndividual({ onClose, usuario, onExito
             </div>
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "24px" }}>
-              <button type="button" className="btn-secondary" onClick={onClose} disabled={guardando}>Cancelar</button>
-              <button type="submit" className="btn-primary" disabled={guardando || !vacaSeleccionada || !litros}>
+              <button type="button" className="btn-outline" onClick={onClose} disabled={guardando}>Cancelar</button>
+              <button type="submit" className="btn-primary" style={{ width: "auto" }} disabled={guardando || !vacaSeleccionada || !litros}>
                 {guardando ? "Guardando..." : <><Save size={18} /> Guardar Registro</>}
               </button>
             </div>
