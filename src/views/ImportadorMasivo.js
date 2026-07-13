@@ -484,7 +484,7 @@ export default function ImportadorMasivo({ usuario }) {
     setMensajeExito(false);
 
     try {
-      const colecciones = ["animales", "eventos", "alertas", "potreros", "grupos"];
+      const colecciones = ["animales", "eventos", "alertas", "potreros", "grupos", "produccion_leche_tanque", "produccion_leche_individual"];
       for (const col of colecciones) {
         const snap = await getDocs(query(collection(db, col), where("ranchoId", "==", usuario?.ranchoId)));
         await Promise.all(snap.docs.map(d => deleteDoc(doc(db, col, d.id))));
@@ -616,6 +616,7 @@ export default function ImportadorMasivo({ usuario }) {
         const docRef  = await addDoc(collection(db, "animales"), animalesAGenerar[i]);
         const animalId = docRef.id;
         const animal  = animalesAGenerar[i];
+        animal.id = animalId; // Guardar ID para registros de leche
         const misPromesas = [];
 
         // Historial de Peso (Mínimo 2 pesajes para GDP)
@@ -746,6 +747,45 @@ export default function ImportadorMasivo({ usuario }) {
       }
 
       await Promise.all(alertasPromesas);
+
+      // Generar Producción de Leche de prueba
+      const lechePromesas = [];
+      
+      // 14 días de Tanque
+      for (let i = 0; i < 14; i++) {
+        const fechaProd = generarFechaFutura(-i); 
+        const totales = getRandomInt(120, 200);
+        const crias = getRandomInt(15, 30);
+        const autoconsumo = getRandomInt(2, 5);
+        lechePromesas.push(addDoc(collection(db, "produccion_leche_tanque"), {
+          ranchoId: usuario?.ranchoId,
+          fecha: fechaProd,
+          litrosTotales: totales,
+          litrosCrias: crias,
+          litrosAutoconsumo: autoconsumo,
+          litrosVenta: totales - crias - autoconsumo,
+          fechaRegistro: new Date().toISOString()
+        }));
+      }
+
+      // 30 registros individuales (aleatorios en los últimos 14 días)
+      const vacasGeneradas = animalesAGenerar.filter(a => a.tipo === "Vaca");
+      for (let i = 0; i < 30; i++) {
+        if (vacasGeneradas.length === 0) break;
+        const vaca = getRandom(vacasGeneradas);
+        const fechaProd = generarFechaFutura(-getRandomInt(0, 14));
+        lechePromesas.push(addDoc(collection(db, "produccion_leche_individual"), {
+          ranchoId: usuario?.ranchoId,
+          animalId: vaca.id,
+          animalArete: vaca.arete,
+          animalAreteRancho: "",
+          fecha: fechaProd,
+          periodo: "Diario",
+          litros: getRandomInt(8, 25) + (Math.random() > 0.5 ? 0.5 : 0),
+          fechaRegistro: new Date().toISOString()
+        }));
+      }
+      await Promise.all(lechePromesas);
 
       setContadorImportados(batchSize);
       setMensajeExito(true);
