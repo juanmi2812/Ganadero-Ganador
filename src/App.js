@@ -9,7 +9,8 @@ import CalendarioAlertas from "./views/CalendarioAlertas";
 import ReportesBI from "./views/ReportesBI";
 import ConfiguracionFinanciera from "./views/ConfiguracionFinanciera";
 import ConfiguracionPotreros from "./views/ConfiguracionPotreros";
-import { Home, CalendarDays, BarChart3, Settings, LogOut, Plus, Map, CreditCard } from "lucide-react";
+import ProduccionLeche from "./views/ProduccionLeche";
+import { Home, CalendarDays, BarChart3, Settings, LogOut, Plus, Map, CreditCard, Droplets } from "lucide-react";
 import logoConvivet from "./assets/logo_convivet.jpg";
 import { auth, db, onAuthStateChanged, signOut, functions } from "./firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -107,6 +108,7 @@ export default function App() {
 
   const tabs = [
     { id: "dashboard", label: "Mi Ganado", icon: Home },
+    { id: "leche", label: "Leche", icon: Droplets },
     { id: "rancho", label: "Mi Rancho", icon: Map },
     { id: "calendario", label: "Calendario", icon: CalendarDays },
     { id: "reportes", label: "Reportes", icon: BarChart3 },
@@ -170,6 +172,7 @@ export default function App() {
         {vistaActiva === "importar" && <ImportadorMasivo usuario={usuario} />}
         {vistaActiva === "finanzas" && <ConfiguracionFinanciera />}
         {vistaActiva === "rancho" && <ConfiguracionPotreros usuario={usuario} />}
+        {vistaActiva === "leche" && <ProduccionLeche usuario={usuario} />}
       </div>
 
       {/* === FAB — Registrar Animal === */}
