@@ -18,7 +18,7 @@ export default function ModalRegistroLecheIndividual({ onClose, usuario, onExito
     const fetchVacas = async () => {
       try {
         const q = query(
-          collection(db, "ganado"),
+          collection(db, "animales"),
           where("ranchoId", "==", usuario.ranchoId),
           where("sexo", "==", "Hembra")
         );
