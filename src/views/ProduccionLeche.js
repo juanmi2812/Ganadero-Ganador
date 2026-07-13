@@ -185,8 +185,8 @@ export default function ProduccionLeche({ usuario }) {
                       <tr key={r.id} style={{ borderBottom: "1px solid #e5e7eb" }}>
                         <td style={{ padding: "12px", color: "#111827", display: "flex", alignItems: "center", gap: "6px" }}><Calendar size={14} color="#6b7280"/> {r.fecha}</td>
                         <td style={{ padding: "12px" }}>
-                          <strong>{r.animalNombre || "Sin nombre"}</strong> 
-                          <span style={{ color: "#6b7280", marginLeft: "6px", fontSize: "12px" }}>({r.animalArete || "S/A"})</span>
+                          <strong>Arete: {r.animalArete || "N/A"}</strong> 
+                          {r.animalAreteRancho && <span style={{ color: "#6b7280", marginLeft: "6px", fontSize: "12px" }}>(Rancho: {r.animalAreteRancho})</span>}
                         </td>
                         <td style={{ padding: "12px", fontWeight: "600", color: "#9333ea" }}>{r.litros} L</td>
                       </tr>

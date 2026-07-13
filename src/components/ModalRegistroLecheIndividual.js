@@ -58,8 +58,8 @@ export default function ModalRegistroLecheIndividual({ onClose, usuario, onExito
       await addDoc(collection(db, "produccion_leche_individual"), {
         ranchoId: usuario.ranchoId,
         animalId: vacaSeleccionada.id,
-        animalNombre: vacaSeleccionada.nombre || "",
-        animalArete: vacaSeleccionada.numeroArete || "",
+        animalArete: vacaSeleccionada.arete || "",
+        animalAreteRancho: vacaSeleccionada.areteRancho || "",
         fecha: fecha,
         litros: parseFloat(litros),
         fechaRegistro: new Date().toISOString()
@@ -105,7 +105,7 @@ export default function ModalRegistroLecheIndividual({ onClose, usuario, onExito
                   <option value="">-- Elige una vaca --</option>
                   {inventario.map(v => (
                     <option key={v.id} value={v.id}>
-                      {v.nombre || "Sin nombre"} (Arete: {v.numeroArete || "N/A"})
+                      Arete: {v.arete} {v.areteRancho ? `(Rancho: ${v.areteRancho})` : ""}
                     </option>
                   ))}
                 </select>
