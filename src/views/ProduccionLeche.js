@@ -23,21 +23,23 @@ export default function ProduccionLeche({ usuario }) {
       // Cargar Tanque
       const qTanque = query(
         collection(db, "produccion_leche_tanque"),
-        where("ranchoId", "==", usuario.ranchoId),
-        orderBy("fecha", "desc")
+        where("ranchoId", "==", usuario.ranchoId)
       );
       const snapTanque = await getDocs(qTanque);
-      const dataTanque = snapTanque.docs.map(d => ({ id: d.id, ...d.data() }));
+      const dataTanque = snapTanque.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
       setRegistrosTanque(dataTanque);
 
       // Cargar Individuales
       const qIndiv = query(
         collection(db, "produccion_leche_individual"),
-        where("ranchoId", "==", usuario.ranchoId),
-        orderBy("fecha", "desc")
+        where("ranchoId", "==", usuario.ranchoId)
       );
       const snapIndiv = await getDocs(qIndiv);
-      const dataIndiv = snapIndiv.docs.map(d => ({ id: d.id, ...d.data() }));
+      const dataIndiv = snapIndiv.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
       setRegistrosIndividuales(dataIndiv);
       
     } catch (err) {

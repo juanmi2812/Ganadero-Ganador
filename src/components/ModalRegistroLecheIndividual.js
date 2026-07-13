@@ -38,12 +38,16 @@ export default function ModalRegistroLecheIndividual({ onClose, usuario, onExito
     fetchVacas();
   }, [usuario.ranchoId]);
 
-  const vacasFiltradas = busqueda
-    ? inventario.filter(v => 
-        (v.nombre && v.nombre.toLowerCase().includes(busqueda.toLowerCase())) ||
-        (v.numeroArete && String(v.numeroArete).includes(busqueda))
-      )
-    : [];
+  const vacasFiltradas = inventario.filter(v => {
+    if (!busqueda) return true;
+    const term = busqueda.toLowerCase();
+    return (
+      (v.arete && v.arete.toLowerCase().includes(term)) ||
+      (v.areteRancho && v.areteRancho.toLowerCase().includes(term)) ||
+      (v.potrero && v.potrero.toLowerCase().includes(term)) ||
+      (v.grupo && v.grupo.toLowerCase().includes(term))
+    );
+  });
 
   const handleGuardar = async (e) => {
     e.preventDefault();
@@ -91,26 +95,38 @@ export default function ModalRegistroLecheIndividual({ onClose, usuario, onExito
               {cargando ? (
                 <p style={{ color: "#6b7280", fontSize: "14px", margin: "10px 0" }}>Cargando vacas...</p>
               ) : (
-                <select 
-                  value={vacaSeleccionada ? vacaSeleccionada.id : ""}
-                  onChange={(e) => {
-                    const id = e.target.value;
-                    if (!id) {
-                      setVacaSeleccionada(null);
-                    } else {
-                      const vaca = inventario.find(v => v.id === id);
-                      setVacaSeleccionada(vaca);
-                    }
-                  }}
-                  required
-                >
-                  <option value="">-- Elige una vaca --</option>
-                  {inventario.map(v => (
-                    <option key={v.id} value={v.id}>
-                      Arete: {v.arete} {v.areteRancho ? `(Rancho: ${v.areteRancho})` : ""}
-                    </option>
-                  ))}
-                </select>
+                <>
+                  <div style={{ position: "relative", marginBottom: "12px" }}>
+                    <Search size={16} style={{ position: "absolute", left: "10px", top: "10px", color: "#6b7280" }} />
+                    <input 
+                      type="text" 
+                      value={busqueda}
+                      onChange={(e) => setBusqueda(e.target.value)}
+                      placeholder="Filtrar por Arete, Potrero, Grupo..."
+                      style={{ paddingLeft: "32px", padding: "8px 8px 8px 32px", width: "100%", borderRadius: "8px", border: "1px solid #d1d5db", fontSize: "13px" }}
+                    />
+                  </div>
+                  <select 
+                    value={vacaSeleccionada ? vacaSeleccionada.id : ""}
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      if (!id) {
+                        setVacaSeleccionada(null);
+                      } else {
+                        const vaca = inventario.find(v => v.id === id);
+                        setVacaSeleccionada(vaca);
+                      }
+                    }}
+                    required
+                  >
+                    <option value="">-- Elige una vaca ({vacasFiltradas.length} resultados) --</option>
+                    {vacasFiltradas.map(v => (
+                      <option key={v.id} value={v.id}>
+                        Arete: {v.arete} {v.areteRancho ? `(${v.areteRancho})` : ""} - {v.potrero || "Sin potrero"} ({v.grupo || "Sin grupo"})
+                      </option>
+                    ))}
+                  </select>
+                </>
               )}
             </div>
 
