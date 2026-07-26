@@ -42,82 +42,34 @@ export default function ImportadorMasivo({ usuario }) {
 
     // ── Hoja 1: Datos ──────────────────────────────────────────────────────────
     const encabezados = [[
-      // Datos básicos del animal
-      "Arete", "Tipo", "Sexo", "Raza",
-      "Fecha_Nacimiento", "Peso_kg", "Estado",
-      "Potrero", "Grupo", "Arete_Madre", "Arete_Padre",
-      // Genera evento Parto
-      "Fecha_Ultimo_Parto",
-      // Genera evento Palpación
+      "Arete", "Arete_SINIIGA", "Tipo", "Sexo", "Raza", "Fecha_Nacimiento", "Peso_kg", 
+      "Estado", "Potrero", "Grupo", "Arete_Madre", "Arete_Padre",
+      "Fecha_Ultimo_Parto", "Fecha_Parto_1", "Fecha_Parto_2", "Fecha_Parto_3", "Fecha_Parto_4",
+      "Fecha_Parto_5", "Fecha_Parto_6", "Fecha_Parto_7", "Fecha_Parto_8", "Fecha_Parto_9", "Fecha_Parto_10",
       "Resultado_Palpacion", "Meses_Gestacion", "Fecha_Palpacion",
-      // Genera evento Repeso (para GDP)
       "Peso_Anterior_kg", "Fecha_Peso_Anterior",
-      // Genera evento Inseminación
       "Fecha_Inseminacion",
-      // Genera evento Vacunación
       "Fecha_Ultima_Vacuna", "Producto_Vacuna"
     ]];
 
     const ejemplos = [
-      // Vaca con historial completo
-      ["VC-001", "Vaca", "Hembra", "Brahman",
+      ["VC-001", "0900000001", "Vaca", "Hembra", "Brahman",
        "2018-05-15", 480, "Sano",
        "Potrero Norte", "Vacas", "", "SM-001",
-       "2024-11-10",
+       "2024-11-10", "", "", "", "", "", "", "", "", "", "",
        "Gestante", 4, "2025-01-15",
        430, "2024-09-01",
        "2024-07-20",
-       "2024-10-05", "Clostridial"],
-
-      // Vaca vacía ciclando
-      ["VC-002", "Vaca", "Hembra", "Angus",
-       "2019-03-20", 510, "Sano",
-       "Potrero Sur", "Vacas Secas", "", "SM-002",
-       "2024-06-01",
-       "Vacía - Ciclando", "", "2025-02-10",
-       460, "2024-10-15",
-       "", "", ""],
-
-      // Novillona sin parto
-      ["NV-003", "Novillona", "Hembra", "Hereford",
-       "2023-08-01", 300, "Sano",
-       "Potrero Norte", "Desarrollo", "VC-001", "SM-001",
-       "",
-       "", "", "",
-       260, "2024-11-01",
-       "2025-01-10", "", ""],
-
-      // Torete
-      ["TR-004", "Torete", "Macho", "Brangus",
-       "2024-01-10", 320, "Disponible para Venta",
-       "Corral Engorda", "Engorda", "VC-002", "SM-002",
-       "", "", "", "",
-       280, "2024-10-20",
-       "", "", ""],
-
-      // Becerra lactante
-      ["CR-005", "Becerra", "Hembra", "Brahman",
-       "2025-02-14", 95, "Sano",
-       "Potrero Maternidad", "Crías Lactantes", "VC-001", "SM-001",
-       "", "", "", "",
-       "", "", "", "", ""],
-
-      // Semental
-      ["SM-001", "Semental", "Macho", "Angus",
-       "2017-11-05", 950, "Sano",
-       "Pradera Abierta", "Sementales", "", "",
-       "", "", "", "",
-       900, "2024-08-01",
-       "", "2024-12-01", "IBR + DVB"],
+       "2024-10-05", "Clostridial"]
     ];
 
     const ws1 = XLSX.utils.aoa_to_sheet([...encabezados, ...ejemplos]);
     ws1["!cols"] = [
-      {wch:12},{wch:11},{wch:8},{wch:12},
-      {wch:16},{wch:9},{wch:26},
-      {wch:17},{wch:17},{wch:13},{wch:13},
-      {wch:16},
-      {wch:22},{wch:15},{wch:15},
+      {wch:12},{wch:15},{wch:10},{wch:8},{wch:12},
+      {wch:16},{wch:9},{wch:10},
+      {wch:15},{wch:15},{wch:13},{wch:13},
+      {wch:16},{wch:12},{wch:12},{wch:12},{wch:12},{wch:12},{wch:12},{wch:12},{wch:12},{wch:12},{wch:12},
+      {wch:20},{wch:15},{wch:15},
       {wch:16},{wch:17},
       {wch:16},
       {wch:17},{wch:16}
@@ -127,20 +79,23 @@ export default function ImportadorMasivo({ usuario }) {
     // ── Hoja 2: Guía de llenado ────────────────────────────────────────────────
     const guia = [
       ["GUÍA DE LLENADO — IMPORTADOR DE GANADO", "", "", "", ""],
-      ["Llena la hoja 'Animales' siguiendo estas instrucciones. Las columnas en ROJO son obligatorias.", "", "", "", ""],
+      ["Llena la hoja 'Animales' siguiendo estas instrucciones.", "", "", "", ""],
       ["", "", "", "", ""],
       ["COLUMNA", "OBLIGATORIA", "DESCRIPCIÓN", "VALORES VÁLIDOS", "EJEMPLO"],
 
-      // ── Bloque: Datos básicos ──
-      ["── DATOS BÁSICOS DEL ANIMAL ──", "", "", "", ""],
       ["Arete",
        "SÍ — obligatorio",
-       "Número o código único que identifica al animal. No puede repetirse.",
-       "Cualquier texto. Recomendado: prefijo + número (VC-001, SM-003)",
-       "VC-001"],
+       "Identificador interno o número de control principal (corto). Ejemplo: VC-002, 105",
+       "Cualquier texto o número corto.",
+       "VC-002"],
+      ["Arete_SINIIGA",
+       "No",
+       "Arete Oficial o de SINIIGA (largo).",
+       "Número oficial (ej. 09 123 4567 8)",
+       "0912345678"],
       ["Tipo",
        "SÍ — obligatorio",
-       "Categoría del animal. El sistema usa este valor para clasificarlo correctamente.",
+       "Categoría del animal.",
        "Vaca | Novillona | Torete | Becerro | Becerra | Semental",
        "Vaca"],
       ["Sexo",
@@ -155,7 +110,7 @@ export default function ImportadorMasivo({ usuario }) {
        "Brahman"],
       ["Fecha_Nacimiento",
        "No (muy recomendada)",
-       "Fecha de nacimiento. Permite calcular edad, GDP y alertas de fertilidad automáticamente.",
+       "Fecha de nacimiento.",
        "Formato: YYYY-MM-DD  Ej: 2018-05-15  También acepta DD/MM/YYYY",
        "2018-05-15"],
       ["Peso_kg",
@@ -189,14 +144,24 @@ export default function ImportadorMasivo({ usuario }) {
        "Arete del padre (debe existir en el archivo o en la base de datos)",
        "SM-001"],
 
-      // ── Bloque: Parto ──
+      // ── Bloque: Partos ──
       ["", "", "", "", ""],
-      ["── ÚLTIMO PARTO (genera un evento de Parto en el historial) ──", "", "", "", ""],
+      ["── HISTORIAL DE PARTOS (genera eventos de Parto en el historial) ──", "", "", "", ""],
       ["Fecha_Ultimo_Parto",
        "No — pero MUY recomendada para vacas",
-       "Fecha del último parto registrado. SIN este dato, una vaca menor de 48 meses que ya ha parido aparecerá clasificada incorrectamente como 'Novillona'. También alimenta el Reporte de Vientres y las Métricas de Productividad.",
-       "Formato: YYYY-MM-DD  Solo aplica para Vacas y Novillonas que ya parieron.",
+       "Fecha del último parto registrado. Permite calcular métricas productivas.",
+       "Formato: YYYY-MM-DD",
        "2024-11-10"],
+      ["Fecha_Parto_1", "No", "Fecha de un parto histórico (1).", "Formato: YYYY-MM-DD", "2023-11-10"],
+      ["Fecha_Parto_2", "No", "Fecha de un parto histórico (2).", "Formato: YYYY-MM-DD", "2022-11-10"],
+      ["Fecha_Parto_3", "No", "Fecha de un parto histórico (3).", "Formato: YYYY-MM-DD", ""],
+      ["Fecha_Parto_4", "No", "Fecha de un parto histórico (4).", "Formato: YYYY-MM-DD", ""],
+      ["Fecha_Parto_5", "No", "Fecha de un parto histórico (5).", "Formato: YYYY-MM-DD", ""],
+      ["Fecha_Parto_6", "No", "Fecha de un parto histórico (6).", "Formato: YYYY-MM-DD", ""],
+      ["Fecha_Parto_7", "No", "Fecha de un parto histórico (7).", "Formato: YYYY-MM-DD", ""],
+      ["Fecha_Parto_8", "No", "Fecha de un parto histórico (8).", "Formato: YYYY-MM-DD", ""],
+      ["Fecha_Parto_9", "No", "Fecha de un parto histórico (9).", "Formato: YYYY-MM-DD", ""],
+      ["Fecha_Parto_10", "No", "Fecha de un parto histórico (10).", "Formato: YYYY-MM-DD", ""],
 
       // ── Bloque: Palpación ──
       ["", "", "", "", ""],
@@ -389,6 +354,7 @@ export default function ImportadorMasivo({ usuario }) {
         // Construir objeto del animal
         const animal = {
           arete,
+          areteSiniiga:    String(fila["Arete_SINIIGA"] || "").trim(),
           tipo,
           sexo,
           raza:            String(fila["Raza"] || "").trim(),
@@ -411,11 +377,18 @@ export default function ImportadorMasivo({ usuario }) {
         // Construir eventos a crear
         const eventos = [];
 
-        // Evento: Parto
-        const fechaParto = normalizarFecha(fila["Fecha_Ultimo_Parto"]);
-        if (fechaParto) {
-          eventos.push({ tipo: "Parto", resultado: "Importado del histórico", fecha: fechaParto, costo: 0 });
+        // Eventos: Partos (Último parto y hasta 10 históricos)
+        const posiblesFechasPartos = [normalizarFecha(fila["Fecha_Ultimo_Parto"])];
+        for (let i = 1; i <= 10; i++) {
+          posiblesFechasPartos.push(normalizarFecha(fila[`Fecha_Parto_${i}`]));
         }
+        
+        // Quitar duplicados o vacíos (por si alguien repite la fecha)
+        const fechasPartosUnicas = [...new Set(posiblesFechasPartos.filter(f => f))];
+        
+        fechasPartosUnicas.forEach(fechaP => {
+          eventos.push({ tipo: "Parto", resultado: "Importado del histórico", fecha: fechaP, costo: 0 });
+        });
 
         // Evento: Palpación
         if (resultadoPalp) {

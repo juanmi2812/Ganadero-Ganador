@@ -6,10 +6,12 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 
 import ModalRegistroLecheIndividual from "../components/ModalRegistroLecheIndividual";
 import ModalRegistroLecheTanque from "../components/ModalRegistroLecheTanque";
+import ModalGraficaVaca from "../components/ModalGraficaVaca";
 
 export default function ProduccionLeche({ usuario }) {
   const [modalIndividual, setModalIndividual] = useState(false);
   const [modalTanque, setModalTanque] = useState(false);
+  const [vacaGrafica, setVacaGrafica] = useState(null);
   
   const [registrosTanque, setRegistrosTanque] = useState([]);
   const [registrosIndividuales, setRegistrosIndividuales] = useState([]);
@@ -29,6 +31,18 @@ export default function ProduccionLeche({ usuario }) {
       const dataTanque = snapTanque.docs
         .map(d => ({ id: d.id, ...d.data() }))
         .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+      // Calcular variación porcentual
+      dataTanque.forEach((record, index) => {
+        if (index < dataTanque.length - 1) {
+          const prev = dataTanque[index + 1];
+          const diff = record.litrosTotales - prev.litrosTotales;
+          record.variacion = prev.litrosTotales > 0 ? (diff / prev.litrosTotales) * 100 : 0;
+        } else {
+          record.variacion = null;
+        }
+      });
+      
       setRegistrosTanque(dataTanque);
 
       // Cargar Individuales
@@ -150,6 +164,7 @@ export default function ProduccionLeche({ usuario }) {
                     <tr style={{ backgroundColor: "#f3f4f6", color: "#4b5563", textAlign: "left" }}>
                       <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb" }}>Fecha</th>
                       <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb" }}>Totales</th>
+                      <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb" }}>Variación</th>
                       <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb" }}>Venta</th>
                       <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb" }}>Crías</th>
                       <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb" }}>Autoconsumo</th>
@@ -160,6 +175,14 @@ export default function ProduccionLeche({ usuario }) {
                       <tr key={r.id} style={{ borderBottom: "1px solid #e5e7eb" }}>
                         <td style={{ padding: "12px", color: "#111827", display: "flex", alignItems: "center", gap: "6px" }}><Calendar size={14} color="#6b7280"/> {r.fecha}</td>
                         <td style={{ padding: "12px", fontWeight: "600" }}>{r.litrosTotales} L</td>
+                        <td style={{ padding: "12px", fontWeight: "600", color: r.variacion !== null ? (r.variacion >= 10 ? "#dc2626" : (r.variacion > 0 ? "#16a34a" : (r.variacion < 0 ? "#ea580c" : "#6b7280"))) : "#6b7280" }}>
+                          {r.variacion !== null ? (
+                            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                              {r.variacion >= 10 && <span title="¡Alerta! Variación superior al 10%">⚠️</span>}
+                              {r.variacion > 0 ? "▲" : (r.variacion < 0 ? "▼" : "-")} {Math.abs(r.variacion).toFixed(1)}%
+                            </span>
+                          ) : "-"}
+                        </td>
                         <td style={{ padding: "12px", color: "#16a34a" }}>{r.litrosVenta} L</td>
                         <td style={{ padding: "12px", color: "#d97706" }}>{r.litrosCrias} L</td>
                         <td style={{ padding: "12px", color: "#2563eb" }}>{r.litrosAutoconsumo} L</td>
@@ -181,6 +204,7 @@ export default function ProduccionLeche({ usuario }) {
                       <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb" }}>Vaca (Arete)</th>
                       <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb" }}>Periodo</th>
                       <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb" }}>Litros</th>
+                      <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb", textAlign: "right" }}>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -197,6 +221,14 @@ export default function ProduccionLeche({ usuario }) {
                           </span>
                         </td>
                         <td style={{ padding: "12px", fontWeight: "600", color: "#9333ea" }}>{r.litros} L</td>
+                        <td style={{ padding: "12px", textAlign: "right" }}>
+                          <button 
+                            onClick={() => setVacaGrafica({ animalId: r.animalId, animalArete: r.animalArete })}
+                            style={{ backgroundColor: "#f3e8ff", color: "#9333ea", border: "1px solid #d8b4fe", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "bold", cursor: "pointer", transition: "0.2s" }}
+                          >
+                            Ver Gráfica
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -222,6 +254,15 @@ export default function ProduccionLeche({ usuario }) {
           usuario={usuario}
           onClose={() => setModalTanque(false)}
           onExito={() => { setModalTanque(false); cargarDatos(); }}
+        />
+      )}
+
+      {vacaGrafica && (
+        <ModalGraficaVaca 
+          usuario={usuario}
+          animalId={vacaGrafica.animalId}
+          animalArete={vacaGrafica.animalArete}
+          onClose={() => setVacaGrafica(null)}
         />
       )}
 
