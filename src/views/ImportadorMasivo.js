@@ -324,31 +324,35 @@ export default function ImportadorMasivo({ usuario }) {
       filas.forEach((fila, idx) => {
         const numFila = idx + 2;
         const arete = String(fila["Arete"] || "").trim();
-        const tipo  = String(fila["Tipo"]  || "").trim();
-        const sexo  = String(fila["Sexo"]  || "").trim();
+        let tipo  = String(fila["Tipo"]  || "").trim();
+        let sexo  = String(fila["Sexo"]  || "").trim();
 
         if (!arete) { erroresEncontrados.push(`Fila ${numFila}: La columna "Arete" está vacía.`); return; }
+        
+        // Auto-corrección de Sexo
+        if (sexo.toLowerCase() === "macho" || sexo.toLowerCase() === "m") sexo = "Macho";
+        else sexo = "Hembra"; // Default a Hembra si está mal escrito o vacío
+
+        // Auto-corrección de Tipo
+        if (tipo) {
+            tipo = tipo.charAt(0).toUpperCase() + tipo.slice(1).toLowerCase();
+        }
         if (!tiposValidos.includes(tipo)) {
-          erroresEncontrados.push(`Fila ${numFila} (${arete}): Tipo "${tipo}" no válido. Opciones: ${tiposValidos.join(", ")}`);
-          return;
-        }
-        if (!sexosValidos.includes(sexo)) {
-          erroresEncontrados.push(`Fila ${numFila} (${arete}): Sexo "${sexo}" no válido. Usa "Hembra" o "Macho".`);
-          return;
+            tipo = sexo === "Macho" ? "Torete" : "Vaca"; // Default razonable
         }
 
-        // Validar Resultado_Palpacion si está llenado
-        const resultadoPalp = String(fila["Resultado_Palpacion"] || "").trim();
-        if (resultadoPalp && !resultadosPalpValidos.includes(resultadoPalp)) {
-          erroresEncontrados.push(`Fila ${numFila} (${arete}): Resultado_Palpacion "${resultadoPalp}" no válido. Opciones: ${resultadosPalpValidos.join(", ")}`);
-          return;
-        }
+        // Auto-corrección de Palpación
+        let rawPalp = String(fila["Resultado_Palpacion"] || "").trim().toLowerCase();
+        let resultadoPalp = "";
+        if (rawPalp.includes("gestante") || rawPalp.includes("preñada") || rawPalp === "si") resultadoPalp = "Gestante";
+        else if (rawPalp.includes("fresca")) resultadoPalp = "Vacía - Fresca";
+        else if (rawPalp.includes("anestro")) resultadoPalp = "Vacía - Anestro";
+        else if (rawPalp.includes("vacia") || rawPalp.includes("vacía") || rawPalp.includes("ciclando")) resultadoPalp = "Vacía - Ciclando";
 
-        // Validar Meses_Gestacion si hay palpación Gestante
-        const mesesGes = Number(fila["Meses_Gestacion"]) || 0;
+        // Auto-corrección Meses Gestación
+        let mesesGes = Number(fila["Meses_Gestacion"]) || 0;
         if (resultadoPalp === "Gestante" && (mesesGes < 1 || mesesGes > 9)) {
-          erroresEncontrados.push(`Fila ${numFila} (${arete}): Si Resultado_Palpacion es "Gestante", Meses_Gestacion debe ser un número del 1 al 9.`);
-          return;
+            mesesGes = 1; // Default a 1 mes si no lo pusieron bien
         }
 
         // Construir objeto del animal
