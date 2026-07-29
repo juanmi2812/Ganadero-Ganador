@@ -653,6 +653,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
           </div>
         )}
 
+        {ganadoFiltrado.map((animal) => (
           <div 
             key={animal.id} 
             className="animal-item"
