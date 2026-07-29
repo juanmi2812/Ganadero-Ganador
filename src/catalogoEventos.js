@@ -13,7 +13,7 @@ export const CATALOGO_EVENTOS = {
   "Plaguicida": ["Cipermetrina"],
   "Tratamiento": ["Antibiótico", "Antiinflamatorio", "Vitaminas", "Suero Oral", "Otro"],
   "Repeso": [],
-  "Palpación": ["Gestante", "Vacía - Fresca", "Vacía - Ciclando", "Vacía - Anestro", "Dudosa"],
+  "Palpación": ["Gestante", "Vacía - Fresca", "Vacía - Ciclando", "Vacía - Anestro", "Dudosa", "No Pasó"],
   "Parto": [],
   "Inseminación": [],
   "Revisión General": [],
