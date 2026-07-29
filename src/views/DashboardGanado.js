@@ -1034,6 +1034,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                           <option value="Vacía - Ciclando">Vacía - Ciclando</option>
                           <option value="Vacía - Anestro">Vacía - Anestro</option>
                           <option value="Dudosa">Dudosa</option>
+                          <option value="No Pasó">No Pasó</option>
                         </select>
                       </td>
                       <td style={{ padding: "12px" }}>
