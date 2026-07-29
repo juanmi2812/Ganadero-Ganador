@@ -38,3 +38,12 @@ export const iniciarSesionCorreo = (correo, password) => signInWithEmailAndPassw
 export const registrarCorreo = (correo, password) => createUserWithEmailAndPassword(auth, correo, password);
 export const iniciarSesionGoogle = () => signInWithPopup(auth, googleProvider);
 export const iniciarSesionApple = () => signInWithPopup(auth, appleProvider);
+
+// Función especial para que el Admin cree cuentas sin desloguearse a sí mismo
+export const crearCuentaEmpleadoSecundario = async (correo, password) => {
+  const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
+  const secondaryAuth = getAuth(secondaryApp);
+  const cred = await createUserWithEmailAndPassword(secondaryAuth, correo, password);
+  await signOut(secondaryAuth);
+  return cred;
+};

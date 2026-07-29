@@ -32,15 +32,6 @@ export default function Login({ alIniciarSesion }) {
   // Usuario Firebase de Google (guardado en state para el flujo de registro con Google)
   const [googleUser, setGoogleUser] = useState(null);
 
-  // Carga lista de ranchos al entrar a pantallas de empleado
-  useEffect(() => {
-    if (pantalla === "registro-empleado" || pantalla === "google-empleado") {
-      getDocs(query(collection(db, "ranchos"), orderBy("nombre"))).then(snap => {
-        setRanchos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      }).catch(() => {});
-    }
-  }, [pantalla]);
-
   const reset = () => {
     setError("");
     setNombre("");
@@ -111,38 +102,6 @@ export default function Login({ alIniciarSesion }) {
     }
   };
 
-  // ─── Registro Empleado ────────────────────────────────────────────────────
-  const manejarRegistroEmpleado = async (e) => {
-    e.preventDefault();
-    if (!nombre.trim()) { setError("El nombre es obligatorio."); return; }
-    if (!ranchoSeleccionado) { setError("Selecciona el rancho al que perteneces."); return; }
-    setError("");
-    setCargando(true);
-    try {
-      const rancho = ranchos.find(r => r.id === ranchoSeleccionado);
-      const cred = await registrarCorreo(correo, password);
-      await setDoc(doc(db, "usuarios", cred.user.uid), {
-        nombre: nombre.trim(),
-        correo: correo.trim(),
-        rol: "empleado",
-        ranchoId: ranchoSeleccionado,
-        ranchoNombre: rancho?.nombre || "",
-      });
-      alIniciarSesion({
-        uid: cred.user.uid,
-        nombre: nombre.trim(),
-        correo: correo.trim(),
-        rol: "empleado",
-        ranchoId: ranchoSeleccionado,
-        ranchoNombre: rancho?.nombre || "",
-      });
-    } catch (err) {
-      setError(mensajeError(err.code || err.message));
-    } finally {
-      setCargando(false);
-    }
-  };
-
   // ─── Google ───────────────────────────────────────────────────────────────
   const loginGoogle = async () => {
     setError("");
@@ -190,30 +149,6 @@ export default function Login({ alIniciarSesion }) {
         ranchoId: ranchoRef.id,
         ranchoNombre: nombreRancho.trim(),
         fechaFinPrueba: hoy.toISOString(),
-      };
-      await setDoc(doc(db, "usuarios", uid), perfil);
-      alIniciarSesion({ uid, ...perfil });
-    } catch (err) {
-      setError(mensajeError(err.code || err.message));
-    } finally {
-      setCargando(false);
-    }
-  };
-
-  const completarGoogleEmpleado = async (e) => {
-    e.preventDefault();
-    if (!ranchoSeleccionado) { setError("Selecciona el rancho."); return; }
-    if (!googleUser) { setError("Error: sesión de Google perdida. Intenta de nuevo."); return; }
-    setCargando(true);
-    try {
-      const uid = googleUser.uid;
-      const rancho = ranchos.find(r => r.id === ranchoSeleccionado);
-      const perfil = {
-        nombre: nombre || googleUser.displayName || "",
-        correo: googleUser.email || "",
-        rol: "empleado",
-        ranchoId: ranchoSeleccionado,
-        ranchoNombre: rancho?.nombre || "",
       };
       await setDoc(doc(db, "usuarios", uid), perfil);
       alIniciarSesion({ uid, ...perfil });
@@ -312,19 +247,8 @@ export default function Login({ alIniciarSesion }) {
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <Plus size={22} color="#16a34a" />
                 <div>
-                  <div style={{ fontWeight: "700", color: "#15803d", fontSize: "15px" }}>Administrador</div>
+                  <div style={{ fontWeight: "700", color: "#15803d", fontSize: "15px" }}>Dueño / Administrador</div>
                   <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "2px" }}>Crea un nuevo rancho y gestiona todo</div>
-                </div>
-              </div>
-            </button>
-
-            <button onClick={() => { pantalla === "elegir-registro-google" ? setPantalla("google-empleado") : ir("registro-empleado"); }}
-              style={{ width: "100%", padding: "16px", borderRadius: "10px", border: "2px solid #3b82f6", backgroundColor: "#eff6ff", cursor: "pointer", textAlign: "left" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <Users size={22} color="#3b82f6" />
-                <div>
-                  <div style={{ fontWeight: "700", color: "#1d4ed8", fontSize: "15px" }}>Empleado del Rancho</div>
-                  <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "2px" }}>Únete a un rancho ya existente</div>
                 </div>
               </div>
             </button>
@@ -372,52 +296,6 @@ export default function Login({ alIniciarSesion }) {
           </>
         )}
 
-        {/* ══════════ PANTALLA: REGISTRO EMPLEADO ══════════ */}
-        {(pantalla === "registro-empleado" || pantalla === "google-empleado") && (
-          <>
-            <button onClick={() => ir("elegir-registro")} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", display: "flex", alignItems: "center", gap: "4px", fontSize: "13px", marginBottom: "16px", padding: 0 }}>
-              <ArrowLeft size={14} /> Volver
-            </button>
-            <h2 style={{ margin: "0 0 4px 0", color: "#111827" }}>Nuevo Empleado</h2>
-            <p style={{ color: "#6b7280", fontSize: "14px", marginBottom: "18px" }}>Regístrate y selecciona tu rancho</p>
-            {error && <ErrorBox msg={error} />}
-            <form onSubmit={pantalla === "google-empleado" ? completarGoogleEmpleado : manejarRegistroEmpleado}>
-              <div style={groupStyle}>
-                <label style={labelStyle}>Tu Nombre</label>
-                <input style={inputStyle} type="text" placeholder="Ej. Carlos López"
-                  value={nombre} onChange={e => setNombre(e.target.value)} required />
-              </div>
-              <div style={groupStyle}>
-                <label style={labelStyle}>Rancho al que perteneces</label>
-                {ranchos.length === 0
-                  ? <p style={{ fontSize: "13px", color: "#ef4444", marginTop: "6px" }}>No hay ranchos registrados todavía. Pide al administrador que cree su cuenta primero.</p>
-                  : <select style={{ ...inputStyle, backgroundColor: "#fff" }}
-                      value={ranchoSeleccionado} onChange={e => setRanchoSeleccionado(e.target.value)} required>
-                      <option value="">-- Selecciona un rancho --</option>
-                      {ranchos.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
-                    </select>
-                }
-              </div>
-              {pantalla !== "google-empleado" && (
-                <>
-                  <div style={groupStyle}>
-                    <label style={labelStyle}>Correo Electrónico</label>
-                    <input style={inputStyle} type="email" placeholder="empleado@ejemplo.com"
-                      value={correo} onChange={e => setCorreo(e.target.value)} required />
-                  </div>
-                  <div style={groupStyle}>
-                    <label style={labelStyle}>Contraseña (mínimo 6 caracteres)</label>
-                    <input style={inputStyle} type="password" placeholder="••••••••"
-                      value={password} onChange={e => setPassword(e.target.value)} required />
-                  </div>
-                </>
-              )}
-              <button type="submit" className="btn-primary" style={{ width: "100%", marginTop: "4px", backgroundColor: "#1d4ed8", borderColor: "#1d4ed8" }} disabled={cargando || ranchos.length === 0}>
-                {cargando ? "Creando cuenta..." : "Crear Cuenta de Empleado"}
-              </button>
-            </form>
-          </>
-        )}
       </div>
     </div>
   );

@@ -10,7 +10,8 @@ import ReportesBI from "./views/ReportesBI";
 import ConfiguracionFinanciera from "./views/ConfiguracionFinanciera";
 import ConfiguracionPotreros from "./views/ConfiguracionPotreros";
 import ProduccionLeche from "./views/ProduccionLeche";
-import { Home, CalendarDays, BarChart3, Settings, LogOut, Plus, Map, CreditCard, Droplets } from "lucide-react";
+import ConfiguracionEquipo from "./views/ConfiguracionEquipo";
+import { Home, CalendarDays, BarChart3, Settings, LogOut, Plus, Map, CreditCard, Droplets, Users } from "lucide-react";
 import logoConvivet from "./assets/logo_convivet.jpg";
 import { auth, db, onAuthStateChanged, signOut, functions } from "./firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -125,9 +126,14 @@ export default function App() {
         <div className="top-header-actions">
           {/* Importar solo visible para admin */}
           {usuario.rol === "admin" && (
-            <button title="Importar Excel" onClick={() => setVistaActiva("importar")}>
-              <Settings size={18} />
-            </button>
+            <>
+              <button title="Mi Equipo" onClick={() => setVistaActiva("equipo")}>
+                <Users size={18} />
+              </button>
+              <button title="Importar Excel" onClick={() => setVistaActiva("importar")}>
+                <Settings size={18} />
+              </button>
+            </>
           )}
           <div style={{ fontSize: "12px", color: "#e5e7eb", lineHeight: 1.2, textAlign: "right", maxWidth: "100px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {usuario.nombre || usuario.correo}
@@ -173,6 +179,7 @@ export default function App() {
         {vistaActiva === "finanzas" && <ConfiguracionFinanciera />}
         {vistaActiva === "rancho" && <ConfiguracionPotreros usuario={usuario} />}
         {vistaActiva === "leche" && <ProduccionLeche usuario={usuario} />}
+        {vistaActiva === "equipo" && <ConfiguracionEquipo usuario={usuario} />}
       </div>
 
       {/* === FAB — Registrar Animal === */}
