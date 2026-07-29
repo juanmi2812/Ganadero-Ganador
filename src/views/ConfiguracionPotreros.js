@@ -268,18 +268,20 @@ export default function ConfiguracionPotreros({ usuario }) {
     e.preventDefault();
     setGuardandoTraslado(true);
     try {
-      const q = query(
-        collection(db, "animales"), 
-        where("ranchoId", "==", usuario?.ranchoId),
-        where(datosTraslado.tipo === "potrero" ? "potrero" : "grupo", "==", datosTraslado.nombreOrigen)
-      );
+      const q = query(collection(db, "animales"), where("ranchoId", "==", usuario?.ranchoId));
       const snap = await getDocs(q);
+      
+      const docsFiltrados = snap.docs.filter(doc => {
+        const campo = datosTraslado.tipo === "potrero" ? "potrero" : "grupo";
+        return doc.data()[campo] === datosTraslado.nombreOrigen;
+      });
+
       let count = 0;
       
-      for (const animalDoc of snap.docs) {
+      for (const animalDoc of docsFiltrados) {
         const updateData = {};
-        if (datosTraslado.potreroDestino) updateData.potrero = datosTraslado.potreroDestino;
-        if (datosTraslado.grupoDestino) updateData.grupo = datosTraslado.grupoDestino;
+        if (datosTraslado.potreroDestino) updateData.potrero = datosTraslado.potreroDestino === "Sin Asignar" ? "" : datosTraslado.potreroDestino;
+        if (datosTraslado.grupoDestino) updateData.grupo = datosTraslado.grupoDestino === "Sin Asignar" ? "" : datosTraslado.grupoDestino;
         
         if (Object.keys(updateData).length > 0) {
           await updateDoc(doc(db, "animales", animalDoc.id), updateData);
