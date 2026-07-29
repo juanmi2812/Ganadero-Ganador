@@ -480,7 +480,7 @@ export default function ImportadorMasivo({ usuario }) {
 
   // ─── Limpiar Base de Datos (Peligro) ──────────────────────────────────────────
   const limpiarRanchoCompletamente = async () => {
-    if (!window.confirm("⚠️ ALERTA ROJA: Esto borrará de forma irreversible TODOS tus animales, eventos, potreros y grupos. Tu cuenta quedará totalmente en blanco. ¿Estás absolutamente seguro de continuar?")) return;
+    if (!window.confirm("¿Estás seguro de que deseas limpiar toda la información? Esto borrará de forma definitiva tus animales, eventos, potreros y grupos, dejando la cuenta en blanco para empezar de cero.")) return;
     
     setCargandoDemo(true);
     try {
@@ -962,18 +962,18 @@ export default function ImportadorMasivo({ usuario }) {
 
       {/* Botón Peligro - Limpiar Todo */}
       {usuario?.rol === "admin" && (
-        <div style={{ marginTop: "50px", paddingTop: "30px", borderTop: "2px dashed #fca5a5", textAlign: "center" }}>
-          <h3 style={{ color: "#991b1b", marginTop: "10px" }}>Zona de Peligro</h3>
+        <div style={{ marginTop: "50px", paddingTop: "30px", borderTop: "2px dashed #d1d5db", textAlign: "center" }}>
+          <h3 style={{ color: "#374151", marginTop: "10px" }}>Limpiar Información</h3>
           <p style={{ color: "#6b7280", fontSize: "14px", marginBottom: "20px" }}>
-            Si deseas reiniciar desde cero para probar la importación masiva automática, puedes vaciar tu rancho aquí.
+            Si deseas reiniciar tu cuenta desde cero (por ejemplo, para cargar un nuevo archivo completo), puedes limpiar tus datos aquí.
           </p>
           <button
             className="btn-outline"
-            style={{ backgroundColor: "#fef2f2", borderColor: "#ef4444", color: "#dc2626", maxWidth: "300px", margin: "0 auto", display: "inline-flex", alignItems: "center", gap: "6px", padding: "10px 16px" }}
+            style={{ backgroundColor: "#f9fafb", borderColor: "#6b7280", color: "#4b5563", maxWidth: "300px", margin: "0 auto", display: "inline-flex", alignItems: "center", gap: "6px", padding: "10px 16px" }}
             onClick={limpiarRanchoCompletamente} disabled={cargandoDemo}
           >
-            <AlertCircle size={18} />
-            {cargandoDemo ? "Borrando todo..." : "Vaciar Todo Mi Rancho"}
+            <RefreshCw size={18} />
+            {cargandoDemo ? "Borrando información..." : "Limpiar Todos mis Datos"}
           </button>
         </div>
       )}
