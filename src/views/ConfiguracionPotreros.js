@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, Map, ShieldAlert, X, ClipboardList } from "lucide-react";
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import { CATALOGO_EVENTOS_POTRERO, TIPOS_EVENTO_POTRERO } from "../catalogoEventos";
 
