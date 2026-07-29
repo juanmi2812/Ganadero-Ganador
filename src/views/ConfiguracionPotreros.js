@@ -710,26 +710,31 @@ export default function ConfiguracionPotreros({ usuario }) {
             )}
 
             <form onSubmit={ejecutarTrasladoMasivo}>
-              <div style={{ marginBottom: "14px" }}>
-                <label style={labelStyle}>Mover al Potrero (Opcional)</label>
-                <select value={datosTraslado.potreroDestino}
-                  onChange={e => setDatosTraslado({ ...datosTraslado, potreroDestino: e.target.value })}
-                  style={{ ...inputStyle, padding: "10px 12px" }}>
-                  <option value="">No cambiar potrero</option>
-                  <option value="Sin Asignar">Sin Asignar (Quitar potrero)</option>
-                  {potreros.filter(p => p.nombre !== datosTraslado.nombreOrigen).map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)}
-                </select>
-              </div>
-              <div style={{ marginBottom: "20px" }}>
-                <label style={labelStyle}>Mover al Grupo (Opcional)</label>
-                <select value={datosTraslado.grupoDestino}
-                  onChange={e => setDatosTraslado({ ...datosTraslado, grupoDestino: e.target.value })}
-                  style={{ ...inputStyle, padding: "10px 12px" }}>
-                  <option value="">No cambiar grupo</option>
-                  <option value="Sin Asignar">Sin Asignar (Quitar grupo)</option>
-                  {grupos.filter(g => g.nombre !== datosTraslado.nombreOrigen).map(g => <option key={g.id} value={g.nombre}>{g.nombre}</option>)}
-                </select>
-              </div>
+              {datosTraslado.tipo === "potrero" && (
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={labelStyle}>Nuevo Potrero de Destino</label>
+                  <select value={datosTraslado.potreroDestino}
+                    onChange={e => setDatosTraslado({ ...datosTraslado, potreroDestino: e.target.value })}
+                    style={{ ...inputStyle, padding: "10px 12px" }}>
+                    <option value="">Seleccionar potrero...</option>
+                    <option value="Sin Asignar">Sin Asignar (Quitar potrero)</option>
+                    {potreros.filter(p => p.nombre !== datosTraslado.nombreOrigen).map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+                  </select>
+                </div>
+              )}
+
+              {datosTraslado.tipo === "grupo" && (
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={labelStyle}>Nuevo Grupo de Destino</label>
+                  <select value={datosTraslado.grupoDestino}
+                    onChange={e => setDatosTraslado({ ...datosTraslado, grupoDestino: e.target.value })}
+                    style={{ ...inputStyle, padding: "10px 12px" }}>
+                    <option value="">Seleccionar grupo...</option>
+                    <option value="Sin Asignar">Sin Asignar (Quitar grupo)</option>
+                    {grupos.filter(g => g.nombre !== datosTraslado.nombreOrigen).map(g => <option key={g.id} value={g.nombre}>{g.nombre}</option>)}
+                  </select>
+                </div>
+              )}
 
               <button type="submit" className="btn-primary" style={{ width: "100%", marginTop: 0 }} disabled={guardandoTraslado || (!datosTraslado.potreroDestino && !datosTraslado.grupoDestino)}>
                 {guardandoTraslado ? "Moviendo..." : "Confirmar Traslado"}
