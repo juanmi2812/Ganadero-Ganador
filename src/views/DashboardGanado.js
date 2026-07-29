@@ -428,12 +428,13 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
       
       for (const id of ids) {
         const animalRef = doc(db, "animales", id);
-        if (accionMasivaActiva === "mover") {
-          const updateData = {};
-          if (nuevaUbicacionMasiva.potrero !== "") updateData.potrero = nuevaUbicacionMasiva.potrero;
-          if (nuevaUbicacionMasiva.grupo !== "") updateData.grupo = nuevaUbicacionMasiva.grupo;
-          if (Object.keys(updateData).length > 0) {
-            await updateDoc(animalRef, updateData);
+        if (accionMasivaActiva === "moverPotrero") {
+          if (nuevaUbicacionMasiva.potrero !== "") {
+            await updateDoc(animalRef, { potrero: nuevaUbicacionMasiva.potrero === "Sin Asignar" ? "" : nuevaUbicacionMasiva.potrero });
+          }
+        } else if (accionMasivaActiva === "moverGrupo") {
+          if (nuevaUbicacionMasiva.grupo !== "") {
+            await updateDoc(animalRef, { grupo: nuevaUbicacionMasiva.grupo === "Sin Asignar" ? "" : nuevaUbicacionMasiva.grupo });
           }
         } else if (accionMasivaActiva === "vender") {
           await updateDoc(animalRef, { estado: "Disponible para Venta" });
@@ -688,7 +689,8 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
         <div style={{ position: "fixed", bottom: "80px", left: "50%", transform: "translateX(-50%)", backgroundColor: "#1f2937", color: "white", padding: "12px 24px", borderRadius: "30px", display: "flex", alignItems: "center", gap: "20px", boxShadow: "0 10px 25px rgba(0,0,0,0.2)", zIndex: 50, border: "1px solid #374151" }}>
           <span style={{ fontWeight: "bold" }}>{seleccionados.size} seleccionados</span>
           <div style={{ display: "flex", gap: "10px" }}>
-            <button onClick={() => { setAccionMasivaActiva("mover"); setMostrarModalAccionMasiva(true); }} style={{ padding: "6px 12px", backgroundColor: "#3b82f6", color: "white", borderRadius: "20px", border: "none", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>📍 Trasladar</button>
+            <button onClick={() => { setAccionMasivaActiva("moverPotrero"); setMostrarModalAccionMasiva(true); }} style={{ padding: "6px 12px", backgroundColor: "#3b82f6", color: "white", borderRadius: "20px", border: "none", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>📍 Mover Potrero</button>
+            <button onClick={() => { setAccionMasivaActiva("moverGrupo"); setMostrarModalAccionMasiva(true); }} style={{ padding: "6px 12px", backgroundColor: "#6366f1", color: "white", borderRadius: "20px", border: "none", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>🏷️ Mover Grupo</button>
             <button onClick={() => { setAccionMasivaActiva("vender"); setMostrarModalAccionMasiva(true); }} style={{ padding: "6px 12px", backgroundColor: "#f59e0b", color: "white", borderRadius: "20px", border: "none", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>💰 En Venta</button>
             <button onClick={() => setSeleccionados(new Set())} style={{ padding: "6px 12px", backgroundColor: "transparent", color: "#9ca3af", borderRadius: "20px", border: "1px solid #4b5563", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>Cancelar</button>
           </div>
@@ -699,7 +701,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
         <div className="modal-overlay" onClick={() => !guardandoMasivoSelect && setMostrarModalAccionMasiva(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: "400px" }}>
             <div className="modal-header">
-              <h2>{accionMasivaActiva === "mover" ? "Trasladar Ganado" : "Marcar para Venta"}</h2>
+              <h2>{accionMasivaActiva === "moverPotrero" ? "Mover de Potrero" : accionMasivaActiva === "moverGrupo" ? "Mover de Grupo" : "Marcar para Venta"}</h2>
               <button className="close-btn" onClick={() => !guardandoMasivoSelect && setMostrarModalAccionMasiva(false)}><X size={24} /></button>
             </div>
             <div className="modal-body">
@@ -707,23 +709,24 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                 Aplicarás esta acción a <strong>{seleccionados.size} animal(es)</strong>.
               </p>
               
-              {accionMasivaActiva === "mover" ? (
-                <>
+              {accionMasivaActiva === "moverPotrero" ? (
                   <div style={{ marginBottom: "16px" }}>
-                    <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", marginBottom: "4px", color: "#4b5563" }}>NUEVO POTRERO (Opcional)</label>
+                    <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", marginBottom: "4px", color: "#4b5563" }}>NUEVO POTRERO</label>
                     <select value={nuevaUbicacionMasiva.potrero} onChange={e => setNuevaUbicacionMasiva({...nuevaUbicacionMasiva, potrero: e.target.value})} style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #d1d5db" }}>
-                      <option value="">No cambiar potrero</option>
+                      <option value="">Seleccionar potrero...</option>
+                      <option value="Sin Asignar">Sin Asignar (Quitar potrero)</option>
                       {listaPotreros.filter(p => p !== "Todos").map(p => <option key={p} value={p}>{p}</option>)}
                     </select>
                   </div>
+              ) : accionMasivaActiva === "moverGrupo" ? (
                   <div style={{ marginBottom: "20px" }}>
-                    <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", marginBottom: "4px", color: "#4b5563" }}>NUEVO GRUPO (Opcional)</label>
+                    <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", marginBottom: "4px", color: "#4b5563" }}>NUEVO GRUPO</label>
                     <select value={nuevaUbicacionMasiva.grupo} onChange={e => setNuevaUbicacionMasiva({...nuevaUbicacionMasiva, grupo: e.target.value})} style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #d1d5db" }}>
-                      <option value="">No cambiar grupo</option>
+                      <option value="">Seleccionar grupo...</option>
+                      <option value="Sin Asignar">Sin Asignar (Quitar grupo)</option>
                       {listaGrupos.filter(g => g !== "Todos").map(g => <option key={g} value={g}>{g}</option>)}
                     </select>
                   </div>
-                </>
               ) : (
                 <div style={{ backgroundColor: "#fffbeb", padding: "12px", borderRadius: "8px", border: "1px solid #fde68a", marginBottom: "20px" }}>
                   <p style={{ color: "#92400e", fontSize: "14px", margin: 0 }}>
@@ -735,7 +738,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
               <button 
                 onClick={ejecutarAccionMasiva} 
                 disabled={guardandoMasivoSelect}
-                style={{ width: "100%", padding: "12px", backgroundColor: accionMasivaActiva === "mover" ? "#3b82f6" : "#f59e0b", color: "white", borderRadius: "8px", border: "none", cursor: guardandoMasivoSelect ? "wait" : "pointer", fontWeight: "bold", fontSize: "15px" }}
+                style={{ width: "100%", padding: "12px", backgroundColor: (accionMasivaActiva === "moverPotrero" || accionMasivaActiva === "moverGrupo") ? "#3b82f6" : "#f59e0b", color: "white", borderRadius: "8px", border: "none", cursor: guardandoMasivoSelect ? "wait" : "pointer", fontWeight: "bold", fontSize: "15px" }}
               >
                 {guardandoMasivoSelect ? "Aplicando..." : "Confirmar Cambios"}
               </button>
