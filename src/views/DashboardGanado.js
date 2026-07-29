@@ -22,6 +22,13 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   const [editandoUbicacion, setEditandoUbicacion] = useState(false);
   const [nuevaUbicacion, setNuevaUbicacion] = useState({ potrero: "", grupo: "" });
   
+  // Acciones Masivas (Selección)
+  const [seleccionados, setSeleccionados] = useState(new Set());
+  const [mostrarModalAccionMasiva, setMostrarModalAccionMasiva] = useState(false);
+  const [accionMasivaActiva, setAccionMasivaActiva] = useState("mover"); // "mover" | "vender"
+  const [nuevaUbicacionMasiva, setNuevaUbicacionMasiva] = useState({ potrero: "", grupo: "" });
+  const [guardandoMasivoSelect, setGuardandoMasivoSelect] = useState(false);
+  
   const [datosEvento, setDatosEvento] = useState({ 
     tipo: "Desparasitante", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes", costo: ""
   });
@@ -383,9 +390,63 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     try {
       const animalRef = doc(db, "animales", animalActivo.id);
       await updateDoc(animalRef, { estado: `Baja - ${datosBaja.motivo}` });
+      await addDoc(collection(db, "eventos"), {
+        animalId: animalActivo.id,
+        tipo: "Baja",
+        resultado: datosBaja.motivo,
+        fecha: datosBaja.fecha,
+        notas: datosBaja.notas,
+        ranchoId: usuario?.ranchoId || null
+      });
+      setAnimalActivo({ ...animalActivo, estado: `Baja - ${datosBaja.motivo}` });
       setMostrandoBaja(false);
-      setAnimalActivo(null);
     } catch (error) { console.error(error); }
+  };
+
+  const toggleSeleccion = (id, e) => {
+    e.stopPropagation();
+    const nuevos = new Set(seleccionados);
+    if (nuevos.has(id)) nuevos.delete(id);
+    else nuevos.add(id);
+    setSeleccionados(nuevos);
+  };
+
+  const seleccionarTodos = () => {
+    if (seleccionados.size === ganadoFiltrado.length) {
+      setSeleccionados(new Set());
+    } else {
+      setSeleccionados(new Set(ganadoFiltrado.map(a => a.id)));
+    }
+  };
+
+  const ejecutarAccionMasiva = async () => {
+    if (seleccionados.size === 0) return;
+    setGuardandoMasivoSelect(true);
+    
+    try {
+      const ids = Array.from(seleccionados);
+      
+      for (const id of ids) {
+        const animalRef = doc(db, "animales", id);
+        if (accionMasivaActiva === "mover") {
+          const updateData = {};
+          if (nuevaUbicacionMasiva.potrero !== "") updateData.potrero = nuevaUbicacionMasiva.potrero;
+          if (nuevaUbicacionMasiva.grupo !== "") updateData.grupo = nuevaUbicacionMasiva.grupo;
+          if (Object.keys(updateData).length > 0) {
+            await updateDoc(animalRef, updateData);
+          }
+        } else if (accionMasivaActiva === "vender") {
+          await updateDoc(animalRef, { estado: "Disponible para Venta" });
+        }
+      }
+      
+      setSeleccionados(new Set());
+      setMostrarModalAccionMasiva(false);
+    } catch (error) {
+      console.error("Error en acción masiva:", error);
+    }
+    
+    setGuardandoMasivoSelect(false);
   };
 
   const guardarCambioUbicacion = async () => {
@@ -592,18 +653,24 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
           </div>
         )}
 
-        {ganadoFiltrado.map((animal) => (
           <div 
             key={animal.id} 
             className="animal-item"
             onClick={() => setAnimalActivo(animal)}
-            style={{ opacity: animal.estado?.includes('Baja') ? 0.6 : 1 }}
+            style={{ opacity: animal.estado?.includes('Baja') ? 0.6 : 1, position: "relative" }}
           >
-            <div className={`animal-avatar ${animal.sexo?.toLowerCase() === "macho" ? "macho" : "hembra"}`}>
+            <input 
+              type="checkbox"
+              checked={seleccionados.has(animal.id)}
+              onChange={(e) => toggleSeleccion(animal.id, e)}
+              onClick={(e) => e.stopPropagation()}
+              style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", width: "18px", height: "18px", cursor: "pointer" }}
+            />
+            <div className={`animal-avatar ${animal.sexo?.toLowerCase() === "macho" ? "macho" : "hembra"}`} style={{ marginLeft: "30px" }}>
               {getAnimalEmoji(animal.tipo, animal.sexo)}
             </div>
             <div className="animal-info">
-              <div className="animal-arete">{animal.arete} {animal.areteRancho ? `(Rancho: ${animal.areteRancho})` : ""}</div>
+              <div className="animal-arete">{animal.nombre ? `${animal.nombre} (${animal.arete})` : animal.arete} {animal.areteRancho ? `[Rancho: ${animal.areteRancho}]` : ""}</div>
               <div className="animal-meta">
                 {animal.raza} • {animal.tipo} <br/> 
                 <span style={{ color: "var(--verde-medio)", fontWeight: "600", fontSize: "11px" }}>📍 {animal.potrero || animal.hectarea || "Sin Lote"} {animal.grupo && ` • 🏷️ ${animal.grupo}`}</span>
@@ -616,12 +683,72 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
         ))}
       </div>
 
+      {seleccionados.size > 0 && (
+        <div style={{ position: "fixed", bottom: "80px", left: "50%", transform: "translateX(-50%)", backgroundColor: "#1f2937", color: "white", padding: "12px 24px", borderRadius: "30px", display: "flex", alignItems: "center", gap: "20px", boxShadow: "0 10px 25px rgba(0,0,0,0.2)", zIndex: 50, border: "1px solid #374151" }}>
+          <span style={{ fontWeight: "bold" }}>{seleccionados.size} seleccionados</span>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button onClick={() => { setAccionMasivaActiva("mover"); setMostrarModalAccionMasiva(true); }} style={{ padding: "6px 12px", backgroundColor: "#3b82f6", color: "white", borderRadius: "20px", border: "none", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>📍 Trasladar</button>
+            <button onClick={() => { setAccionMasivaActiva("vender"); setMostrarModalAccionMasiva(true); }} style={{ padding: "6px 12px", backgroundColor: "#f59e0b", color: "white", borderRadius: "20px", border: "none", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>💰 En Venta</button>
+            <button onClick={() => setSeleccionados(new Set())} style={{ padding: "6px 12px", backgroundColor: "transparent", color: "#9ca3af", borderRadius: "20px", border: "1px solid #4b5563", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>Cancelar</button>
+          </div>
+        </div>
+      )}
+
+      {mostrarModalAccionMasiva && (
+        <div className="modal-overlay" onClick={() => !guardandoMasivoSelect && setMostrarModalAccionMasiva(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: "400px" }}>
+            <div className="modal-header">
+              <h2>{accionMasivaActiva === "mover" ? "Trasladar Ganado" : "Marcar para Venta"}</h2>
+              <button className="close-btn" onClick={() => !guardandoMasivoSelect && setMostrarModalAccionMasiva(false)}><X size={24} /></button>
+            </div>
+            <div className="modal-body">
+              <p style={{ marginBottom: "20px", color: "#4b5563" }}>
+                Aplicarás esta acción a <strong>{seleccionados.size} animal(es)</strong>.
+              </p>
+              
+              {accionMasivaActiva === "mover" ? (
+                <>
+                  <div style={{ marginBottom: "16px" }}>
+                    <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", marginBottom: "4px", color: "#4b5563" }}>NUEVO POTRERO (Opcional)</label>
+                    <select value={nuevaUbicacionMasiva.potrero} onChange={e => setNuevaUbicacionMasiva({...nuevaUbicacionMasiva, potrero: e.target.value})} style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #d1d5db" }}>
+                      <option value="">No cambiar potrero</option>
+                      {listaPotreros.filter(p => p !== "Todos").map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ marginBottom: "20px" }}>
+                    <label style={{ display: "block", fontSize: "12px", fontWeight: "bold", marginBottom: "4px", color: "#4b5563" }}>NUEVO GRUPO (Opcional)</label>
+                    <select value={nuevaUbicacionMasiva.grupo} onChange={e => setNuevaUbicacionMasiva({...nuevaUbicacionMasiva, grupo: e.target.value})} style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #d1d5db" }}>
+                      <option value="">No cambiar grupo</option>
+                      {listaGrupos.filter(g => g !== "Todos").map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                  </div>
+                </>
+              ) : (
+                <div style={{ backgroundColor: "#fffbeb", padding: "12px", borderRadius: "8px", border: "1px solid #fde68a", marginBottom: "20px" }}>
+                  <p style={{ color: "#92400e", fontSize: "14px", margin: 0 }}>
+                    Los animales seleccionados cambiarán su estado a <strong>"Disponible para Venta"</strong> y aparecerán en la pestaña "En Venta".
+                  </p>
+                </div>
+              )}
+
+              <button 
+                onClick={ejecutarAccionMasiva} 
+                disabled={guardandoMasivoSelect}
+                style={{ width: "100%", padding: "12px", backgroundColor: accionMasivaActiva === "mover" ? "#3b82f6" : "#f59e0b", color: "white", borderRadius: "8px", border: "none", cursor: guardandoMasivoSelect ? "wait" : "pointer", fontWeight: "bold", fontSize: "15px" }}
+              >
+                {guardandoMasivoSelect ? "Aplicando..." : "Confirmar Cambios"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {animalActivo && (
         <div className="modal-overlay" onClick={() => setAnimalActivo(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <h2>SINIIGA: {animalActivo.arete || "--"} | Rancho: {animalActivo.areteRancho || "--"}</h2>
+                <h2>{animalActivo.nombre ? `${animalActivo.nombre} (${animalActivo.arete})` : animalActivo.arete} {animalActivo.areteRancho ? ` | Rancho: ${animalActivo.areteRancho}` : ""}</h2>
                 <button onClick={() => { setNuevoArete(animalActivo.arete || ""); setNuevoAreteRancho(animalActivo.areteRancho || ""); setMostrarModalArete(true); }} style={{ fontSize: "11px", padding: "4px 8px", backgroundColor: "#f3f4f6", border: "1px solid #d1d5db", borderRadius: "4px", cursor: "pointer", color: "#4b5563" }}>🔄 Cambiar Arete</button>
               </div>
               <button onClick={() => { setAnimalActivo(null); setMostrarModalArete(false); }} style={{ background: "none", border: "none" }}><X size={24} /></button>
@@ -733,8 +860,9 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                 {animalActivo.tipo === "Torete" && (
                   <button className="btn-outline" style={{ flex: 1, margin: 0, borderColor: "#3b82f6", color: "#3b82f6" }} onClick={hacerSemental}>🔥 Hacer Semental</button>
                 )}
+                <button className="btn-outline" style={{ flex: 1, margin: 0, borderColor: "#f59e0b", color: "#f59e0b" }} onClick={() => updateDoc(doc(db, "animales", animalActivo.id), { estado: "Disponible para Venta" }).then(()=>setAnimalActivo({...animalActivo, estado: "Disponible para Venta"}))}>💰 Vender</button>
                 {(["Vaca", "Semental", "Novillona"].includes(animalActivo.tipo)) && animalActivo.estado !== "Desecho" && (
-                  <button className="btn-outline" style={{ flex: 1, margin: 0, borderColor: "#f59e0b", color: "#f59e0b" }} onClick={marcarDesecho}>🗑️ Descartar</button>
+                  <button className="btn-outline" style={{ flex: 1, margin: 0, borderColor: "#6b7280", color: "#6b7280" }} onClick={marcarDesecho}>🗑️ Descartar</button>
                 )}
                 <button className="btn-outline" style={{ color: "#ef4444", borderColor: "#ef4444" }} onClick={() => { setMostrandoBaja(!mostrandoBaja); setMostrandoFormulario(false); }}><AlertTriangle size={18} /></button>
               </div>

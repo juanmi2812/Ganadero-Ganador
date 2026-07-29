@@ -46,6 +46,12 @@ export default function ConfiguracionPotreros({ usuario }) {
   const [guardandoTratRancho, setGuardandoTratRancho] = useState(false);
   const [exitoTratRancho, setExitoTratRancho] = useState("");
 
+  // Traslado de Ganado
+  const [modalTraslado, setModalTraslado] = useState(false);
+  const [datosTraslado, setDatosTraslado] = useState({ tipo: "", nombreOrigen: "", potreroDestino: "", grupoDestino: "" });
+  const [guardandoTraslado, setGuardandoTraslado] = useState(false);
+  const [exitoTraslado, setExitoTraslado] = useState("");
+
   useEffect(() => {
     if (!usuario?.ranchoId) return;
     const unsubP = onSnapshot(query(collection(db, "potreros"), where("ranchoId", "==", usuario.ranchoId)), (snap) => {
@@ -251,6 +257,44 @@ export default function ConfiguracionPotreros({ usuario }) {
     }
   };
 
+  // ─── Traslado Masivo ────────────────────────────────────────────────────────
+  const abrirModalTraslado = (tipo, nombreOrigen) => {
+    setDatosTraslado({ tipo, nombreOrigen, potreroDestino: "", grupoDestino: "" });
+    setExitoTraslado("");
+    setModalTraslado(true);
+  };
+
+  const ejecutarTrasladoMasivo = async (e) => {
+    e.preventDefault();
+    setGuardandoTraslado(true);
+    try {
+      const q = query(
+        collection(db, "animales"), 
+        where("ranchoId", "==", usuario?.ranchoId),
+        where(datosTraslado.tipo === "potrero" ? "potrero" : "grupo", "==", datosTraslado.nombreOrigen)
+      );
+      const snap = await getDocs(q);
+      let count = 0;
+      
+      for (const animalDoc of snap.docs) {
+        const updateData = {};
+        if (datosTraslado.potreroDestino) updateData.potrero = datosTraslado.potreroDestino;
+        if (datosTraslado.grupoDestino) updateData.grupo = datosTraslado.grupoDestino;
+        
+        if (Object.keys(updateData).length > 0) {
+          await updateDoc(doc(db, "animales", animalDoc.id), updateData);
+          count++;
+        }
+      }
+      
+      setExitoTraslado(`✅ Se trasladaron ${count} animales exitosamente.`);
+      setTimeout(() => { setExitoTraslado(""); setModalTraslado(false); }, 2000);
+    } catch (error) {
+      console.error("Error en traslado masivo:", error);
+    }
+    setGuardandoTraslado(false);
+  };
+
   const getTotalHectareas = () => potreros.reduce((total, p) => total + (p.hectareas || 0), 0);
 
   // ─── UI ──────────────────────────────────────────────────────────────────────
@@ -437,6 +481,11 @@ export default function ConfiguracionPotreros({ usuario }) {
                           style={{ background: "#dcfce7", border: "1px solid #86efac", borderRadius: "6px", cursor: "pointer", color: "#166534", padding: "4px 8px", fontSize: "11px", fontWeight: "600", display: "flex", alignItems: "center", gap: "3px" }}>
                           💊 Trat.
                         </button>
+                        <button onClick={() => abrirModalTraslado("potrero", pot.nombre)}
+                          title="Trasladar Ganado"
+                          style={{ background: "#dbeafe", border: "1px solid #93c5fd", borderRadius: "6px", cursor: "pointer", color: "#1e40af", padding: "4px 8px", fontSize: "11px", fontWeight: "600", display: "flex", alignItems: "center", gap: "3px" }}>
+                          🚜 Mover
+                        </button>
                         <button onClick={() => abrirHistorial(pot)}
                           title="Ver historial"
                           style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280" }}>
@@ -512,6 +561,11 @@ export default function ConfiguracionPotreros({ usuario }) {
                   <tr key={g.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
                     <td style={{ padding: "12px 8px", fontWeight: "500", color: "#111827" }}>{g.nombre}</td>
                     <td style={{ padding: "12px 8px", textAlign: "center", display: "flex", justifyContent: "center", gap: "8px" }}>
+                      <button onClick={() => abrirModalTraslado("grupo", g.nombre)}
+                        title="Trasladar Ganado"
+                        style={{ background: "#dbeafe", border: "1px solid #93c5fd", borderRadius: "6px", cursor: "pointer", color: "#1e40af", padding: "4px 8px", fontSize: "11px", fontWeight: "600", display: "flex", alignItems: "center", gap: "3px" }}>
+                        🚜 Mover
+                      </button>
                       <button onClick={() => editarGrupo(g)} style={{ background: "none", border: "none", cursor: "pointer", color: "#3b82f6" }} title="Editar"><Edit2 size={18} /></button>
                       <button onClick={() => borrarGrupo(g.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444" }} title="Eliminar"><Trash2 size={18} /></button>
                     </td>
@@ -589,8 +643,6 @@ export default function ConfiguracionPotreros({ usuario }) {
                 </div>
               )}
 
-
-
               <button type="submit" className="btn-primary" style={{ width: "100%", marginTop: 0 }} disabled={guardandoTrat}>
                 {guardandoTrat ? "Guardando..." : "Registrar Tratamiento"}
               </button>
@@ -631,6 +683,56 @@ export default function ConfiguracionPotreros({ usuario }) {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ══ MODAL TRASLADO MASIVO ══════════════════════════════════════════════ */}
+      {modalTraslado && (
+        <div className="modal-overlay" onClick={() => !guardandoTraslado && setModalTraslado(false)}>
+          <div className="modal-content" style={{ maxWidth: "400px" }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h2 style={{ margin: 0, fontSize: "18px", color: "#111827" }}>🚜 Traslado Masivo</h2>
+                <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: "13px" }}>
+                  Mover animales de {datosTraslado.tipo === "potrero" ? "potrero" : "grupo"} <strong>{datosTraslado.nombreOrigen}</strong>
+                </p>
+              </div>
+              <button onClick={() => !guardandoTraslado && setModalTraslado(false)} style={{ background: "none", border: "none", cursor: "pointer" }}>
+                <X size={22} color="#9ca3af" />
+              </button>
+            </div>
+
+            {exitoTraslado && (
+              <div className="file-status status-success" style={{ marginBottom: "14px" }}><span>{exitoTraslado}</span></div>
+            )}
+
+            <form onSubmit={ejecutarTrasladoMasivo}>
+              <div style={{ marginBottom: "14px" }}>
+                <label style={labelStyle}>Mover al Potrero (Opcional)</label>
+                <select value={datosTraslado.potreroDestino}
+                  onChange={e => setDatosTraslado({ ...datosTraslado, potreroDestino: e.target.value })}
+                  style={{ ...inputStyle, padding: "10px 12px" }}>
+                  <option value="">No cambiar potrero</option>
+                  <option value="Sin Asignar">Sin Asignar (Quitar potrero)</option>
+                  {potreros.filter(p => p.nombre !== datosTraslado.nombreOrigen).map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+                </select>
+              </div>
+              <div style={{ marginBottom: "20px" }}>
+                <label style={labelStyle}>Mover al Grupo (Opcional)</label>
+                <select value={datosTraslado.grupoDestino}
+                  onChange={e => setDatosTraslado({ ...datosTraslado, grupoDestino: e.target.value })}
+                  style={{ ...inputStyle, padding: "10px 12px" }}>
+                  <option value="">No cambiar grupo</option>
+                  <option value="Sin Asignar">Sin Asignar (Quitar grupo)</option>
+                  {grupos.filter(g => g.nombre !== datosTraslado.nombreOrigen).map(g => <option key={g.id} value={g.nombre}>{g.nombre}</option>)}
+                </select>
+              </div>
+
+              <button type="submit" className="btn-primary" style={{ width: "100%", marginTop: 0 }} disabled={guardandoTraslado || (!datosTraslado.potreroDestino && !datosTraslado.grupoDestino)}>
+                {guardandoTraslado ? "Moviendo..." : "Confirmar Traslado"}
+              </button>
+            </form>
           </div>
         </div>
       )}

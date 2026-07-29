@@ -42,7 +42,7 @@ export default function ImportadorMasivo({ usuario }) {
 
     // ── Hoja 1: Datos ──────────────────────────────────────────────────────────
     const encabezados = [[
-      "Arete", "Arete_SINIIGA", "Tipo", "Sexo", "Raza", "Fecha_Nacimiento", "Peso_kg", 
+      "Arete", "Nombre", "Arete_SINIIGA", "Tipo", "Sexo", "Raza", "Fecha_Nacimiento", "Peso_kg", 
       "Estado", "Potrero", "Grupo", "Arete_Madre", "Arete_Padre",
       "Fecha_Ultimo_Parto", "Fecha_Parto_1", "Fecha_Parto_2", "Fecha_Parto_3", "Fecha_Parto_4",
       "Fecha_Parto_5", "Fecha_Parto_6", "Fecha_Parto_7", "Fecha_Parto_8", "Fecha_Parto_9", "Fecha_Parto_10",
@@ -53,7 +53,7 @@ export default function ImportadorMasivo({ usuario }) {
     ]];
 
     const ejemplos = [
-      ["VC-001", "0900000001", "Vaca", "Hembra", "Brahman",
+      ["VC-001", "La Pinta", "0900000001", "Vaca", "Hembra", "Brahman",
        "2018-05-15", 480, "Sano",
        "Potrero Norte", "Vacas", "", "SM-001",
        "2024-11-10", "", "", "", "", "", "", "", "", "", "",
@@ -65,7 +65,7 @@ export default function ImportadorMasivo({ usuario }) {
 
     const ws1 = XLSX.utils.aoa_to_sheet([...encabezados, ...ejemplos]);
     ws1["!cols"] = [
-      {wch:12},{wch:15},{wch:10},{wch:8},{wch:12},
+      {wch:12},{wch:15},{wch:15},{wch:10},{wch:8},{wch:12},
       {wch:16},{wch:9},{wch:10},
       {wch:15},{wch:15},{wch:13},{wch:13},
       {wch:16},{wch:12},{wch:12},{wch:12},{wch:12},{wch:12},{wch:12},{wch:12},{wch:12},{wch:12},{wch:12},
@@ -88,6 +88,11 @@ export default function ImportadorMasivo({ usuario }) {
        "Identificador interno o número de control principal (corto). Ejemplo: VC-002, 105",
        "Cualquier texto o número corto.",
        "VC-002"],
+      ["Nombre",
+       "No",
+       "Nombre de pila del animal si lo tiene.",
+       "Texto.",
+       "La Pinta"],
       ["Arete_SINIIGA",
        "No",
        "Arete Oficial o de SINIIGA (largo).",
@@ -358,6 +363,7 @@ export default function ImportadorMasivo({ usuario }) {
         // Construir objeto del animal
         const animal = {
           arete,
+          nombre:          String(fila["Nombre"] || "").trim(),
           areteSiniiga:    String(fila["Arete_SINIIGA"] || "").trim(),
           tipo,
           sexo,
@@ -430,6 +436,26 @@ export default function ImportadorMasivo({ usuario }) {
         setErrores(erroresEncontrados);
         setCargando(false);
         return;
+      }
+
+      // Autocreación de potreros y grupos
+      const potrerosUnicos = [...new Set(animalesValidos.map(a => a.animal.potrero).filter(p => p !== ""))];
+      const gruposUnicos = [...new Set(animalesValidos.map(a => a.animal.grupo).filter(g => g !== ""))];
+
+      const snapPotreros = await getDocs(query(collection(db, "potreros"), where("ranchoId", "==", usuario?.ranchoId)));
+      const potrerosExistentes = snapPotreros.docs.map(d => d.data().nombre);
+      const snapGrupos = await getDocs(query(collection(db, "grupos"), where("ranchoId", "==", usuario?.ranchoId)));
+      const gruposExistentes = snapGrupos.docs.map(d => d.data().nombre);
+
+      for (const p of potrerosUnicos) {
+        if (!potrerosExistentes.includes(p)) {
+          await addDoc(collection(db, "potreros"), { nombre: p, hectareas: 0, ranchoId: usuario?.ranchoId || null });
+        }
+      }
+      for (const g of gruposUnicos) {
+        if (!gruposExistentes.includes(g)) {
+          await addDoc(collection(db, "grupos"), { nombre: g, ranchoId: usuario?.ranchoId || null });
+        }
       }
 
       // Subir a Firestore

@@ -9,6 +9,7 @@ export default function NuevoAnimal({ usuario }) {
   const [sementales, setSementales] = useState([]);
 
   const [datosFormulario, setDatosFormulario] = useState({
+    nombre: "",
     arete: "",
     areteRancho: "",
     tipo: "Desarrollo",
@@ -71,6 +72,7 @@ export default function NuevoAnimal({ usuario }) {
     e.preventDefault();
 
     const animalNuevo = {
+      nombre: datosFormulario.nombre || "",
       arete: datosFormulario.arete,
       areteRancho: datosFormulario.areteRancho || "",
       tipo: datosFormulario.tipo,
@@ -93,6 +95,7 @@ export default function NuevoAnimal({ usuario }) {
       setTimeout(() => {
         setExito(false);
         setDatosFormulario({
+          nombre: "",
           arete: "",
           areteRancho: "",
           tipo: "Desarrollo",
@@ -142,6 +145,16 @@ export default function NuevoAnimal({ usuario }) {
               gap: "16px",
             }}
           >
+            <div className="input-group" style={{ gridColumn: "1 / -1" }}>
+              <label>Nombre del Animal (Opcional)</label>
+              <input
+                type="text"
+                name="nombre"
+                value={datosFormulario.nombre}
+                onChange={manejarCambio}
+                placeholder="Ej: La Pinta, El Toro"
+              />
+            </div>
             <div className="input-group">
               <label>Arete Oficial (SINIIGA)</label>
               <input
