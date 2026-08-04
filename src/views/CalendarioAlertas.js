@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { collection, onSnapshot, addDoc, updateDoc, doc, query, where } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, updateDoc, doc, query, where, deleteDoc } from "firebase/firestore";
 import { db } from "../firebase";
-import { Plus, X, User, Layers, CalendarDays, ChevronDown, ChevronUp, CheckCircle2, Clock, AlertCircle, Bell } from "lucide-react";
+import { Plus, X, User, Layers, CalendarDays, ChevronDown, ChevronUp, CheckCircle2, Clock, AlertCircle, Bell, Trash2 } from "lucide-react";
 import { CATALOGO_EVENTOS, TIPOS_EVENTO } from "../catalogoEventos";
 
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
@@ -132,6 +132,13 @@ export default function CalendarioAlertas({ usuario }) {
   const marcarRealizada = async (alertaId) => {
     try {
       await updateDoc(doc(db, "alertas", alertaId), { completada: true });
+    } catch (err) { console.error(err); }
+  };
+
+  const eliminarAlerta = async (alertaId) => {
+    if (!window.confirm("¿Estás seguro de eliminar esta actividad?")) return;
+    try {
+      await deleteDoc(doc(db, "alertas", alertaId));
     } catch (err) { console.error(err); }
   };
 
@@ -348,7 +355,7 @@ export default function CalendarioAlertas({ usuario }) {
                       </div>
                     </div>
 
-                    {/* Estado + Botón Marcar Realizada */}
+                    {/* Estado + Botones de Acción */}
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px", flexShrink: 0, marginLeft: "10px" }}>
                       <span style={{
                         display: "inline-flex", alignItems: "center", gap: "4px",
@@ -357,20 +364,33 @@ export default function CalendarioAlertas({ usuario }) {
                       }}>
                         {estado.icon} {estado.label}
                       </span>
-                      {!alerta.completada && (
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        {!alerta.completada && (
+                          <button
+                            onClick={() => marcarRealizada(alerta.id)}
+                            style={{
+                              fontSize: "11px", fontWeight: "600", padding: "4px 10px",
+                              backgroundColor: "transparent", color: "#10b981", border: "1px solid #10b981",
+                              borderRadius: "4px", cursor: "pointer",
+                              display: "flex", alignItems: "center", gap: "4px",
+                            }}
+                          >
+                            <CheckCircle2 size={12} /> Realizada
+                          </button>
+                        )}
                         <button
-                          onClick={() => marcarRealizada(alerta.id)}
+                          onClick={() => eliminarAlerta(alerta.id)}
                           style={{
-                            fontSize: "11px", fontWeight: "600", padding: "4px 10px",
-                            borderRadius: "8px", border: "1px solid #10b981",
-                            backgroundColor: "#f0fdf4", color: "#059669",
-                            cursor: "pointer", whiteSpace: "nowrap",
-                            display: "flex", alignItems: "center", gap: "4px",
+                            fontSize: "11px", fontWeight: "600", padding: "4px 8px",
+                            backgroundColor: "transparent", color: "#ef4444", border: "1px solid #ef4444",
+                            borderRadius: "4px", cursor: "pointer",
+                            display: "flex", alignItems: "center", justifyContent: "center"
                           }}
+                          title="Eliminar Actividad"
                         >
-                          <CheckCircle2 size={12} /> Marcar Realizada
+                          <Trash2 size={14} />
                         </button>
-                      )}
+                      </div>
                     </div>
                   </div>
                 );
