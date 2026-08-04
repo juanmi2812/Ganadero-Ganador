@@ -9,6 +9,8 @@ import { CATALOGO_EVENTOS, TIPOS_EVENTO_GANADO } from "../catalogoEventos";
 export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, setAbrirModalTratamientoMasivo }) {
   // --- ESTADOS ---
   const [inventario, setInventario] = useState([]);
+  const [potrerosCol, setPotrerosCol] = useState([]);
+  const [gruposCol, setGruposCol] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [filtroActivo, setFiltroActivo] = useState("Todos");
   const [filtroPotrero, setFiltroPotrero] = useState("Todos");
@@ -139,7 +141,22 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
         setInventario(listaAnimales);
       }
     );
-    return () => cancelarSuscripcion();
+
+    const qPotreros = query(collection(db, "potreros"), where("ranchoId", "==", usuario.ranchoId));
+    const unsubPotreros = onSnapshot(qPotreros, (snap) => {
+      setPotrerosCol(snap.docs.map(doc => doc.data()));
+    });
+
+    const qGrupos = query(collection(db, "grupos"), where("ranchoId", "==", usuario.ranchoId));
+    const unsubGrupos = onSnapshot(qGrupos, (snap) => {
+      setGruposCol(snap.docs.map(doc => doc.data()));
+    });
+
+    return () => {
+      cancelarSuscripcion();
+      unsubPotreros();
+      unsubGrupos();
+    };
   }, [usuario]);
 
   useEffect(() => {
@@ -254,8 +271,8 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     return animal.tipo === filtroActivo && !animal.estado?.includes('Baja') && animal.estado !== "Disponible para Venta" && animal.estado !== "Desecho";
   });
 
-  const listaPotreros = ["Todos", ...new Set(inventario.map(a => a.potrero || a.hectarea).filter(Boolean))].sort();
-  const listaGrupos = ["Todos", ...new Set(inventario.map(a => a.grupo).filter(Boolean))].sort();
+  const listaPotreros = ["Todos", ...new Set([...inventario.map(a => a.potrero || a.hectarea), ...potrerosCol.map(p => p.nombre)].filter(Boolean))].sort();
+  const listaGrupos = ["Todos", ...new Set([...inventario.map(a => a.grupo), ...gruposCol.map(g => g.nombre)].filter(Boolean))].sort();
 
   // --- ACCIONES ---
   const guardarEvento = async (e) => {
