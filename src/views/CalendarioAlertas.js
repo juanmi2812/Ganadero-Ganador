@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { collection, onSnapshot, addDoc, updateDoc, doc, query, where } from "firebase/firestore";
 import { db } from "../firebase";
-import { Plus, X, User, Layers, CalendarDays, ChevronDown, ChevronUp, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Plus, X, User, Layers, CalendarDays, ChevronDown, ChevronUp, CheckCircle2, Clock, AlertCircle, Bell } from "lucide-react";
 import { CATALOGO_EVENTOS, TIPOS_EVENTO } from "../catalogoEventos";
 
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
@@ -155,6 +155,7 @@ export default function CalendarioAlertas({ usuario }) {
 
       await addDoc(collection(db, "alertas"), {
         fechaProgramada: datosEvento.fecha,
+        fechaRecordatorio: crearRecordatorio && fechaRecordatorio ? fechaRecordatorio : null,
         titulo,
         tipo: datosEvento.tipo,
         resultado: datosEvento.resultado,
@@ -166,23 +167,6 @@ export default function CalendarioAlertas({ usuario }) {
         origen: "planeado",
         ranchoId: usuario?.ranchoId || null
       });
-
-      // Crear recordatorio adicional si el usuario lo activó
-      if (crearRecordatorio && fechaRecordatorio) {
-        await addDoc(collection(db, "alertas"), {
-          fechaProgramada: fechaRecordatorio,
-          titulo: `🔔 Recordatorio: ${titulo}`,
-          tipo: datosEvento.tipo,
-          resultado: datosEvento.resultado,
-          modoAplicacion,
-          animalId: modoAplicacion === "individual" ? animalSeleccionado : null,
-          filtroPotrero: modoAplicacion === "masivo" ? filtroPotrero : null,
-          filtroGrupo: modoAplicacion === "masivo" ? filtroGrupo : null,
-          completada: false,
-          origen: "planeado",
-          ranchoId: usuario?.ranchoId || null
-        });
-      }
 
       setExitoMsg(`✅ Actividad planeada para el ${datosEvento.fecha}`);
       setDatosEvento({ tipo: "Vacunación", resultado: "", fecha: new Date().toISOString().split("T")[0] });
@@ -349,6 +333,16 @@ export default function CalendarioAlertas({ usuario }) {
                         {alerta.titulo && (
                           <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: "2px" }}>
                             {alerta.titulo.split("—")[1]?.trim() || alerta.titulo}
+                          </div>
+                        )}
+                        {alerta.fechaRecordatorio && (
+                          <div style={{
+                            fontSize: "11px", fontWeight: "600", marginTop: "4px",
+                            display: "flex", alignItems: "center", gap: "4px",
+                            color: hoy >= new Date(alerta.fechaRecordatorio + "T00:00:00") && !alerta.completada ? "#ea580c" : "#9ca3af"
+                          }}>
+                            <Bell size={12} />
+                            {hoy >= new Date(alerta.fechaRecordatorio + "T00:00:00") && !alerta.completada ? "¡Recordatorio Activo!" : `Recordatorio: ${alerta.fechaRecordatorio.slice(8)}/${alerta.fechaRecordatorio.slice(5, 7)}`}
                           </div>
                         )}
                       </div>
