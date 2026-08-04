@@ -42,23 +42,14 @@ export default function NuevoAnimal({ usuario }) {
         setVientres(
           lista.filter(
             (a) => {
-              const sexoStr = typeof a.sexo === 'string' ? a.sexo.trim().toLowerCase() : "";
-              const tipoStr = typeof a.tipo === 'string' ? a.tipo.trim().toLowerCase() : "";
-              const isFemale = sexoStr === "hembra" || ["vaca", "novillona", "vientre", "becerra", "desarrollo"].includes(tipoStr);
-              const estadoStr = typeof a.estado === 'string' ? a.estado.trim().toLowerCase() : "";
-              return isFemale && !estadoStr.includes("baja");
+              const isFemale = a.sexo?.toLowerCase() === "hembra" || ["Vaca", "Novillona", "Vientre", "Becerra"].includes(a.tipo);
+              return isFemale && !a.estado?.includes("Baja");
             }
           )
         );
         setSementales(
           lista.filter(
-            (a) => {
-              const tipoStr = typeof a.tipo === 'string' ? a.tipo.trim().toLowerCase() : "";
-              const sexoStr = typeof a.sexo === 'string' ? a.sexo.trim().toLowerCase() : "";
-              const isMale = tipoStr === "semental" || tipoStr === "torete" || tipoStr === "becerro" || sexoStr === "macho";
-              const estadoStr = typeof a.estado === 'string' ? a.estado.trim().toLowerCase() : "";
-              return isMale && !estadoStr.includes("baja");
-            }
+            (a) => a.tipo === "Semental" && !a.estado?.includes("Baja")
           )
         );
         
@@ -249,12 +240,6 @@ export default function NuevoAnimal({ usuario }) {
             </div>
 
             {/* SELECCIÓN DE PADRES */}
-            {/* DEBUG INFO: Oculto para uso futuro o visible si hay problemas */}
-            <div style={{ fontSize: '10px', color: 'gray' }}>
-              Total animales: {potrerosInventario.length > 0 ? "Sí" : "No"} | 
-              Vientres detectados: {vientres.length} | 
-              Sementales: {sementales.length}
-            </div>
             <div className="input-group">
               <label>Madre (Vientre)</label>
               <select
