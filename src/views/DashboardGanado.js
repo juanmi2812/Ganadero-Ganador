@@ -185,8 +185,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     if (!animalActivo) return null;
 
     const pesoInicial = parseFloat(animalActivo.peso?.toString().replace(/[^0-9.]/g, '')) || 0;
-    const fechaInicial = new Date(animalActivo.fechaRegistro || animalActivo.fechaNacimiento);
-
+    
     const repesos = historialEventos
       .filter(ev => ev.tipo === "Repeso")
       .map(ev => ({
@@ -198,11 +197,22 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     if (repesos.length === 0) return { actual: pesoInicial, gananciaTotal: 0, gdp: 0 };
 
     const pesoActual = repesos[0].peso;
-    const fechaActual = repesos[0].fecha;
     const gananciaTotal = pesoActual - pesoInicial;
-    const diffTiempo = Math.abs(fechaActual - fechaInicial);
-    const dias = Math.ceil(diffTiempo / (1000 * 60 * 60 * 24)) || 1;
-    const gdp = gananciaTotal / dias;
+    let gdp = 0;
+
+    if (repesos.length > 1) {
+      // Calcular GDP del último periodo entre repesos
+      const gananciaPeriodo = repesos[0].peso - repesos[1].peso;
+      const diffTiempo = Math.abs(repesos[0].fecha - repesos[1].fecha);
+      const dias = Math.ceil(diffTiempo / (1000 * 60 * 60 * 24)) || 1;
+      gdp = gananciaPeriodo / dias;
+    } else {
+      // Si hay solo 1 repeso, usar la fecha de nacimiento si existe (ideal para becerros), si no la de registro
+      const fechaInicial = new Date(animalActivo.fechaNacimiento || animalActivo.fechaRegistro || new Date());
+      const diffTiempo = Math.abs(repesos[0].fecha - fechaInicial);
+      const dias = Math.ceil(diffTiempo / (1000 * 60 * 60 * 24)) || 1;
+      gdp = gananciaTotal / dias;
+    }
 
     return { actual: pesoActual, gananciaTotal: gananciaTotal.toFixed(2), gdp: gdp.toFixed(3) };
   };
@@ -290,11 +300,13 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   const guardarCambioArete = async (e) => {
     e.preventDefault();
     if (!nuevoArete.trim() && !nuevoAreteRancho.trim()) return;
+    const areteFinal = nuevoArete.trim() !== "" ? nuevoArete.trim() : (animalActivo.arete || "");
+    const ranchoFinal = nuevoAreteRancho.trim() !== "" ? nuevoAreteRancho.trim() : (animalActivo.areteRancho || "");
     try {
       await addDoc(collection(db, "eventos"), {
         animalId: animalActivo.id,
         tipo: "Cambio de Arete",
-        resultado: `SINIIGA: ${animalActivo.arete || "--"} -> ${nuevoArete || "--"} | Rancho: ${animalActivo.areteRancho || "--"} -> ${nuevoAreteRancho || "--"}`,
+        resultado: `SINIIGA: ${animalActivo.arete || "--"} -> ${areteFinal || "--"} | Rancho: ${animalActivo.areteRancho || "--"} -> ${ranchoFinal || "--"}`,
         fecha: new Date().toISOString().split('T')[0],
         costo: 0,
         origen: "realizado",
