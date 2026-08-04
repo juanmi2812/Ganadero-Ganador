@@ -29,6 +29,7 @@ export default function ReportesBI({ usuario }) {
   const [config, setConfig] = useState(null);
   const [potreros, setPotreros] = useState([]);
   const [eventosPotreros, setEventosPotreros] = useState([]);
+  const [lecheIndividual, setLecheIndividual] = useState([]);
 
   // Filtros extra para Reporte de Tratamientos
   const [filtroOrigenTrat, setFiltroOrigenTrat] = useState("ambos");
@@ -92,7 +93,11 @@ export default function ReportesBI({ usuario }) {
       setEventosPotreros(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
 
-    return () => { unsubAnimales(); unsubEventos(); unsubConfig(); unsubAlertas(); unsubPotreros(); unsubEventosPotreros(); };
+    const unsubLeche = onSnapshot(query(collection(db, "produccion_leche_individual"), where("ranchoId", "==", usuario.ranchoId)), snap => {
+      setLecheIndividual(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+
+    return () => { unsubAnimales(); unsubEventos(); unsubConfig(); unsubAlertas(); unsubPotreros(); unsubEventosPotreros(); unsubLeche(); };
   }, [usuario]);
 
   // --- MATEMÁTICA Y EXTRACCIÓN DE DATOS ---
@@ -144,6 +149,18 @@ export default function ReportesBI({ usuario }) {
 
   const dataProyeccion = prepararDatosProyeccionPartos(animales, eventos);
   const avgIEP = dataProyeccion.stats.avgIEP;
+
+  const edadPrimerParto = metricas.edadPrimerParto;
+  const gdpPromedio = metricas.gdp.m_12m !== "0.000" ? metricas.gdp.m_12m : (metricas.gdp.h_12m !== "0.000" ? metricas.gdp.h_12m : "--");
+  
+  const totalAbortos = eventos.filter(e => e.tipo === "Aborto").length;
+  const tasaAbortos = totalVientres > 0 ? ((totalAbortos / totalVientres) * 100).toFixed(1) : "0.0";
+
+  let promedioLeche = "0.0";
+  if (lecheIndividual && lecheIndividual.length > 0) {
+      const sumaLeche = lecheIndividual.reduce((sum, r) => sum + (Number(r.litros) || 0), 0);
+      promedioLeche = (sumaLeche / lecheIndividual.length).toFixed(1);
+  }
 
   const procesarGraficaMetrica = () => {
      const distMap = {};
@@ -321,6 +338,37 @@ export default function ReportesBI({ usuario }) {
             <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>{metricas.conteoDesecho} vacas de desecho</div>
         </div>
 
+        {/* KPI 7: Edad al Primer Parto */}
+        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #14b8a6", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
+            <button onClick={() => setInfoKpi({titulo: "Edad al Primer Parto", descripcion: "Promedio de meses que tardan las hembras desde que nacen hasta que tienen su primera cría.", calculo: "Promedio de edad (meses) en la fecha del primer evento de parto registrado por vientre."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
+            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><Activity size={16}/> EDAD PRIMER PARTO</div>
+            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#14b8a6", marginTop: "8px" }}>{edadPrimerParto}</div>
+            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>Meses (promedio)</div>
+        </div>
+
+        {/* KPI 8: GDP Promedio (12m) */}
+        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #3b82f6", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
+            <button onClick={() => setInfoKpi({titulo: "GDP Promedio (Últimos 12m)", descripcion: "Ganancia Diaria de Peso promedio en animales en desarrollo (Becerros/Toretes/Novillonas) en el último año.", calculo: "(Peso Actual - Peso Anterior) / Días Transcurridos."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
+            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><TrendingUp size={16}/> GDP PROMEDIO (12M)</div>
+            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#3b82f6", marginTop: "8px" }}>{gdpPromedio}</div>
+            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>Kg / día</div>
+        </div>
+
+        {/* KPI 9: Producción de Leche (Promedio Individual) */}
+        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #8b5cf6", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
+            <button onClick={() => setInfoKpi({titulo: "Promedio Leche Individual", descripcion: "Promedio de litros de leche producidos por vaca según los registros individuales.", calculo: "Suma de litros individuales / Número de registros individuales."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
+            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><Activity size={16}/> PROM. LECHE/VACA</div>
+            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#8b5cf6", marginTop: "8px" }}>{promedioLeche}</div>
+            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>Litros (histórico)</div>
+        </div>
+
+        {/* KPI 10: Tasa de Abortos */}
+        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #ef4444", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
+            <button onClick={() => setInfoKpi({titulo: "Tasa de Abortos", descripcion: "Proporción de abortos registrados frente al total de vientres en el rancho.", calculo: "(Total de eventos Aborto / Total de Vientres) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
+            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><AlertTriangle size={16}/> TASA DE ABORTOS</div>
+            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#ef4444", marginTop: "8px" }}>{tasaAbortos}%</div>
+            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>{totalAbortos} aborto(s) registrado(s)</div>
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "24px" }}>

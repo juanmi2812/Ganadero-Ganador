@@ -1,0 +1,21 @@
+3 agosto Ajustes en la APP
+1.- Añadir UPP (Unidad de producción pecuaria) este es un numero único que le asignan a cada productor el gobierno para identificar. Debe ir incluido al registrar el rancho y poder verlo en el perfil.  El de mi rancho es 30 189 1447 002.
+2.-Reportes:
+Reporte de palpación (nuevo), para poder ver el resultado de la ultima palpación.
+En “cargar palpación” incluir C.C. que es condición corporal, las opciones son numericas abiertas, también una pestaña de observaciones (si esta vacia puedes poner aplicar CATOSAL), 
+Reporte de días abiertos (nuevo), este te dice los días que pasa desde la fecha de parto hasta que se vuelve a preñar. Ojo en la gestación si tiene 3 meses de gestación y pario hace 6 meses, los días abiertos son 90 o tres meses.
+Reporte de abortos (nuevo), en evento poner la opción, en el reporte visualizar los abortos por mes, en los ultimos 12 meses, y sacar porcentaje vs vacas y novillonas exsitentes.
+3.-Objetivos en cada reporte y alarma:
+
+4.- Hacer un usuario de Tecnico (para los médicos o administradores de varios ranchos, el dueño da acceso, solo pueden ver información.
+5.- Pestaña “Movilización”
+a) seleccionar movimiento: venta o cambio de potreros
+b) selecciona UPP origen (un rancho puede tener mas de una)
+c) Seleccioanr UPP destino
+d) seleccionar aretes a mover/vender. Inlcuir placas de vehiculo, ruta y chofer.
+e) descargar reporte PDF
+g) Seleccionar ganadera a usar (hay 47)
+d) sacar cita de acuerdo a calendario de la ganadera
+
+
+

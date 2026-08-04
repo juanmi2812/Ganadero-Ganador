@@ -30,7 +30,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   const [guardandoMasivoSelect, setGuardandoMasivoSelect] = useState(false);
   
   const [datosEvento, setDatosEvento] = useState({ 
-    tipo: "Desparasitante", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes", costo: ""
+    tipo: "Desparasitante", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes", costo: "", condicionCorporal: "", observaciones: ""
   });
   const [datosBaja, setDatosBaja] = useState({ 
     motivo: "Venta", notas: "", fecha: new Date().toISOString().split('T')[0] 
@@ -172,7 +172,9 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
           tipo: a.tipo,
           estadoActual: a.estado || "Sano",
           resultado: "Gestante",
-          detalle: "3" // default 3 meses si es gestante
+          detalle: "3", // default 3 meses si es gestante
+          condicionCorporal: "",
+          observaciones: ""
         }));
       setVientresPalpacion(vientres);
     }
@@ -249,7 +251,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   const guardarEvento = async (e) => {
     e.preventDefault();
     try {
-      await addDoc(collection(db, "eventos"), {
+      const eventoPayload = {
         animalId: animalActivo.id,
         tipo: datosEvento.tipo,
         resultado: datosEvento.resultado,
@@ -257,7 +259,14 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
         costo: Number(datosEvento.costo) || 0,
         origen: "realizado",
         ranchoId: usuario?.ranchoId || null
-      });
+      };
+
+      if (datosEvento.tipo === "Palpación") {
+        eventoPayload.condicionCorporal = datosEvento.condicionCorporal;
+        eventoPayload.observaciones = datosEvento.observaciones;
+      }
+
+      await addDoc(collection(db, "eventos"), eventoPayload);
 
       const updates = {};
       if (datosEvento.tipo === "Parto") {
@@ -273,7 +282,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
          await updateDoc(doc(db, "animales", animalActivo.id), updates);
       }
 
-      setDatosEvento({ tipo: "Desparasitante", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes", costo: "" });
+      setDatosEvento({ tipo: "Desparasitante", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes", costo: "", condicionCorporal: "", observaciones: "" });
       setMostrandoFormulario(false);
     } catch (error) { console.error(error); }
   };
@@ -475,7 +484,9 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
           fecha: new Date().toISOString().split('T')[0],
           costo: 0,
           origen: "realizado",
-          ranchoId: usuario?.ranchoId
+          ranchoId: usuario?.ranchoId,
+          condicionCorporal: v.condicionCorporal || "",
+          observaciones: v.observaciones || ""
         });
 
         const updates = { 
@@ -557,22 +568,24 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     <div className="dashboard-container">
       
       <Header subtitle="Control de inventario y análisis de rendimiento.">
-        <div style={{ display: "flex", gap: "10px" }}>
-          <button 
-            className="btn-primary" 
-            onClick={() => setMostrarModalPalpacion(true)}
-            style={{ margin: 0, width: "auto", display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#7c3aed", borderColor: "#7c3aed", padding: "10px 20px" }}
-          >
-            🔍 Cargar Palpación
-          </button>
-          <button 
-            className="btn-primary" 
-            onClick={() => setMostrarModalMasivo(true)}
-            style={{ margin: 0, width: "auto", display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#16a34a", borderColor: "#16a34a", padding: "10px 20px" }}
-          >
-            💊 Cargar Tratamiento
-          </button>
-        </div>
+        {usuario?.rol !== "tecnico" && (
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button 
+              className="btn-primary" 
+              onClick={() => setMostrarModalPalpacion(true)}
+              style={{ margin: 0, width: "auto", display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#7c3aed", borderColor: "#7c3aed", padding: "10px 20px" }}
+            >
+              🔍 Cargar Palpación
+            </button>
+            <button 
+              className="btn-primary" 
+              onClick={() => setMostrarModalMasivo(true)}
+              style={{ margin: 0, width: "auto", display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#16a34a", borderColor: "#16a34a", padding: "10px 20px" }}
+            >
+              💊 Cargar Tratamiento
+            </button>
+          </div>
+        )}
       </Header>
 
       <div className="kpi-grid">
@@ -689,9 +702,13 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
         <div style={{ position: "fixed", bottom: "80px", left: "50%", transform: "translateX(-50%)", backgroundColor: "#1f2937", color: "white", padding: "12px 24px", borderRadius: "30px", display: "flex", alignItems: "center", gap: "20px", boxShadow: "0 10px 25px rgba(0,0,0,0.2)", zIndex: 50, border: "1px solid #374151" }}>
           <span style={{ fontWeight: "bold" }}>{seleccionados.size} seleccionados</span>
           <div style={{ display: "flex", gap: "10px" }}>
-            <button onClick={() => { setAccionMasivaActiva("moverPotrero"); setMostrarModalAccionMasiva(true); }} style={{ padding: "6px 12px", backgroundColor: "#3b82f6", color: "white", borderRadius: "20px", border: "none", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>📍 Mover Potrero</button>
-            <button onClick={() => { setAccionMasivaActiva("moverGrupo"); setMostrarModalAccionMasiva(true); }} style={{ padding: "6px 12px", backgroundColor: "#6366f1", color: "white", borderRadius: "20px", border: "none", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>🏷️ Mover Grupo</button>
-            <button onClick={() => { setAccionMasivaActiva("vender"); setMostrarModalAccionMasiva(true); }} style={{ padding: "6px 12px", backgroundColor: "#f59e0b", color: "white", borderRadius: "20px", border: "none", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>💰 En Venta</button>
+            {usuario?.rol !== "tecnico" && (
+              <>
+                <button onClick={() => { setAccionMasivaActiva("moverPotrero"); setMostrarModalAccionMasiva(true); }} style={{ padding: "6px 12px", backgroundColor: "#3b82f6", color: "white", borderRadius: "20px", border: "none", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>📍 Mover Potrero</button>
+                <button onClick={() => { setAccionMasivaActiva("moverGrupo"); setMostrarModalAccionMasiva(true); }} style={{ padding: "6px 12px", backgroundColor: "#6366f1", color: "white", borderRadius: "20px", border: "none", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>🏷️ Mover Grupo</button>
+                <button onClick={() => { setAccionMasivaActiva("vender"); setMostrarModalAccionMasiva(true); }} style={{ padding: "6px 12px", backgroundColor: "#f59e0b", color: "white", borderRadius: "20px", border: "none", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>💰 En Venta</button>
+              </>
+            )}
             <button onClick={() => setSeleccionados(new Set())} style={{ padding: "6px 12px", backgroundColor: "transparent", color: "#9ca3af", borderRadius: "20px", border: "1px solid #4b5563", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>Cancelar</button>
           </div>
         </div>
@@ -857,7 +874,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
               {animalActivo.madre && <span><strong>Madre:</strong> {animalActivo.madre} | <strong>Padre:</strong> {animalActivo.padre}</span>}
             </div>
 
-            {!animalActivo.estado?.includes('Baja') && (
+            {(!animalActivo.estado?.includes('Baja') && usuario?.rol !== "tecnico") && (
               <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
                 <button className="btn-primary" style={{ flex: 1, margin: 0 }} onClick={() => { setMostrandoFormulario(!mostrandoFormulario); setMostrandoBaja(false); }}>+ Evento</button>
                 <button className="btn-primary" style={{ flex: 1, margin: 0, backgroundColor: "#16a34a", borderColor: "#16a34a" }} onClick={() => { setDatosEvento(d => ({...d, tipo: "Tratamiento", resultado: ""})); setMostrandoFormulario(true); setMostrandoBaja(false); }}>💊 Tratamiento</button>
@@ -912,6 +929,24 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
 
                 {(!CATALOGO_EVENTOS[datosEvento.tipo] || CATALOGO_EVENTOS[datosEvento.tipo].length === 0) && (
                   <input type="text" placeholder="Resultado..." value={datosEvento.resultado} onChange={(e) => setDatosEvento({...datosEvento, resultado: e.target.value})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px", boxSizing: "border-box" }} required />
+                )}
+
+                {datosEvento.tipo === "Palpación" && (
+                  <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563", marginBottom: "4px", display: "block" }}>Condición Corporal (C.C.)</label>
+                      <select value={datosEvento.condicionCorporal} onChange={(e) => setDatosEvento({...datosEvento, condicionCorporal: e.target.value})} style={{ width: "100%", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} required>
+                        <option value="">Selecciona C.C...</option>
+                        {Array.from({ length: 50 }, (_, i) => i + 1).map(num => (
+                          <option key={num} value={num}>{num}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div style={{ flex: 2 }}>
+                      <label style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563", marginBottom: "4px", display: "block" }}>Observaciones</label>
+                      <input type="text" placeholder="Ej: Aplicar CATOSAL" value={datosEvento.observaciones} onChange={(e) => setDatosEvento({...datosEvento, observaciones: e.target.value})} style={{ width: "100%", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px", boxSizing: "border-box" }} />
+                    </div>
+                  </div>
                 )}
 
                 <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
@@ -1005,8 +1040,9 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                   <tr>
                     <th style={{ padding: "12px", textAlign: "left" }}>Arete</th>
                     <th style={{ padding: "12px", textAlign: "left" }}>Estado Actual</th>
+                    <th style={{ padding: "12px", textAlign: "left" }}>C.C.</th>
                     <th style={{ padding: "12px", textAlign: "left" }}>Resultado</th>
-                    <th style={{ padding: "12px", textAlign: "left" }}>Detalle</th>
+                    <th style={{ padding: "12px", textAlign: "left" }}>Detalle / Observaciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1025,6 +1061,19 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                       </td>
                       <td style={{ padding: "12px" }}>
                         <select 
+                          value={v.condicionCorporal} 
+                          onChange={(e) => actualizarRenglonPalpacion(v.id, "condicionCorporal", e.target.value)}
+                          style={{ width: "70px", padding: "6px", borderRadius: "6px", border: "1px solid #d1d5db" }}
+                          required
+                        >
+                          <option value="">--</option>
+                          {Array.from({ length: 50 }, (_, i) => i + 1).map(num => (
+                            <option key={num} value={num}>{num}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td style={{ padding: "12px" }}>
+                        <select 
                           value={v.resultado} 
                           onChange={(e) => actualizarRenglonPalpacion(v.id, "resultado", e.target.value)}
                           style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #d1d5db" }}
@@ -1038,17 +1087,26 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                         </select>
                       </td>
                       <td style={{ padding: "12px" }}>
-                        {v.resultado === "Gestante" ? (
-                          <select 
-                            value={v.detalle} 
-                            onChange={(e) => actualizarRenglonPalpacion(v.id, "detalle", e.target.value)}
-                            style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #d1d5db", backgroundColor: "#f0fdf4" }}
-                          >
-                            {[1,2,3,4,5,6,7,8,9].map(m => <option key={m} value={m}>{m} meses</option>)}
-                          </select>
-                        ) : (
-                          <span style={{ color: "#9ca3af", fontSize: "12px" }}>N/A (Vacía)</span>
-                        )}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                          {v.resultado === "Gestante" ? (
+                            <select 
+                              value={v.detalle} 
+                              onChange={(e) => actualizarRenglonPalpacion(v.id, "detalle", e.target.value)}
+                              style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #d1d5db", backgroundColor: "#f0fdf4" }}
+                            >
+                              {[1,2,3,4,5,6,7,8,9].map(m => <option key={m} value={m}>{m} meses</option>)}
+                            </select>
+                          ) : (
+                            <span style={{ color: "#9ca3af", fontSize: "12px" }}>N/A (Vacía)</span>
+                          )}
+                          <input 
+                            type="text" 
+                            placeholder="Obs. (ej: CATOSAL)" 
+                            value={v.observaciones}
+                            onChange={(e) => actualizarRenglonPalpacion(v.id, "observaciones", e.target.value)}
+                            style={{ padding: "6px", borderRadius: "6px", border: "1px solid #d1d5db", fontSize: "12px" }}
+                          />
+                        </div>
                       </td>
                     </tr>
                   ))}

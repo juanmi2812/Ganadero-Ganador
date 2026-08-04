@@ -15,6 +15,7 @@ export const CATALOGO_EVENTOS = {
   "Repeso": [],
   "Palpación": ["Gestante", "Vacía - Fresca", "Vacía - Ciclando", "Vacía - Anestro", "Dudosa", "No Pasó"],
   "Parto": [],
+  "Aborto": [],
   "Inseminación": [],
   "Revisión General": [],
   "Otro": [],

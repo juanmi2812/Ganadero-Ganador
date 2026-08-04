@@ -1,0 +1,21 @@
+Para el ingreso de compras:
+- Agregar Humedad, densidad, presencia de plaga, y uno de comentarios adicionales
+- Para el jefe de planta no debe ver los costos
+
+
+- Perfil de solo ver
+- historial de cambios para el admin.
+
+
+
+Beneficios:
+
+- Automatización, Sin renovación de licencias (planta, Formulador, Administrador y dueño)
+- Visión Completa del negocio, en tiempo Real
+- Posibilidad de hacerlo a la medida del negocion, incluir gastos (desarrollo aparte)
+
+
+App ganadero:
+- para la leche, poner % de variación en registro de tanque diario, si sube el 10% que se ponga rojo de alerta
+- para el registro diario, poner una grafica por vaca de los últimos 300 días
+- Para la carga de animales, en la carga inicial que puedas agregar hasta 10 partos por vaca

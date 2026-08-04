@@ -11,7 +11,8 @@ import ConfiguracionFinanciera from "./views/ConfiguracionFinanciera";
 import ConfiguracionPotreros from "./views/ConfiguracionPotreros";
 import ProduccionLeche from "./views/ProduccionLeche";
 import ConfiguracionEquipo from "./views/ConfiguracionEquipo";
-import { Home, CalendarDays, BarChart3, Settings, LogOut, Plus, Map, CreditCard, Droplets, Users } from "lucide-react";
+import Movilizacion from "./views/Movilizacion";
+import { Home, CalendarDays, BarChart3, Settings, LogOut, Plus, Map, CreditCard, Droplets, Users, Truck } from "lucide-react";
 import logoConvivet from "./assets/logo_convivet.jpg";
 import { auth, db, onAuthStateChanged, signOut, functions } from "./firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -113,6 +114,7 @@ export default function App() {
     { id: "rancho", label: "Mi Rancho", icon: Map },
     { id: "calendario", label: "Calendario", icon: CalendarDays },
     { id: "reportes", label: "Reportes", icon: BarChart3 },
+    { id: "movilizacion", label: "Movilización", icon: Truck },
   ];
 
   return (
@@ -180,10 +182,11 @@ export default function App() {
         {vistaActiva === "rancho" && <ConfiguracionPotreros usuario={usuario} />}
         {vistaActiva === "leche" && <ProduccionLeche usuario={usuario} />}
         {vistaActiva === "equipo" && <ConfiguracionEquipo usuario={usuario} />}
+        {vistaActiva === "movilizacion" && <Movilizacion usuario={usuario} />}
       </div>
 
       {/* === FAB — Registrar Animal === */}
-      {vistaActiva === "dashboard" && (
+      {vistaActiva === "dashboard" && usuario?.rol !== "tecnico" && (
         <button className="fab" onClick={() => setVistaActiva("nuevo")} title="Registrar animal">
           <Plus size={26} strokeWidth={2.5} />
         </button>

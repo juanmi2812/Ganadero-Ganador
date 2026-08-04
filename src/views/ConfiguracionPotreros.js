@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, Map, ShieldAlert, X, ClipboardList } from "lucide-react";
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where, getDocs } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where, getDocs, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { CATALOGO_EVENTOS_POTRERO, TIPOS_EVENTO_POTRERO } from "../catalogoEventos";
 
@@ -52,6 +52,11 @@ export default function ConfiguracionPotreros({ usuario }) {
   const [guardandoTraslado, setGuardandoTraslado] = useState(false);
   const [exitoTraslado, setExitoTraslado] = useState("");
 
+  // UPPs
+  const [ranchoDoc, setRanchoDoc] = useState(null);
+  const [nuevaUpp, setNuevaUpp] = useState("");
+  const [guardandoUpp, setGuardandoUpp] = useState(false);
+
   useEffect(() => {
     if (!usuario?.ranchoId) return;
     const unsubP = onSnapshot(query(collection(db, "potreros"), where("ranchoId", "==", usuario.ranchoId)), (snap) => {
@@ -60,8 +65,46 @@ export default function ConfiguracionPotreros({ usuario }) {
     const unsubG = onSnapshot(query(collection(db, "grupos"), where("ranchoId", "==", usuario.ranchoId)), (snap) => {
       setGrupos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
-    return () => { unsubP(); unsubG(); };
+    
+    // Obtener datos del rancho (para UPPs)
+    const unsubR = onSnapshot(doc(db, "ranchos", usuario.ranchoId), (docSnap) => {
+      if (docSnap.exists()) {
+        setRanchoDoc({ id: docSnap.id, ...docSnap.data() });
+      }
+    });
+
+    return () => { unsubP(); unsubG(); unsubR(); };
   }, [usuario]);
+
+  // ─── UPPs ────────────────────────────────────────────────────────────────────
+  
+  const agregarUpp = async () => {
+    const val = nuevaUpp.trim();
+    if (!val || !ranchoDoc) return;
+    setGuardandoUpp(true);
+    try {
+      const currentUpps = ranchoDoc.upps || [];
+      if (!currentUpps.includes(val)) {
+        await updateDoc(doc(db, "ranchos", usuario.ranchoId), {
+          upps: [...currentUpps, val]
+        });
+      }
+      setNuevaUpp("");
+    } catch (error) {
+      console.error("Error agregando UPP:", error);
+    }
+    setGuardandoUpp(false);
+  };
+
+  const quitarUpp = async (uppIndex) => {
+    if (!window.confirm("¿Seguro que deseas eliminar esta UPP?")) return;
+    try {
+      const newUpps = (ranchoDoc.upps || []).filter((_, idx) => idx !== uppIndex);
+      await updateDoc(doc(db, "ranchos", usuario.ranchoId), { upps: newUpps });
+    } catch (error) {
+      console.error("Error quitando UPP:", error);
+    }
+  };
 
   // ─── Divisiones ──────────────────────────────────────────────────────────────
 
@@ -322,6 +365,35 @@ export default function ConfiguracionPotreros({ usuario }) {
         >
           💊 Cargar Tratamiento
         </button>
+      </div>
+
+      {/* ══ UPPs (Unidades de Producción Pecuaria) ══════════════════════════════════════════════════ */}
+      <div className="card" style={{ padding: "20px", marginBottom: "20px" }}>
+        <h2 style={{ margin: "0 0 10px 0", fontSize: "18px" }}>Mis UPPs (Unidades de Producción Pecuaria)</h2>
+        <p style={{ fontSize: "13px", color: "var(--gris-400)", marginBottom: "15px" }}>Identificadores oficiales de tu rancho. Requeridos para guías de tránsito y movilización.</p>
+        
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "15px" }}>
+          {(ranchoDoc?.upps || []).map((upp, idx) => (
+            <div key={idx} style={{ backgroundColor: "#f3f4f6", padding: "8px 12px", borderRadius: "6px", display: "flex", alignItems: "center", gap: "10px", border: "1px solid #e5e7eb" }}>
+              <span style={{ fontWeight: "bold", color: "#374151" }}>{upp}</span>
+              {usuario?.rol === "admin" && (
+                <button onClick={() => quitarUpp(idx)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: 0, display: "flex" }} title="Eliminar UPP"><X size={16} /></button>
+              )}
+            </div>
+          ))}
+          {(!ranchoDoc?.upps || ranchoDoc.upps.length === 0) && (
+            <div style={{ color: "#9ca3af", fontSize: "13px", fontStyle: "italic" }}>No has registrado ninguna UPP todavía.</div>
+          )}
+        </div>
+
+        {usuario?.rol === "admin" && (
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <input type="text" placeholder="Ej: 30 189 1447 002" value={nuevaUpp} onChange={e => setNuevaUpp(e.target.value)} style={{...inputStyle, width: "250px", margin: 0}} />
+            <button onClick={agregarUpp} className="btn-primary" style={{ margin: 0, width: "auto" }} disabled={guardandoUpp || !nuevaUpp.trim()}>
+              {guardandoUpp ? "Guardando..." : "Añadir UPP"}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ══ TABLA DE POTREROS ══════════════════════════════════════════════════ */}

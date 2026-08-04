@@ -9,7 +9,8 @@ const labelStyle = { display: "block", fontSize: "12px", fontWeight: "bold", mar
 const ROLES = [
   { id: "mayoral", nombre: "Mayoral", desc: "Manejo completo del rancho (ganado, lotes, leche). No ve costos." },
   { id: "veterinario", nombre: "Veterinario", desc: "Registra eventos de salud y palpaciones. No mueve ganado." },
-  { id: "vaquero", nombre: "Vaquero", desc: "Captura básica (leche diaria). No modifica catálogos." }
+  { id: "vaquero", nombre: "Vaquero", desc: "Captura básica (leche diaria). No modifica catálogos." },
+  { id: "tecnico", nombre: "Técnico (Lector)", desc: "Solo puede ver la información del rancho. No puede editar, borrar ni agregar nada." }
 ];
 
 export default function ConfiguracionEquipo({ usuario }) {

@@ -25,6 +25,9 @@ export default function NuevoAnimal({ usuario }) {
 
   const [potreros, setPotreros] = useState([]);
   const [grupos, setGrupos] = useState([]);
+  
+  const [potrerosInventario, setPotrerosInventario] = useState([]);
+  const [gruposInventario, setGruposInventario] = useState([]);
 
   // Cargamos las listas de madres y padres existentes
   useEffect(() => {
@@ -38,14 +41,35 @@ export default function NuevoAnimal({ usuario }) {
         }));
         setVientres(
           lista.filter(
-            (a) => a.tipo === "Vientre" && !a.estado?.includes("Baja")
+            (a) => {
+              const sexoStr = typeof a.sexo === 'string' ? a.sexo.trim().toLowerCase() : "";
+              const tipoStr = typeof a.tipo === 'string' ? a.tipo.trim().toLowerCase() : "";
+              const isFemale = sexoStr === "hembra" || ["vaca", "novillona", "vientre", "becerra", "desarrollo"].includes(tipoStr);
+              const estadoStr = typeof a.estado === 'string' ? a.estado.trim().toLowerCase() : "";
+              return isFemale && !estadoStr.includes("baja");
+            }
           )
         );
         setSementales(
           lista.filter(
-            (a) => a.tipo === "Semental" && !a.estado?.includes("Baja")
+            (a) => {
+              const tipoStr = typeof a.tipo === 'string' ? a.tipo.trim().toLowerCase() : "";
+              const sexoStr = typeof a.sexo === 'string' ? a.sexo.trim().toLowerCase() : "";
+              const isMale = tipoStr === "semental" || tipoStr === "torete" || tipoStr === "becerro" || sexoStr === "macho";
+              const estadoStr = typeof a.estado === 'string' ? a.estado.trim().toLowerCase() : "";
+              return isMale && !estadoStr.includes("baja");
+            }
           )
         );
+        
+        // Extraer potreros y grupos dinámicos del inventario
+        const potrerosInv = [...new Set(lista.map(a => a.potrero || a.hectarea).filter(Boolean))];
+        const gruposInv = [...new Set(lista.map(a => a.grupo).filter(Boolean))];
+        
+        // Guardarlos temporalmente en variables o directamente en un state si quisieramos,
+        // pero mejor lo combinaremos cuando lleguen de la colección
+        setPotrerosInventario(potrerosInv);
+        setGruposInventario(gruposInv);
       }
     );
     
@@ -225,6 +249,12 @@ export default function NuevoAnimal({ usuario }) {
             </div>
 
             {/* SELECCIÓN DE PADRES */}
+            {/* DEBUG INFO: Oculto para uso futuro o visible si hay problemas */}
+            <div style={{ fontSize: '10px', color: 'gray' }}>
+              Total animales: {potrerosInventario.length > 0 ? "Sí" : "No"} | 
+              Vientres detectados: {vientres.length} | 
+              Sementales: {sementales.length}
+            </div>
             <div className="input-group">
               <label>Madre (Vientre)</label>
               <select
@@ -240,8 +270,8 @@ export default function NuevoAnimal({ usuario }) {
               >
                 <option value="">-- Seleccionar --</option>
                 {vientres.map((v) => (
-                  <option key={v.id} value={v.arete}>
-                    {v.arete} ({v.raza})
+                  <option key={v.id} value={v.arete || v.id}>
+                    {v.arete || v.nombre || "Sin Arete"} ({v.raza || "Sin Raza"})
                   </option>
                 ))}
               </select>
@@ -262,8 +292,8 @@ export default function NuevoAnimal({ usuario }) {
               >
                 <option value="">-- Seleccionar --</option>
                 {sementales.map((s) => (
-                  <option key={s.id} value={s.arete}>
-                    {s.arete} ({s.raza})
+                  <option key={s.id} value={s.arete || s.id}>
+                    {s.arete || s.nombre || "Sin Arete"} ({s.raza || "Sin Raza"})
                   </option>
                 ))}
               </select>
@@ -278,8 +308,8 @@ export default function NuevoAnimal({ usuario }) {
                 style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #d1d5db" }}
               >
                 <option value="">Sin Asignar</option>
-                {potreros.map(pot => (
-                  <option key={pot.nombre} value={pot.nombre}>{pot.nombre}</option>
+                {[...new Set([...potreros.map(p => p.nombre), ...potrerosInventario])].sort().map(pot => (
+                  <option key={pot} value={pot}>{pot}</option>
                 ))}
               </select>
             </div>
@@ -293,8 +323,8 @@ export default function NuevoAnimal({ usuario }) {
                 style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #d1d5db" }}
               >
                 <option value="">Sin Grupo</option>
-                {grupos.map(g => (
-                  <option key={g.nombre} value={g.nombre}>{g.nombre}</option>
+                {[...new Set([...grupos.map(g => g.nombre), ...gruposInventario])].sort().map(g => (
+                  <option key={g} value={g}>{g}</option>
                 ))}
               </select>
             </div>
