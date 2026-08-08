@@ -38,8 +38,8 @@ export default function Movilizacion({ usuario }) {
       setAnimales(data);
     });
 
-    // Cargar UPPs de configuración
-    const unsubConfig = onSnapshot(doc(db, "configuracion", `rancho_${usuario.ranchoId}`), (snap) => {
+    // Cargar UPPs de configuración (rancho)
+    const unsubConfig = onSnapshot(doc(db, "ranchos", usuario.ranchoId), (snap) => {
       if (snap.exists() && snap.data().upps) {
         setUppsLocales(snap.data().upps);
         if (snap.data().upps.length > 0) setOrigenUPP(snap.data().upps[0]);
