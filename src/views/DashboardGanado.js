@@ -77,6 +77,19 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
           const hembrasConParto = new Set();
           partosSnap.forEach(d => hembrasConParto.add(d.data().animalId));
 
+          const qPalpaciones = query(collection(db, "eventos"), where("tipo", "==", "Palpación"), where("resultado", "==", "Gestante"), where("ranchoId", "==", usuario?.ranchoId));
+          const palpacionesSnap = await getDocs(qPalpaciones);
+          const ultimasPalpaciones = {};
+          palpacionesSnap.forEach(d => {
+            const data = d.data();
+            if (!data.animalId || !data.fecha) return;
+            const fechaEvento = new Date(data.fecha + "T00:00:00");
+            if (isNaN(fechaEvento.getTime())) return;
+            if (!ultimasPalpaciones[data.animalId] || fechaEvento > ultimasPalpaciones[data.animalId].fecha) {
+               ultimasPalpaciones[data.animalId] = { fecha: fechaEvento, meses: parseInt(data.detalle) || 1 };
+            }
+          });
+
           const qAlertas = query(collection(db, "alertas"), where("titulo", "==", "Revisión de Fertilidad"), where("ranchoId", "==", usuario?.ranchoId));
           const alertasSnap = await getDocs(qAlertas);
           const animalesConAlerta = new Set();
@@ -118,6 +131,17 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                 nuevaCategoria = "Torete";
               }
             }
+
+            if (nuevoEstado === "Gestante") {
+                const palpacion = ultimasPalpaciones[animal.id];
+                if (palpacion) {
+                  const mesesDesdePalpacion = differenceInMonths(hoy, palpacion.fecha);
+                  const gestacionActual = palpacion.meses + mesesDesdePalpacion;
+                  if (gestacionActual >= 10) {
+                    nuevoEstado = "Vacía";
+                  }
+                }
+              }
 
             if (nuevaCategoria !== animal.tipo || nuevoEstado !== animal.estado) {
               await updateDoc(doc(db, "animales", animal.id), { tipo: nuevaCategoria, estado: nuevoEstado });
