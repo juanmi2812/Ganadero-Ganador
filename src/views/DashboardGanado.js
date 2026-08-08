@@ -106,7 +106,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
               if (haParido || mesesDeEdad >= 48) {
                 nuevaCategoria = "Vaca";
                 if (!haParido && mesesDeEdad >= 48) {
-                  if (!nuevoEstado.includes('Baja') && nuevoEstado !== "Desecho" && nuevoEstado !== "Alerta: Revisión de Fertilidad") {
+                  if (!nuevoEstado.includes('Baja') && nuevoEstado !== "Desecho" && nuevoEstado !== "Alerta: Revisión de Fertilidad" && nuevoEstado !== "Gestante") {
                     nuevoEstado = "Alerta: Revisión de Fertilidad";
                   }
                 }
