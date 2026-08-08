@@ -899,6 +899,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
             <div style={{ backgroundColor: "#f3f4f6", padding: "12px", borderRadius: "8px", marginBottom: "16px", fontSize: "13px" }}>
               <strong>Ubicación:</strong> <span style={{ color: "var(--verde-medio)", fontWeight: "bold" }}>{animalActivo.potrero || animalActivo.hectarea || "Sin Asignar"}</span> <br/>
               <strong>Info:</strong> {animalActivo.raza} | <strong>Peso Inicial:</strong> {animalActivo.peso} <br/>
+              <strong>Nacimiento / Registro:</strong> {animalActivo.fechaNacimiento || animalActivo.fechaRegistro || "--"} {animalActivo.fechaNacimiento ? `(${differenceInMonths(new Date(), new Date(animalActivo.fechaNacimiento + "T00:00:00"))} meses)` : ""} <br/>
               <strong>Estado Actual:</strong> <span style={{ color: animalActivo.estado?.includes("Alerta") ? "red" : (animalActivo.estado === "Disponible para Venta" ? "orange" : "green") }}>{animalActivo.estado || "Sano"}</span> <br/>
               {animalActivo.madre && <span><strong>Madre:</strong> {animalActivo.madre} | <strong>Padre:</strong> {animalActivo.padre}</span>}
             </div>
