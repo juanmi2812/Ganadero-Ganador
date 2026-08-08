@@ -165,20 +165,24 @@ export default function ReportesBI({ usuario }) {
   const procesarGraficaMetrica = () => {
      const distMap = {};
      const razaMap = {};
+     const grupoMap = {};
      datosFiltrados.forEach(a => {
         const cat = a.tipo || "Desconocido";
         const rz = a.raza || "Otra";
+        const gr = a.grupo || "Sin Asignar";
         const valor = vistaFinanciera ? a.costoTotal : 1;
         distMap[cat] = (distMap[cat] || 0) + valor;
         razaMap[rz] = (razaMap[rz] || 0) + valor;
+        grupoMap[gr] = (grupoMap[gr] || 0) + valor;
      });
      return { 
        datosCategoria: Object.keys(distMap).map(k => ({ name: k, value: Math.round(distMap[k]) })),
-       datosRazas: Object.keys(razaMap).map(k => ({ name: k, value: Math.round(razaMap[k]) }))
+       datosRazas: Object.keys(razaMap).map(k => ({ name: k, value: Math.round(razaMap[k]) })),
+       datosGrupos: Object.keys(grupoMap).map(k => ({ name: k, value: Math.round(grupoMap[k]) }))
      };
   };
 
-    const { datosCategoria, datosRazas } = procesarGraficaMetrica();
+    const { datosCategoria, datosRazas, datosGrupos } = procesarGraficaMetrica();
   
   const datosPotrero = (() => {
     const hMap = {};
@@ -396,7 +400,7 @@ export default function ReportesBI({ usuario }) {
         </div>
         {/* Gráfica Rendimiento por Genética eliminada a petición del usuario. (Solo se mantiene en reporte estático). */}
         {/* NUEVO GRÁFICO: DISTRIBUCIÓN POR POTRERO */}
-        <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", marginTop: "24px" }}>
+        <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
           <h3 style={{ marginTop: 0, color: "#374151" }}>Inventario por Potrero (Cabezas Totales)</h3>
           <div style={{ height: "300px", width: "100%", marginTop: "20px" }}>
             <ResponsiveContainer>
@@ -412,6 +416,32 @@ export default function ReportesBI({ usuario }) {
             </ResponsiveContainer>
           </div>
         </div>
+
+        {/* NUEVO GRÁFICO: AGRUPACIÓN POR GRUPO */}
+        {datosGrupos.length > 0 && (
+          <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
+            <h3 style={{ marginTop: 0, color: "#374151" }}>Agrupación por Grupo (Cabezas)</h3>
+            <div style={{ height: "300px", width: "100%", marginTop: "20px" }}>
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie 
+                    data={datosGrupos} 
+                    cx="50%" cy="50%" 
+                    innerRadius={60} outerRadius={80} 
+                    paddingAngle={5} dataKey="value"
+                    label={({ name, value }) => `${name}: ${value}`}
+                  >
+                    {datosGrupos.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={paletaActiva[(index + 2) % paletaActiva.length]} />
+                    ))}
+                  </Pie>
+                  <RTTooltip formatter={(value) => `${value} ud.` } />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
         
         {/* NUEVO GRÁFICO: CARGA ANIMAL POR POTRERO */}
         <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", marginTop: "24px" }}>
