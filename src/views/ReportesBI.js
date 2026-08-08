@@ -375,16 +375,16 @@ export default function ReportesBI({ usuario }) {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "24px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))", gap: "24px" }}>
         <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
           <h3 style={{ marginTop: 0, color: "#374151" }}>Agrupación por Categoría {vistaFinanciera ? "($ Invest)" : "(Cabezas)"}</h3>
           <div style={{ height: "300px", width: "100%", marginTop: "20px" }}>
             <ResponsiveContainer>
-              <PieChart>
+              <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
                 <Pie 
                   data={datosCategoria} 
                   cx="50%" cy="50%" 
-                  innerRadius={60} outerRadius={80} 
+                  innerRadius={50} outerRadius={70} 
                   paddingAngle={5} dataKey="value"
                   label={({ name, value }) => vistaFinanciera ? `${name}: ${formatoMonedaCorta(value)}` : `${name}: ${value}`}
                 >
@@ -404,7 +404,7 @@ export default function ReportesBI({ usuario }) {
           <h3 style={{ marginTop: 0, color: "#374151" }}>Inventario por Potrero (Cabezas Totales)</h3>
           <div style={{ height: "300px", width: "100%", marginTop: "20px" }}>
             <ResponsiveContainer>
-              <BarChart data={datosPotrero} margin={{ top: 30, right: 30, left: 0, bottom: 5 }}>
+              <BarChart data={datosPotrero} margin={{ top: 30, right: 30, left: 0, bottom: 25 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" />
                 <YAxis allowDecimals={false} />
@@ -423,11 +423,11 @@ export default function ReportesBI({ usuario }) {
             <h3 style={{ marginTop: 0, color: "#374151" }}>Agrupación por Grupo (Cabezas)</h3>
             <div style={{ height: "300px", width: "100%", marginTop: "20px" }}>
               <ResponsiveContainer>
-                <PieChart>
+                <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
                   <Pie 
                     data={datosGrupos} 
                     cx="50%" cy="50%" 
-                    innerRadius={60} outerRadius={80} 
+                    innerRadius={50} outerRadius={70} 
                     paddingAngle={5} dataKey="value"
                     label={({ name, value }) => `${name}: ${value}`}
                   >
@@ -444,11 +444,11 @@ export default function ReportesBI({ usuario }) {
         )}
         
         {/* NUEVO GRÁFICO: CARGA ANIMAL POR POTRERO */}
-        <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", marginTop: "24px" }}>
+        <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
           <h3 style={{ marginTop: 0, color: "#374151" }}>Carga Animal (cab/ha)</h3>
           <div style={{ height: "300px", width: "100%", marginTop: "20px" }}>
             <ResponsiveContainer>
-              <BarChart data={datosPotrero} margin={{ top: 30, right: 30, left: 0, bottom: 5 }}>
+              <BarChart data={datosPotrero} margin={{ top: 30, right: 30, left: 0, bottom: 25 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" />
                 <YAxis allowDecimals={true} />
