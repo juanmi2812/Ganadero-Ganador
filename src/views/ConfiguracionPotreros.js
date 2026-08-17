@@ -822,7 +822,7 @@ export default function ConfiguracionPotreros({ usuario }) {
           <div className="modal-content" style={{ maxWidth: "480px" }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <h2 style={{ margin: 0, fontSize: "18px", color: "#111827" }}>💊 Tratamiento a Potreros</h2>
+                <h2 style={{ margin: 0, fontSize: "18px", color: "#111827" }}>Registrar evento en potrero</h2>
                 <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: "13px" }}>Aplica insumos directamente al suelo o pasto.</p>
               </div>
               <button onClick={() => setModalTratamientoRancho(false)} style={{ background: "none", border: "none", cursor: "pointer" }}>
@@ -915,7 +915,7 @@ export default function ConfiguracionPotreros({ usuario }) {
               </div>
 
               <button type="submit" className="btn-primary" style={{ width: "100%", marginTop: 0 }} disabled={guardandoTratRancho}>
-                {guardandoTratRancho ? "Guardando..." : "Registrar Tratamiento"}
+                {guardandoTratRancho ? "Guardando..." : "Registrar Evento"}
               </button>
             </form>
           </div>
