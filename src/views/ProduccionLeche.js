@@ -77,6 +77,33 @@ export default function ProduccionLeche({ usuario }) {
       "Autoconsumo": r.litrosAutoconsumo || 0
     }));
 
+  // Preparar historial individual agrupado
+  const vacasAgrupadasMap = {};
+  registrosIndividuales.forEach(r => {
+    const arete = r.animalArete || "N/A";
+    if (!vacasAgrupadasMap[arete]) {
+      vacasAgrupadasMap[arete] = {
+        animalId: r.animalId,
+        animalArete: arete,
+        animalAreteRancho: r.animalAreteRancho,
+        ultimoRegistro: r.fecha,
+        ultimoLitros: r.litros,
+        totalLitros: 0,
+        conteo: 0
+      };
+    }
+    vacasAgrupadasMap[arete].totalLitros += Number(r.litros) || 0;
+    vacasAgrupadasMap[arete].conteo += 1;
+    
+    // Asumimos que están ordenados por fecha desc, así que el primero que entra es el último registro, pero por si acaso:
+    if (new Date(r.fecha) > new Date(vacasAgrupadasMap[arete].ultimoRegistro)) {
+       vacasAgrupadasMap[arete].ultimoRegistro = r.fecha;
+       vacasAgrupadasMap[arete].ultimoLitros = r.litros;
+    }
+  });
+
+  const vacasAgrupadas = Object.values(vacasAgrupadasMap).sort((a, b) => new Date(b.ultimoRegistro) - new Date(a.ultimoRegistro));
+
   return (
     <div className="dashboard-container" style={{ padding: "20px", paddingBottom: "100px", maxWidth: "1200px", margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "30px" }}>
@@ -200,33 +227,29 @@ export default function ProduccionLeche({ usuario }) {
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
                   <thead>
                     <tr style={{ backgroundColor: "#f3f4f6", color: "#4b5563", textAlign: "left" }}>
-                      <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb" }}>Fecha</th>
                       <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb" }}>Vaca (Arete)</th>
-                      <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb" }}>Periodo</th>
-                      <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb" }}>Litros</th>
+                      <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb" }}>Último Registro</th>
+                      <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb" }}>Últimos Litros</th>
+                      <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb" }}>Promedio Histórico</th>
                       <th style={{ padding: "12px", borderBottom: "1px solid #e5e7eb", textAlign: "right" }}>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {registrosIndividuales.map(r => (
-                      <tr key={r.id} style={{ borderBottom: "1px solid #e5e7eb" }}>
-                        <td style={{ padding: "12px", color: "#111827", display: "flex", alignItems: "center", gap: "6px" }}><Calendar size={14} color="#6b7280"/> {r.fecha}</td>
+                    {vacasAgrupadas.map(v => (
+                      <tr key={v.animalId || v.animalArete} style={{ borderBottom: "1px solid #e5e7eb" }}>
                         <td style={{ padding: "12px" }}>
-                          <strong>Arete: {r.animalArete || "N/A"}</strong> 
-                          {r.animalAreteRancho && <span style={{ color: "#6b7280", marginLeft: "6px", fontSize: "12px" }}>(Rancho: {r.animalAreteRancho})</span>}
+                          <strong>Arete: {v.animalArete}</strong> 
+                          {v.animalAreteRancho && <span style={{ color: "#6b7280", marginLeft: "6px", fontSize: "12px" }}>(Rancho: {v.animalAreteRancho})</span>}
                         </td>
-                        <td style={{ padding: "12px" }}>
-                          <span style={{ backgroundColor: r.periodo && r.periodo !== "Diario" ? "#fef3c7" : "#f3f4f6", color: r.periodo && r.periodo !== "Diario" ? "#92400e" : "#4b5563", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: "500" }}>
-                            {r.periodo || "Diario"}
-                          </span>
-                        </td>
-                        <td style={{ padding: "12px", fontWeight: "600", color: "#9333ea" }}>{r.litros} L</td>
+                        <td style={{ padding: "12px", color: "#111827", display: "flex", alignItems: "center", gap: "6px" }}><Calendar size={14} color="#6b7280"/> {v.ultimoRegistro}</td>
+                        <td style={{ padding: "12px", fontWeight: "600", color: "#9333ea" }}>{v.ultimoLitros} L</td>
+                        <td style={{ padding: "12px", fontWeight: "600", color: "#4b5563" }}>{(v.totalLitros / v.conteo).toFixed(1)} L</td>
                         <td style={{ padding: "12px", textAlign: "right" }}>
                           <button 
-                            onClick={() => setVacaGrafica({ animalId: r.animalId, animalArete: r.animalArete })}
+                            onClick={() => setVacaGrafica({ animalId: v.animalId, animalArete: v.animalArete })}
                             style={{ backgroundColor: "#f3e8ff", color: "#9333ea", border: "1px solid #d8b4fe", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "bold", cursor: "pointer", transition: "0.2s" }}
                           >
-                            Ver Gráfica
+                            Ver Vaca
                           </button>
                         </td>
                       </tr>
