@@ -1052,12 +1052,12 @@ export function calcularMetricasProductividad(animales, eventos) {
         return conteoTotal > 0 ? (sumaTotalGDP / conteoTotal).toFixed(3) : "0.000";
     };
 
-    // 3 & 4. Mortalidad
+    // 3 & 4. Bajas Totales (antes Mortalidad)
     const totalDesarrollo = animales.filter(a => ["Becerro", "Becerra", "Torete", "Novillona"].includes(a.tipo)).length;
-    const muertesDesarrollo = animales.filter(a => ["Becerro", "Becerra", "Torete", "Novillona"].includes(a.tipo) && a.estado?.includes("Baja - Muerte")).length;
+    const muertesDesarrollo = animales.filter(a => ["Becerro", "Becerra", "Torete", "Novillona"].includes(a.tipo) && a.estado?.includes("Baja")).length;
     
     const totalVacas = animales.filter(a => a.tipo === "Vaca").length;
-    const muertesVacas = animales.filter(a => a.tipo === "Vaca" && a.estado?.includes("Baja - Muerte")).length;
+    const muertesVacas = animales.filter(a => a.tipo === "Vaca" && a.estado?.includes("Baja")).length;
 
     const tasaMortDesarrollo = totalDesarrollo > 0 ? ((muertesDesarrollo / totalDesarrollo) * 100).toFixed(2) : "0.00";
     const tasaMortVacas = totalVacas > 0 ? ((muertesVacas / totalVacas) * 100).toFixed(2) : "0.00";

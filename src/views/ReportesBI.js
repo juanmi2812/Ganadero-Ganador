@@ -141,8 +141,8 @@ export default function ReportesBI({ usuario }) {
 
   const metricas = calcularMetricasProductividad(animales, eventos);
   const muertesCount = metricas.mortalidad.conteoM_D + metricas.mortalidad.conteoM_V;
-  const baseMortalidad = cabezasTotales + muertesCount; // Aproximación al inventario anual
-  const tasaMortalidadGeneral = baseMortalidad > 0 ? ((muertesCount / baseMortalidad) * 100).toFixed(1) : 0;
+  const baseBajas = cabezasTotales + muertesCount; // Aproximación al inventario anual
+  const tasaBajasGeneral = baseBajas > 0 ? ((muertesCount / baseBajas) * 100).toFixed(1) : 0;
 
   const totalHectareas = potreros.reduce((sum, p) => sum + (parseFloat(p.hectareas) || 0), 0);
   const cargaAnimalGlobal = totalHectareas > 0 ? (cabezasTotales / totalHectareas).toFixed(1) : 0;
@@ -318,11 +318,11 @@ export default function ReportesBI({ usuario }) {
             <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>Vientres ≥ 48m sin parto ({vientresInfertiles})</div>
         </div>
 
-        {/* KPI 4: Mortalidad General */}
+        {/* KPI 4: Bajas Generales */}
         <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #f97316", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
-            <button onClick={() => setInfoKpi({titulo: "Índice de Bajas (Mortalidad)", descripcion: "Evalúa las pérdidas del rancho por muerte. Mantener este número bajo es vital para la rentabilidad.", calculo: "(Cabezas perdidas por muerte / Inventario base estimado) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
+            <button onClick={() => setInfoKpi({titulo: "Índice de Bajas Totales", descripcion: "Evalúa las bajas totales del rancho por venta, muerte o robo. Mantener este número bajo es vital para la rentabilidad.", calculo: "(Cabezas dadas de baja / Inventario base estimado) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
             <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><Activity size={16}/> ÍNDICE DE BAJAS</div>
-            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#f97316", marginTop: "8px" }}>{tasaMortalidadGeneral}%</div>
+            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#f97316", marginTop: "8px" }}>{tasaBajasGeneral}%</div>
             <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>{muertesCount} bajas registradas</div>
         </div>
 
@@ -650,8 +650,8 @@ export default function ReportesBI({ usuario }) {
                     <option value="">-- Elige un reporte --</option>
                     <option value="parto">1. Meses de edad al primer parto</option>
                     <option value="gdp">2. GDP Histórico (3m vs 12m)</option>
-                    <option value="mort_dev">3. % Mortalidad Desarrollo</option>
-                    <option value="mort_vac">4. % Mortalidad Vacas</option>
+                    <option value="mort_dev">3. % Bajas en Desarrollo</option>
+                    <option value="mort_vac">4. % Bajas en Vacas</option>
                     <option value="desecho">6. % Desechos (Culling Rate)</option>
                     <option value="venta">9. Promedio Peso de Venta</option>
                 </select>
@@ -693,17 +693,17 @@ export default function ReportesBI({ usuario }) {
 
                     {reporteProd === "mort_dev" && (
                         <div>
-                            <h4 style={{ margin: 0, color: "#991b1b" }}>% Mortalidad en Desarrollo</h4>
+                            <h4 style={{ margin: 0, color: "#991b1b" }}>% Bajas en Desarrollo</h4>
                             <div style={{ fontSize: "32px", fontWeight: "bold", marginTop: "10px", color: "#dc2626" }}>{metricas.mortalidad.desarrollo}%</div>
-                            <p style={{ fontSize: "11px", color: "#6b7280", marginTop: "5px" }}>{metricas.mortalidad.conteoM_D} bajas registradas por muerte.</p>
+                            <p style={{ fontSize: "11px", color: "#6b7280", marginTop: "5px" }}>{metricas.mortalidad.conteoM_D} bajas registradas.</p>
                         </div>
                     )}
 
                     {reporteProd === "mort_vac" && (
                         <div>
-                            <h4 style={{ margin: 0, color: "#991b1b" }}>% Mortalidad en Vacas</h4>
+                            <h4 style={{ margin: 0, color: "#991b1b" }}>% Bajas en Vacas</h4>
                             <div style={{ fontSize: "32px", fontWeight: "bold", marginTop: "10px", color: "#dc2626" }}>{metricas.mortalidad.vacas}%</div>
-                            <p style={{ fontSize: "11px", color: "#6b7280", marginTop: "5px" }}>{metricas.mortalidad.conteoM_V} bajas registradas por muerte.</p>
+                            <p style={{ fontSize: "11px", color: "#6b7280", marginTop: "5px" }}>{metricas.mortalidad.conteoM_V} bajas registradas.</p>
                         </div>
                     )}
 
