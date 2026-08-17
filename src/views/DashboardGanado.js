@@ -1004,23 +1004,23 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
             </div>
 
             {(!animalActivo.estado?.includes('Baja') && usuario?.rol !== "tecnico") && (
-              <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-                <button className="btn-primary" style={{ flex: 1, margin: 0 }} onClick={() => { 
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "20px" }}>
+                <button className="btn-primary" style={{ flex: 1, margin: 0, minWidth: "120px" }} onClick={() => { 
                   if (mostrandoFormulario && tipoFormularioIndiv === "evento") { setMostrandoFormulario(false); } 
                   else { setTipoFormularioIndiv("evento"); setDatosEvento(d => ({...d, tipo: EVENTOS_GANADO[0], resultado: ""})); setMostrandoFormulario(true); setMostrandoBaja(false); }
                 }}>+ Evento</button>
-                <button className="btn-primary" style={{ flex: 1, margin: 0, backgroundColor: "#16a34a", borderColor: "#16a34a" }} onClick={() => { 
+                <button className="btn-primary" style={{ flex: 1, margin: 0, minWidth: "120px", backgroundColor: "#16a34a", borderColor: "#16a34a" }} onClick={() => { 
                   if (mostrandoFormulario && tipoFormularioIndiv === "tratamiento") { setMostrandoFormulario(false); }
                   else { setTipoFormularioIndiv("tratamiento"); setDatosEvento(d => ({...d, tipo: TRATAMIENTOS_GANADO[0], resultado: ""})); setMostrandoFormulario(true); setMostrandoBaja(false); }
                 }}>💊 Tratamiento</button>
                 {animalActivo.tipo === "Torete" && (
-                  <button className="btn-outline" style={{ flex: 1, margin: 0, borderColor: "#3b82f6", color: "#3b82f6" }} onClick={hacerSemental}>🔥 Hacer Semental</button>
+                  <button className="btn-outline" style={{ flex: 1, margin: 0, minWidth: "120px", borderColor: "#3b82f6", color: "#3b82f6" }} onClick={hacerSemental}>🔥 Hacer Semental</button>
                 )}
-                <button className="btn-outline" style={{ flex: 1, margin: 0, borderColor: "#f59e0b", color: "#f59e0b" }} onClick={() => { if(window.confirm("¿Marcar este animal como Disponible para Venta?")) { updateDoc(doc(db, "animales", animalActivo.id), { estado: "Disponible para Venta" }).then(()=>setAnimalActivo({...animalActivo, estado: "Disponible para Venta"})); } }}>💰 Vender</button>
+                <button className="btn-outline" style={{ flex: 1, margin: 0, minWidth: "120px", borderColor: "#f59e0b", color: "#f59e0b" }} onClick={() => { if(window.confirm("¿Marcar este animal como Disponible para Venta?")) { updateDoc(doc(db, "animales", animalActivo.id), { estado: "Disponible para Venta" }).then(()=>setAnimalActivo({...animalActivo, estado: "Disponible para Venta"})); } }}>💰 Vender</button>
                 {(["Vaca", "Semental", "Novillona"].includes(animalActivo.tipo)) && animalActivo.estado !== "Desecho" && (
-                  <button className="btn-outline" style={{ flex: 1, margin: 0, borderColor: "#6b7280", color: "#6b7280" }} onClick={marcarDesecho}>🗑️ Descartar</button>
+                  <button className="btn-outline" style={{ flex: 1, margin: 0, minWidth: "120px", borderColor: "#6b7280", color: "#6b7280" }} onClick={marcarDesecho}>🗑️ Descartar</button>
                 )}
-                <button className="btn-outline" style={{ color: "#ef4444", borderColor: "#ef4444", display: "flex", alignItems: "center", gap: "4px" }} onClick={() => { setMostrandoBaja(!mostrandoBaja); setMostrandoFormulario(false); }}><AlertTriangle size={18} /> Baja</button>
+                <button className="btn-outline" style={{ flex: 1, minWidth: "100px", color: "#ef4444", borderColor: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }} onClick={() => { setMostrandoBaja(!mostrandoBaja); setMostrandoFormulario(false); }}><AlertTriangle size={18} /> Baja</button>
               </div>
             )}
 

@@ -237,10 +237,9 @@ body {
 .filter-bar {
   display: flex;
   gap: 8px;
-  overflow-x: auto;
+  flex-wrap: wrap;
   padding-bottom: 8px;
   margin-bottom: 16px;
-  -webkit-overflow-scrolling: touch;
 }
 
 .filter-pill {
