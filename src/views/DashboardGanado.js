@@ -4,7 +4,7 @@ import { collection, onSnapshot, addDoc, query, where, doc, updateDoc, getDocs }
 import { differenceInMonths } from "date-fns";
 import { db } from "../firebase";
 import Header from "../components/Header";
-import { CATALOGO_EVENTOS, TIPOS_EVENTO_GANADO } from "../catalogoEventos";
+import { CATALOGO_EVENTOS, TIPOS_EVENTO_GANADO, EVENTOS_GANADO, TRATAMIENTOS_GANADO } from "../catalogoEventos";
 
 export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, setAbrirModalTratamientoMasivo }) {
   // --- ESTADOS ---
@@ -25,6 +25,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   const [nuevaUbicacion, setNuevaUbicacion] = useState({ potrero: "", grupo: "" });
   const [editandoEstado, setEditandoEstado] = useState(false);
   const [nuevoEstadoManual, setNuevoEstadoManual] = useState("");
+  const [tipoFormularioIndiv, setTipoFormularioIndiv] = useState("evento");
   
   // Acciones Masivas (Selección)
   const [seleccionados, setSeleccionados] = useState(new Set());
@@ -961,8 +962,14 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
 
             {(!animalActivo.estado?.includes('Baja') && usuario?.rol !== "tecnico") && (
               <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-                <button className="btn-primary" style={{ flex: 1, margin: 0 }} onClick={() => { setMostrandoFormulario(!mostrandoFormulario); setMostrandoBaja(false); }}>+ Evento</button>
-                <button className="btn-primary" style={{ flex: 1, margin: 0, backgroundColor: "#16a34a", borderColor: "#16a34a" }} onClick={() => { setDatosEvento(d => ({...d, tipo: "Tratamiento", resultado: ""})); setMostrandoFormulario(true); setMostrandoBaja(false); }}>💊 Tratamiento</button>
+                <button className="btn-primary" style={{ flex: 1, margin: 0 }} onClick={() => { 
+                  if (mostrandoFormulario && tipoFormularioIndiv === "evento") { setMostrandoFormulario(false); } 
+                  else { setTipoFormularioIndiv("evento"); setDatosEvento(d => ({...d, tipo: EVENTOS_GANADO[0], resultado: ""})); setMostrandoFormulario(true); setMostrandoBaja(false); }
+                }}>+ Evento</button>
+                <button className="btn-primary" style={{ flex: 1, margin: 0, backgroundColor: "#16a34a", borderColor: "#16a34a" }} onClick={() => { 
+                  if (mostrandoFormulario && tipoFormularioIndiv === "tratamiento") { setMostrandoFormulario(false); }
+                  else { setTipoFormularioIndiv("tratamiento"); setDatosEvento(d => ({...d, tipo: TRATAMIENTOS_GANADO[0], resultado: ""})); setMostrandoFormulario(true); setMostrandoBaja(false); }
+                }}>💊 Tratamiento</button>
                 {animalActivo.tipo === "Torete" && (
                   <button className="btn-outline" style={{ flex: 1, margin: 0, borderColor: "#3b82f6", color: "#3b82f6" }} onClick={hacerSemental}>🔥 Hacer Semental</button>
                 )}
@@ -1002,7 +1009,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
             {mostrandoFormulario && (
               <form onSubmit={guardarEvento} style={{ padding: "15px", background: "#f9fafb", borderRadius: "8px", marginBottom: "15px" }}>
                 <select value={datosEvento.tipo} onChange={(e) => setDatosEvento({...datosEvento, tipo: e.target.value, resultado: ""})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }}>
-                  {TIPOS_EVENTO_GANADO.map(t => <option key={t} value={t}>{t}</option>)}
+                  {(tipoFormularioIndiv === "evento" ? EVENTOS_GANADO : TRATAMIENTOS_GANADO).map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
 
                 {CATALOGO_EVENTOS[datosEvento.tipo]?.length > 0 && (
@@ -1083,7 +1090,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
               </div>
 
               <select value={datosMasivos.tipo} onChange={(e) => setDatosMasivos({...datosMasivos, tipo: e.target.value, resultado: ""})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #16a34a", borderRadius: "4px", backgroundColor: "#f0fdf4" }} required>
-                {TIPOS_EVENTO_GANADO.map(t => <option key={t} value={t}>{t}</option>)}
+                {TRATAMIENTOS_GANADO.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
 
               {CATALOGO_EVENTOS[datosMasivos.tipo]?.length > 0 && (

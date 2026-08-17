@@ -24,9 +24,30 @@ export const CATALOGO_EVENTOS = {
 export const TIPOS_EVENTO = Object.keys(CATALOGO_EVENTOS);
 
 // Tipos exclusivos para tratamientos de GANADO (excluye insumos de campo)
-export const TIPOS_EVENTO_GANADO = TIPOS_EVENTO.filter(
-  t => !["Herbicida", "Fertilizante", "Plaguicida"].includes(t)
-);
+export const TRATAMIENTOS_GANADO = [
+  "Desparasitante",
+  "Garrapaticida",
+  "Vacuna",
+  "Mosquicida",
+  "Antibióticos",
+  "Vitamina",
+  "Tratamiento",
+  "Otro"
+];
+
+// Tipos de EVENTOS
+export const EVENTOS_GANADO = [
+  "Repeso",
+  "Palpación",
+  "Parto",
+  "Aborto",
+  "Inseminación",
+  "Revisión General",
+  "Otro"
+];
+
+// Exportado por retrocompatibilidad donde se requiera todo junto
+export const TIPOS_EVENTO_GANADO = [...TRATAMIENTOS_GANADO, ...EVENTOS_GANADO].filter((v, i, a) => a.indexOf(v) === i);
 
 // Tipos exclusivos para tratamientos de POTREROS
 export const CATALOGO_EVENTOS_POTRERO = {
