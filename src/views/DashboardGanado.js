@@ -626,6 +626,8 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     Novillona: inventario.filter(a => a.tipo === "Novillona" && !a.estado?.includes('Baja')).length,
     Semental: inventario.filter(a => a.tipo === "Semental" && !a.estado?.includes('Baja')).length,
     Torete: inventario.filter(a => a.tipo === "Torete" && !a.estado?.includes('Baja')).length,
+    Becerra: inventario.filter(a => a.tipo === "Becerra" && !a.estado?.includes('Baja')).length,
+    Becerro: inventario.filter(a => a.tipo === "Becerro" && !a.estado?.includes('Baja')).length,
     "En Venta": inventario.filter(a => a.estado === "Disponible para Venta" || a.estado === "Desecho").length,
     Bajas: inventario.filter(a => a.estado?.includes('Baja')).length,
   };
@@ -699,7 +701,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
       </div>
 
       <div className="filter-bar">
-        {["Todos", "Vaca", "Novillona", "Semental", "Torete", "En Venta", "Bajas"].map((tipo) => (
+        {["Todos", "Vaca", "Novillona", "Semental", "Torete", "Becerra", "Becerro", "En Venta", "Bajas"].map((tipo) => (
           <button 
             key={tipo} 
             className={`filter-pill ${filtroActivo === tipo ? "active" : ""}`}
