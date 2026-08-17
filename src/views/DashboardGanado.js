@@ -454,6 +454,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
 
   const guardarBaja = async (e) => {
     e.preventDefault();
+    if (!window.confirm("¿Estás completamente seguro de registrar esta baja?")) return;
     try {
       const animalRef = doc(db, "animales", animalActivo.id);
       await updateDoc(animalRef, { estado: `Baja - ${datosBaja.motivo}` });
@@ -1013,11 +1014,11 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                 {animalActivo.tipo === "Torete" && (
                   <button className="btn-outline" style={{ flex: 1, margin: 0, borderColor: "#3b82f6", color: "#3b82f6" }} onClick={hacerSemental}>🔥 Hacer Semental</button>
                 )}
-                <button className="btn-outline" style={{ flex: 1, margin: 0, borderColor: "#f59e0b", color: "#f59e0b" }} onClick={() => updateDoc(doc(db, "animales", animalActivo.id), { estado: "Disponible para Venta" }).then(()=>setAnimalActivo({...animalActivo, estado: "Disponible para Venta"}))}>💰 Vender</button>
+                <button className="btn-outline" style={{ flex: 1, margin: 0, borderColor: "#f59e0b", color: "#f59e0b" }} onClick={() => { if(window.confirm("¿Marcar este animal como Disponible para Venta?")) { updateDoc(doc(db, "animales", animalActivo.id), { estado: "Disponible para Venta" }).then(()=>setAnimalActivo({...animalActivo, estado: "Disponible para Venta"})); } }}>💰 Vender</button>
                 {(["Vaca", "Semental", "Novillona"].includes(animalActivo.tipo)) && animalActivo.estado !== "Desecho" && (
                   <button className="btn-outline" style={{ flex: 1, margin: 0, borderColor: "#6b7280", color: "#6b7280" }} onClick={marcarDesecho}>🗑️ Descartar</button>
                 )}
-                <button className="btn-outline" style={{ color: "#ef4444", borderColor: "#ef4444" }} onClick={() => { setMostrandoBaja(!mostrandoBaja); setMostrandoFormulario(false); }}><AlertTriangle size={18} /></button>
+                <button className="btn-outline" style={{ color: "#ef4444", borderColor: "#ef4444", display: "flex", alignItems: "center", gap: "4px" }} onClick={() => { setMostrandoBaja(!mostrandoBaja); setMostrandoFormulario(false); }}><AlertTriangle size={18} /> Baja</button>
               </div>
             )}
 
