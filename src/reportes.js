@@ -1,4 +1,4 @@
-﻿import jsPDF from "jspdf";
+import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -105,12 +105,11 @@ export function generarPDFVientres(animales, eventos, config, filtros = null) {
     const vacas = datos.filter((d) => d.tipo === "Vaca").length;
     const novillonas = datos.filter((d) => d.tipo === "Novillona").length;
     const alertas = datos.filter((d) => d.estado.includes("Alerta")).length;
-    const costoGlobal = datos.reduce((s, d) => s + (d.costoTotal || 0), 0);
 
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
-    doc.text(`Vacas: ${vacas}  |  Novillonas: ${novillonas}  |  Alertas Fertilidad: ${alertas}  |  Inversión Acumulada: $${(costoGlobal || 0).toLocaleString()}`, 14, 36);
+    doc.text(`Vacas: ${vacas}  |  Novillonas: ${novillonas}  |  Alertas Fertilidad: ${alertas}`, 14, 36);
 
     // Tabla principal usando autoTable directamente como función para mayor robustez
     autoTable(doc, {
@@ -129,8 +128,6 @@ export function generarPDFVientres(animales, eventos, config, filtros = null) {
         0: { fontStyle: "bold", halign: "center" },
         6: { halign: "center" },
         7: { halign: "center" },
-        9: { halign: "right" },
-        10: { halign: "right" },
       },
       head: [
         [
@@ -143,8 +140,6 @@ export function generarPDFVientres(animales, eventos, config, filtros = null) {
           "# Partos",
           "Último Parto",
           "Último Evento Médico",
-          "Costo Mant.",
-          "Inversión Total",
         ],
       ],
       body: datos.map((d) => [
@@ -157,8 +152,6 @@ export function generarPDFVientres(animales, eventos, config, filtros = null) {
         String(d.numPartos || "0"),
         String(d.ultimoParto || ""),
         String(d.ultimoEvento || ""),
-        `$${(d.costoMantenimiento || 0).toLocaleString()}`,
-        `$${(d.costoTotal || 0).toLocaleString()}`,
       ]),
       didDrawPage: (data) => {
         // Footer en cada página
@@ -199,9 +192,6 @@ export function generarExcelVientres(animales, eventos, config, filtros = null) 
       "Último Evento Médico": d.ultimoEvento,
       "Madre": d.madre,
       "Padre": d.padre,
-      "Costo Mantenimiento ($)": d.costoMantenimiento,
-      "Costo Médico ($)": d.costoMedico,
-      "Inversión Total ($)": d.costoTotal,
     }));
 
     const ws = XLSX.utils.json_to_sheet(datosExcel);
