@@ -26,6 +26,8 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   const [editandoEstado, setEditandoEstado] = useState(false);
   const [nuevoEstadoManual, setNuevoEstadoManual] = useState("");
   const [tipoFormularioIndiv, setTipoFormularioIndiv] = useState("evento");
+  const [editandoDatosAnimal, setEditandoDatosAnimal] = useState(false);
+  const [datosEdicionAnimal, setDatosEdicionAnimal] = useState({});
   
   // Acciones Masivas (Selección)
   const [seleccionados, setSeleccionados] = useState(new Set());
@@ -527,12 +529,31 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   };
 
   const guardarCambioEstado = async () => {
-    if(!animalActivo || !nuevoEstadoManual) return;
     try {
       await updateDoc(doc(db, "animales", animalActivo.id), { estado: nuevoEstadoManual });
       setAnimalActivo({...animalActivo, estado: nuevoEstadoManual});
       setEditandoEstado(false);
-    } catch(e) { console.error(e); }
+    } catch (error) {
+      console.error(error);
+      alert("Error al actualizar el estado.");
+    }
+  };
+
+  const guardarEdicionAnimal = async () => {
+    try {
+      await updateDoc(doc(db, "animales", animalActivo.id), {
+        raza: datosEdicionAnimal.raza || "",
+        peso: datosEdicionAnimal.peso || "",
+        fechaNacimiento: datosEdicionAnimal.fechaNacimiento || "",
+        madre: datosEdicionAnimal.madre || "",
+        padre: datosEdicionAnimal.padre || ""
+      });
+      setAnimalActivo({...animalActivo, ...datosEdicionAnimal});
+      setEditandoDatosAnimal(false);
+    } catch (error) {
+      console.error(error);
+      alert("Error al guardar los datos del animal.");
+    }
   };
 
   const guardarPalpacionMasiva = async (e) => {
@@ -932,10 +953,31 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
               </div>
             )}
 
-            <div style={{ backgroundColor: "#f3f4f6", padding: "12px", borderRadius: "8px", marginBottom: "16px", fontSize: "13px" }}>
+            <div style={{ backgroundColor: "#f3f4f6", padding: "12px", borderRadius: "8px", marginBottom: "16px", fontSize: "13px", position: "relative" }}>
+              {!editandoDatosAnimal && (
+                <button onClick={() => { setEditandoDatosAnimal(true); setDatosEdicionAnimal({ raza: animalActivo.raza, peso: animalActivo.peso, fechaNacimiento: animalActivo.fechaNacimiento, madre: animalActivo.madre, padre: animalActivo.padre }); }} style={{ position: "absolute", top: "12px", right: "12px", background: "none", border: "none", color: "#3b82f6", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}>✏️ Editar Detalles</button>
+              )}
               <strong>Ubicación:</strong> <span style={{ color: "var(--verde-medio)", fontWeight: "bold" }}>{animalActivo.potrero || animalActivo.hectarea || "Sin Asignar"}</span> <br/>
-              <strong>Info:</strong> {animalActivo.raza} | <strong>Peso Inicial:</strong> {animalActivo.peso} <br/>
-              <strong>Nacimiento / Registro:</strong> {animalActivo.fechaNacimiento || animalActivo.fechaRegistro || "--"} {animalActivo.fechaNacimiento ? `(${differenceInMonths(new Date(), new Date(animalActivo.fechaNacimiento + "T00:00:00"))} meses)` : ""} <br/>
+              
+              {editandoDatosAnimal ? (
+                <div style={{ marginTop: "10px", marginBottom: "10px", display: "grid", gap: "8px", gridTemplateColumns: "1fr 1fr" }}>
+                  <div><label style={{fontSize: "11px", fontWeight: "bold", display: "block"}}>Raza</label><input type="text" value={datosEdicionAnimal.raza || ""} onChange={e => setDatosEdicionAnimal({...datosEdicionAnimal, raza: e.target.value})} style={{width: "100%", padding: "6px", fontSize:"12px", border: "1px solid #d1d5db", borderRadius: "4px"}}/></div>
+                  <div><label style={{fontSize: "11px", fontWeight: "bold", display: "block"}}>Peso Inicial</label><input type="text" value={datosEdicionAnimal.peso || ""} onChange={e => setDatosEdicionAnimal({...datosEdicionAnimal, peso: e.target.value})} style={{width: "100%", padding: "6px", fontSize:"12px", border: "1px solid #d1d5db", borderRadius: "4px"}}/></div>
+                  <div><label style={{fontSize: "11px", fontWeight: "bold", display: "block"}}>Nacimiento</label><input type="date" value={datosEdicionAnimal.fechaNacimiento || ""} onChange={e => setDatosEdicionAnimal({...datosEdicionAnimal, fechaNacimiento: e.target.value})} style={{width: "100%", padding: "6px", fontSize:"12px", border: "1px solid #d1d5db", borderRadius: "4px"}}/></div>
+                  <div></div>
+                  <div><label style={{fontSize: "11px", fontWeight: "bold", display: "block"}}>Madre</label><input type="text" value={datosEdicionAnimal.madre || ""} onChange={e => setDatosEdicionAnimal({...datosEdicionAnimal, madre: e.target.value})} style={{width: "100%", padding: "6px", fontSize:"12px", border: "1px solid #d1d5db", borderRadius: "4px"}}/></div>
+                  <div><label style={{fontSize: "11px", fontWeight: "bold", display: "block"}}>Padre</label><input type="text" value={datosEdicionAnimal.padre || ""} onChange={e => setDatosEdicionAnimal({...datosEdicionAnimal, padre: e.target.value})} style={{width: "100%", padding: "6px", fontSize:"12px", border: "1px solid #d1d5db", borderRadius: "4px"}}/></div>
+                  <div style={{gridColumn: "1 / -1", display: "flex", gap: "8px", marginTop: "4px"}}>
+                    <button onClick={guardarEdicionAnimal} style={{padding: "6px 12px", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "4px", cursor: "pointer"}}>Guardar</button>
+                    <button onClick={() => setEditandoDatosAnimal(false)} style={{padding: "6px 12px", backgroundColor: "#e5e7eb", color: "#4b5563", border: "none", borderRadius: "4px", cursor: "pointer"}}>Cancelar</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <strong>Info:</strong> {animalActivo.raza} | <strong>Peso Inicial:</strong> {animalActivo.peso} <br/>
+                  <strong>Nacimiento / Registro:</strong> {animalActivo.fechaNacimiento || animalActivo.fechaRegistro || "--"} {animalActivo.fechaNacimiento ? `(${differenceInMonths(new Date(), new Date(animalActivo.fechaNacimiento + "T00:00:00"))} meses)` : ""} <br/>
+                </>
+              )}
               <strong>Estado Actual:</strong> 
               {editandoEstado ? (
                 <span style={{ display: "inline-flex", gap: "6px", alignItems: "center", marginLeft: "6px" }}>
@@ -956,8 +998,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                   <button onClick={() => { setEditandoEstado(true); setNuevoEstadoManual(animalActivo.estado || "Sano"); }} style={{ background: "none", border: "none", color: "#3b82f6", cursor: "pointer", marginLeft: "6px", fontSize: "12px", padding: 0 }} title="Editar Estado Manualmente">✏️</button>
                 </span>
               )}
-              <br/>
-              {animalActivo.madre && <span><strong>Madre:</strong> {animalActivo.madre} | <strong>Padre:</strong> {animalActivo.padre}</span>}
             </div>
 
             {(!animalActivo.estado?.includes('Baja') && usuario?.rol !== "tecnico") && (
@@ -1042,9 +1082,11 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                 )}
 
                 <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-                  <input type="date" value={datosEvento.fecha} onChange={(e) => setDatosEvento({...datosEvento, fecha: e.target.value})} style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} required />
-                  <input type="number" placeholder="Costo ($)" value={datosEvento.costo} onChange={(e) => setDatosEvento({...datosEvento, costo: e.target.value})} style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} />
-                </div>
+                    <input type="date" value={datosEvento.fecha} onChange={(e) => setDatosEvento({...datosEvento, fecha: e.target.value})} style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} required />
+                    {datosEvento.tipo !== "Parto" && (
+                      <input type="number" placeholder="Costo ($)" value={datosEvento.costo} onChange={(e) => setDatosEvento({...datosEvento, costo: e.target.value})} style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} />
+                    )}
+                  </div>
                 
                 <button type="submit" className="btn-primary" style={{ width: "100%" }}>Guardar Evento</button>
               </form>
