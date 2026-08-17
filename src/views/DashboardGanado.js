@@ -23,6 +23,8 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   const [mostrandoBaja, setMostrandoBaja] = useState(false);
   const [editandoUbicacion, setEditandoUbicacion] = useState(false);
   const [nuevaUbicacion, setNuevaUbicacion] = useState({ potrero: "", grupo: "" });
+  const [editandoEstado, setEditandoEstado] = useState(false);
+  const [nuevoEstadoManual, setNuevoEstadoManual] = useState("");
   
   // Acciones Masivas (Selección)
   const [seleccionados, setSeleccionados] = useState(new Set());
@@ -523,6 +525,15 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     } catch(e) { console.error(e); }
   };
 
+  const guardarCambioEstado = async () => {
+    if(!animalActivo || !nuevoEstadoManual) return;
+    try {
+      await updateDoc(doc(db, "animales", animalActivo.id), { estado: nuevoEstadoManual });
+      setAnimalActivo({...animalActivo, estado: nuevoEstadoManual});
+      setEditandoEstado(false);
+    } catch(e) { console.error(e); }
+  };
+
   const guardarPalpacionMasiva = async (e) => {
     e.preventDefault();
     setGuardandoPalpacion(true);
@@ -924,7 +935,27 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
               <strong>Ubicación:</strong> <span style={{ color: "var(--verde-medio)", fontWeight: "bold" }}>{animalActivo.potrero || animalActivo.hectarea || "Sin Asignar"}</span> <br/>
               <strong>Info:</strong> {animalActivo.raza} | <strong>Peso Inicial:</strong> {animalActivo.peso} <br/>
               <strong>Nacimiento / Registro:</strong> {animalActivo.fechaNacimiento || animalActivo.fechaRegistro || "--"} {animalActivo.fechaNacimiento ? `(${differenceInMonths(new Date(), new Date(animalActivo.fechaNacimiento + "T00:00:00"))} meses)` : ""} <br/>
-              <strong>Estado Actual:</strong> <span style={{ color: animalActivo.estado?.includes("Alerta") ? "red" : (animalActivo.estado === "Disponible para Venta" ? "orange" : "green") }}>{animalActivo.estado || "Sano"}</span> <br/>
+              <strong>Estado Actual:</strong> 
+              {editandoEstado ? (
+                <span style={{ display: "inline-flex", gap: "6px", alignItems: "center", marginLeft: "6px" }}>
+                  <select value={nuevoEstadoManual} onChange={e => setNuevoEstadoManual(e.target.value)} style={{ padding: "2px 4px", fontSize: "12px", borderRadius: "4px", border: "1px solid #d1d5db" }}>
+                    <option value="Sano">Sano</option>
+                    <option value="Enfermo">Enfermo</option>
+                    <option value="Gestante">Gestante</option>
+                    <option value="Alerta: Revisión de Fertilidad">Alerta: Revisión de Fertilidad</option>
+                    <option value="Disponible para Venta">Disponible para Venta</option>
+                    <option value="Vacía">Vacía</option>
+                  </select>
+                  <button onClick={guardarCambioEstado} style={{ padding: "2px 6px", fontSize: "11px", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}>Guardar</button>
+                  <button onClick={() => setEditandoEstado(false)} style={{ padding: "2px 6px", fontSize: "11px", backgroundColor: "#f3f4f6", color: "#4b5563", border: "1px solid #d1d5db", borderRadius: "4px", cursor: "pointer" }}>Cancelar</button>
+                </span>
+              ) : (
+                <span style={{ color: animalActivo.estado?.includes("Alerta") ? "red" : (animalActivo.estado === "Disponible para Venta" ? "orange" : "green") }}>
+                  {animalActivo.estado || "Sano"}
+                  <button onClick={() => { setEditandoEstado(true); setNuevoEstadoManual(animalActivo.estado || "Sano"); }} style={{ background: "none", border: "none", color: "#3b82f6", cursor: "pointer", marginLeft: "6px", fontSize: "12px", padding: 0 }} title="Editar Estado Manualmente">✏️</button>
+                </span>
+              )}
+              <br/>
               {animalActivo.madre && <span><strong>Madre:</strong> {animalActivo.madre} | <strong>Padre:</strong> {animalActivo.padre}</span>}
             </div>
 
