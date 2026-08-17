@@ -24,6 +24,10 @@ export default function Movilizacion({ usuario }) {
   const [fechaCita, setFechaCita] = useState("");
   const [horaCita, setHoraCita] = useState("");
 
+  const [filtroCategoria, setFiltroCategoria] = useState("Todos");
+  const [filtroPotrero, setFiltroPotrero] = useState("Todos");
+  const [filtroBusqueda, setFiltroBusqueda] = useState("");
+
   const [seleccionados, setSeleccionados] = useState([]);
   const [guardando, setGuardando] = useState(false);
   const [exito, setExito] = useState("");
@@ -58,11 +62,23 @@ export default function Movilizacion({ usuario }) {
     }
   };
 
+  const animalesFiltrados = animales.filter(a => {
+    if (filtroCategoria !== "Todos" && a.tipo !== filtroCategoria) return false;
+    if (filtroPotrero !== "Todos" && a.potrero !== filtroPotrero) return false;
+    if (filtroBusqueda && !a.arete?.toLowerCase().includes(filtroBusqueda.toLowerCase())) return false;
+    return true;
+  });
+
   const seleccionarTodos = () => {
-    if (seleccionados.length === animales.length) {
-      setSeleccionados([]);
+    const idsFiltrados = animalesFiltrados.map(a => a.id);
+    if (idsFiltrados.length === 0) return;
+    const todosSeleccionados = idsFiltrados.every(id => seleccionados.includes(id));
+    
+    if (todosSeleccionados) {
+      setSeleccionados(seleccionados.filter(id => !idsFiltrados.includes(id)));
     } else {
-      setSeleccionados(animales.map(a => a.id));
+      const nuevosSeleccionados = new Set([...seleccionados, ...idsFiltrados]);
+      setSeleccionados(Array.from(nuevosSeleccionados));
     }
   };
 
@@ -299,16 +315,33 @@ export default function Movilizacion({ usuario }) {
 
         {/* Tarjeta 3: Ganado a Movilizar */}
         <div className="card" style={{ padding: "20px", backgroundColor: "white", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #e5e7eb", marginBottom: "24px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-            <h3 style={{ margin: 0, fontSize: "16px", color: "#374151", display: "flex", alignItems: "center", gap: "8px" }}>
-              <FileText size={18} color="#f59e0b" /> Animales Seleccionados ({seleccionados.length})
-            </h3>
-            <button type="button" onClick={seleccionarTodos} style={{ padding: "6px 12px", backgroundColor: "#f3f4f6", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "12px", cursor: "pointer", fontWeight: "500" }}>
-              {seleccionados.length === animales.length ? "Desmarcar Todos" : "Seleccionar Todos"}
-            </button>
-          </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
+              <h3 style={{ margin: 0, fontSize: "16px", color: "#374151", display: "flex", alignItems: "center", gap: "8px" }}>
+                <FileText size={18} color="#f59e0b" /> Animales Seleccionados ({seleccionados.length})
+              </h3>
+              <button type="button" onClick={seleccionarTodos} style={{ padding: "6px 12px", backgroundColor: "#f3f4f6", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "12px", cursor: "pointer", fontWeight: "500" }}>
+                Seleccionar Visibles
+              </button>
+            </div>
 
-          <div style={{ maxHeight: "300px", overflowY: "auto", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
+            <div style={{ display: "flex", gap: "10px", marginBottom: "16px", flexWrap: "wrap" }}>
+              <input type="text" placeholder="Buscar por arete..." value={filtroBusqueda} onChange={(e) => setFiltroBusqueda(e.target.value)} style={{ flex: 1, minWidth: "150px", padding: "8px", border: "1px solid #d1d5db", borderRadius: "6px" }} />
+              <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} style={{ padding: "8px", border: "1px solid #d1d5db", borderRadius: "6px", backgroundColor: "white", minWidth: "120px" }}>
+                <option value="Todos">Categorías (Todas)</option>
+                <option value="Vaca">Vacas</option>
+                <option value="Novillona">Novillonas</option>
+                <option value="Becerra">Becerras</option>
+                <option value="Semental">Sementales</option>
+                <option value="Torete">Toretes</option>
+                <option value="Becerro">Becerros</option>
+              </select>
+              <select value={filtroPotrero} onChange={(e) => setFiltroPotrero(e.target.value)} style={{ padding: "8px", border: "1px solid #d1d5db", borderRadius: "6px", backgroundColor: "white", minWidth: "120px" }}>
+                <option value="Todos">Potreros (Todos)</option>
+                {Array.from(new Set(animales.map(a => a.potrero).filter(Boolean))).map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+
+            <div style={{ maxHeight: "300px", overflowY: "auto", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px", textAlign: "left" }}>
               <thead style={{ backgroundColor: "#f9fafb", position: "sticky", top: 0, zIndex: 1, borderBottom: "1px solid #e5e7eb" }}>
                 <tr>
@@ -319,11 +352,11 @@ export default function Movilizacion({ usuario }) {
                   <th style={{ padding: "10px" }}>Potrero</th>
                 </tr>
               </thead>
-              <tbody>
-                {animales.length === 0 ? (
-                  <tr><td colSpan="5" style={{ padding: "16px", textAlign: "center", color: "#6b7280" }}>No hay animales activos.</td></tr>
-                ) : (
-                  animales.map(a => (
+                <tbody>
+                  {animalesFiltrados.length === 0 ? (
+                    <tr><td colSpan="5" style={{ padding: "16px", textAlign: "center", color: "#6b7280" }}>No hay animales que coincidan con la búsqueda.</td></tr>
+                  ) : (
+                    animalesFiltrados.map(a => (
                     <tr key={a.id} style={{ borderBottom: "1px solid #f3f4f6", backgroundColor: seleccionados.includes(a.id) ? "#f0fdf4" : "white" }} onClick={() => toggleSeleccion(a.id)}>
                       <td style={{ padding: "10px" }}>
                         <input type="checkbox" checked={seleccionados.includes(a.id)} readOnly style={{ width: "16px", height: "16px", cursor: "pointer" }} />
