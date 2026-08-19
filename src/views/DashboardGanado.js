@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Search, X, Plus, Activity, Baby, Scale, AlertTriangle, TrendingUp } from "lucide-react";
-import { collection, onSnapshot, addDoc, query, where, doc, updateDoc, getDocs } from "firebase/firestore"; 
+import { collection, onSnapshot, addDoc, query, where, doc, updateDoc, getDocs, deleteDoc } from "firebase/firestore"; 
 import { differenceInMonths } from "date-fns";
 import { db } from "../firebase";
 import Header from "../components/Header";
@@ -40,7 +40,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     tipo: "Desparasitante", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes", costo: "", condicionCorporal: "", observaciones: ""
   });
   const [datosBaja, setDatosBaja] = useState({ 
-    motivo: "Venta", notas: "", fecha: new Date().toISOString().split('T')[0] 
+    motivo: "Venta", notas: "", fecha: new Date().toISOString().split('T')[0], peso: ""
   });
   const [sincronizado, setSincronizado] = useState(false);
   
@@ -306,6 +306,19 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   // --- ACCIONES ---
   const guardarEvento = async (e) => {
     e.preventDefault();
+    
+    if (datosEvento.tipo === "Parto") {
+      const partosPrevios = historialEventos.filter(ev => ev.tipo === "Parto");
+      const fechaNuevo = new Date(datosEvento.fecha);
+      for (const parto of partosPrevios) {
+        const diffDays = Math.abs((fechaNuevo - new Date(parto.fecha)) / (1000 * 60 * 60 * 24));
+        if (diffDays < 300) {
+          alert("Error: No se puede registrar este parto porque el animal ya tiene otro parto registrado en los últimos 10 meses.");
+          return;
+        }
+      }
+    }
+
     try {
       const eventoPayload = {
         animalId: animalActivo.id,
@@ -341,6 +354,17 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
       setDatosEvento({ tipo: "Desparasitante", resultado: "", fecha: new Date().toISOString().split('T')[0], recordatorio: "1 semana antes", costo: "", condicionCorporal: "", observaciones: "" });
       setMostrandoFormulario(false);
     } catch (error) { console.error(error); }
+  };
+
+  const eliminarEvento = async (eventoId) => {
+    if (window.confirm("¿Seguro que deseas eliminar este evento del historial?")) {
+      try {
+        await deleteDoc(doc(db, "eventos", eventoId));
+      } catch (error) {
+        console.error(error);
+        alert("Hubo un error al intentar eliminar el evento.");
+      }
+    }
   };
 
   const guardarCambioArete = async (e) => {
@@ -457,16 +481,20 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     if (!window.confirm("¿Estás completamente seguro de registrar esta baja?")) return;
     try {
       const animalRef = doc(db, "animales", animalActivo.id);
-      await updateDoc(animalRef, { estado: `Baja - ${datosBaja.motivo}` });
+      const updates = { estado: `Baja - ${datosBaja.motivo}` };
+      if (datosBaja.peso) updates.peso = `${datosBaja.peso} kg`;
+
+      await updateDoc(animalRef, updates);
       await addDoc(collection(db, "eventos"), {
         animalId: animalActivo.id,
         tipo: "Baja",
         resultado: datosBaja.motivo,
         fecha: datosBaja.fecha,
         notas: datosBaja.notas,
+        peso: datosBaja.peso,
         ranchoId: usuario?.ranchoId || null
       });
-      setAnimalActivo({ ...animalActivo, estado: `Baja - ${datosBaja.motivo}` });
+      setAnimalActivo({ ...animalActivo, ...updates });
       setMostrandoBaja(false);
     } catch (error) { console.error(error); }
   };
@@ -1038,6 +1066,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
 
                 <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
                   <input type="date" value={datosBaja.fecha} onChange={(e) => setDatosBaja({...datosBaja, fecha: e.target.value})} style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} required />
+                  <input type="number" placeholder="Peso al dar de baja (kg)" value={datosBaja.peso} onChange={(e) => setDatosBaja({...datosBaja, peso: e.target.value})} style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} required />
                 </div>
 
                 <textarea placeholder="Notas adicionales..." value={datosBaja.notas} onChange={(e) => setDatosBaja({...datosBaja, notas: e.target.value})} style={{ width: "100%", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px", marginBottom: "10px", boxSizing: "border-box" }} rows="2" />
@@ -1102,7 +1131,10 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                   <span>
                     <strong>{ev.tipo}:</strong> {ev.resultado} {ev.tipo === "Repeso" ? "kg" : ""}
                   </span>
-                  <span style={{ color: "#9ca3af" }}>{ev.fecha}</span>
+                  <span style={{ color: "#9ca3af", display: "flex", alignItems: "center", gap: "8px" }}>
+                      {ev.fecha}
+                      <button type="button" onClick={() => eliminarEvento(ev.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, fontSize: "14px" }} title="Eliminar registro">🗑️</button>
+                    </span>
                 </div>
               ))}
             </div>
