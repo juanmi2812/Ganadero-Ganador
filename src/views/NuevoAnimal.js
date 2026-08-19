@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { CheckCircle2 } from "lucide-react";
-import { collection, addDoc, onSnapshot, query, where } from "firebase/firestore";
+import { collection, addDoc, onSnapshot, query, where, updateDoc, doc } from "firebase/firestore";
 import { db } from "../firebase";
 
 export default function NuevoAnimal({ usuario }) {
@@ -106,6 +106,28 @@ export default function NuevoAnimal({ usuario }) {
 
     try {
       await addDoc(collection(db, "animales"), animalNuevo);
+      
+      // AUTO-PARTO
+      if (datosFormulario.madre) {
+        const madreObj = vientres.find(v => (v.arete || v.id) === datosFormulario.madre);
+        if (madreObj) {
+          const eventoParto = {
+            tipo: "Parto",
+            fecha: datosFormulario.fechaNacimiento || new Date().toISOString().split("T")[0],
+            resultado: datosFormulario.sexo === "Hembra" ? "Cría Hembra" : "Cría Macho",
+            costo: "",
+            observaciones: `Parto automático por registro de cría: ${datosFormulario.arete || datosFormulario.nombre || "Sin arete"}`,
+            animalId: madreObj.id,
+            ranchoId: usuario?.ranchoId
+          };
+          await addDoc(collection(db, "eventos"), eventoParto);
+          
+          const updates = { estado: "Sano" };
+          if (madreObj.tipo !== "Vaca") updates.tipo = "Vaca";
+          await updateDoc(doc(db, "animales", madreObj.id), updates);
+        }
+      }
+
       setExito(true);
       setTimeout(() => {
         setExito(false);
@@ -242,8 +264,10 @@ export default function NuevoAnimal({ usuario }) {
             {/* SELECCIÓN DE PADRES */}
             <div className="input-group">
               <label>Madre (Vientre)</label>
-              <select
+              <input
+                list="madres-list"
                 name="madre"
+                placeholder="Buscar o seleccionar arete..."
                 value={datosFormulario.madre}
                 onChange={manejarCambio}
                 style={{
@@ -252,20 +276,22 @@ export default function NuevoAnimal({ usuario }) {
                   borderRadius: "6px",
                   border: "1px solid #d1d5db",
                 }}
-              >
-                <option value="">-- Seleccionar --</option>
+              />
+              <datalist id="madres-list">
                 {vientres.map((v) => (
                   <option key={v.id} value={v.arete || v.id}>
                     {v.arete || v.nombre || "Sin Arete"} ({v.raza || "Sin Raza"})
                   </option>
                 ))}
-              </select>
+              </datalist>
             </div>
 
             <div className="input-group">
               <label>Padre (Semental)</label>
-              <select
+              <input
+                list="padres-list"
                 name="padre"
+                placeholder="Buscar o seleccionar arete..."
                 value={datosFormulario.padre}
                 onChange={manejarCambio}
                 style={{
@@ -274,14 +300,14 @@ export default function NuevoAnimal({ usuario }) {
                   borderRadius: "6px",
                   border: "1px solid #d1d5db",
                 }}
-              >
-                <option value="">-- Seleccionar --</option>
+              />
+              <datalist id="padres-list">
                 {sementales.map((s) => (
                   <option key={s.id} value={s.arete || s.id}>
                     {s.arete || s.nombre || "Sin Arete"} ({s.raza || "Sin Raza"})
                   </option>
                 ))}
-              </select>
+              </datalist>
             </div>
 
             <div className="input-group">
