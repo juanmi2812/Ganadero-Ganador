@@ -350,13 +350,6 @@ export default function ReportesBI({ usuario }) {
             <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>Meses (promedio)</div>
         </div>
 
-        {/* KPI 8: GDP Promedio (12m) */}
-        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #3b82f6", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
-            <button onClick={() => setInfoKpi({titulo: "GDP Promedio (Últimos 12m)", descripcion: "Ganancia Diaria de Peso promedio en animales en desarrollo (Becerros/Toretes/Novillonas) en el último año.", calculo: "(Peso Actual - Peso Anterior) / Días Transcurridos."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
-            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><TrendingUp size={16}/> GDP PROMEDIO (12M)</div>
-            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#3b82f6", marginTop: "8px" }}>{gdpPromedio}</div>
-            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>Kg / día</div>
-        </div>
 
         {/* KPI 9: Producción de Leche (Promedio Individual) */}
         <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #8b5cf6", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
@@ -485,8 +478,7 @@ export default function ReportesBI({ usuario }) {
                     <option value="reproduccion">📊 Resumen de Palpaciones</option>
                     <option value="proyeccion">📅 Proyección de Partos</option>
                     <option value="iep">🟣 Detalle de Intervalo Entre Partos (IEP)</option>
-                    <option value="hectareas">🚩 Producción por Hectárea</option>
-                    <option value="desarrollo">📈 Desarrollo (GDP)</option>
+
                     <option value="calendario">📅 Reporte de Movimientos</option>
                     <option value="tratamientos">💊 Reporte de Tratamientos</option>
                 </select>
@@ -649,7 +641,7 @@ export default function ReportesBI({ usuario }) {
                 >
                     <option value="">-- Elige un reporte --</option>
                     <option value="parto">1. Meses de edad al primer parto</option>
-                    <option value="gdp">2. GDP Histórico (3m vs 12m)</option>
+
                     <option value="mort_dev">3. % Bajas en Desarrollo</option>
                     <option value="mort_vac">4. % Bajas en Vacas</option>
                     <option value="desecho">6. % Desechos (Culling Rate)</option>
