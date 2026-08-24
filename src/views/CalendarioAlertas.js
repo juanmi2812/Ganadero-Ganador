@@ -222,7 +222,7 @@ export default function CalendarioAlertas({ usuario }) {
 
   return (
     <div className="dashboard-container" style={{ padding: "0 16px" }}>
-      <div className="header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <img src={require("../assets/logo_calendario.jpg")} alt="Calendario" style={{ width: "64px", height: "64px", objectFit: "contain", borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "white" }} />
           <div>

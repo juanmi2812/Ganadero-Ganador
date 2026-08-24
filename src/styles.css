@@ -1139,3 +1139,105 @@ body {
   .lead-container { grid-template-columns: 1fr; }
   .input-row { grid-template-columns: 1fr; }
 }
+
+/* --- CORRECCIONES RESPONSIVAS GLOBALES --- */
+@media (max-width: 768px) {
+  /* TOP HEADER RESPONSIVE */
+  .top-header {
+    flex-wrap: wrap;
+    padding: 10px;
+    gap: 10px;
+  }
+  .top-header-brand span {
+    font-size: 14px; /* Hacer el titulo más pequeño */
+  }
+  .publicidad-wrapper {
+    order: 3;
+    width: 100%;
+    margin: 5px 0 0 0 !important;
+    flex: none !important;
+  }
+  .top-header-actions {
+    margin-left: auto;
+  }
+  .top-header-actions button {
+    padding: 6px;
+  }
+
+  /* HEADERS DE CADA VISTA */
+  .dashboard-container .header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 10px;
+  }
+  .dashboard-container .header button,
+  .dashboard-container .header > div:last-child {
+    width: 100%;
+    justify-content: center;
+  }
+  .dashboard-container .header > div:first-child h1 {
+    font-size: 18px !important;
+  }
+  .dashboard-container .header img {
+    width: 45px !important;
+    height: 45px !important;
+  }
+
+  /* KPI GRID MEJORADO */
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* BOTONES Y FILTROS */
+  .filter-bar {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 10px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .filter-pill {
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .publicidad-wrapper div {
+    height: 35px !important;
+    font-size: 10px !important;
+  }
+}
+
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 12px;
+  }
+  .page-header > div:last-child {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .page-header > div:last-child > div {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  .page-header > div:last-child button {
+    width: 100%;
+    justify-content: center;
+  }
+  .page-header-title h1 {
+    font-size: 20px !important;
+  }
+  .page-header-title img {
+    width: 48px !important;
+    height: 48px !important;
+  }
+}
+

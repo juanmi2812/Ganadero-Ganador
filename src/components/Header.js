@@ -2,8 +2,8 @@ import React from "react";
 
 export default function Header({ subtitle, title = "Mi Ganado", children, logo }) {
   return (
-    <div style={{ marginBottom: "20px", paddingBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+    <div className="page-header" style={{ marginBottom: "20px", paddingBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="page-header-title" style={{ display: "flex", alignItems: "center", gap: "16px" }}>
         {logo && <img src={logo} alt={title} style={{ width: "64px", height: "64px", objectFit: "contain", borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "white" }} />}
         <div>
           <h1 style={{

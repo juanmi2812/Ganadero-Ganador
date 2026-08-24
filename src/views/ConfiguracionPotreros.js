@@ -346,7 +346,7 @@ export default function ConfiguracionPotreros({ usuario }) {
 
   return (
     <div className="dashboard-container">
-      <div className="header" style={{ marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="page-header" style={{ marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <h1 style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <img src={require("../assets/logo_potreros.jpg")} alt="Potreros" style={{ width: "64px", height: "64px", objectFit: "contain", borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "white" }} />

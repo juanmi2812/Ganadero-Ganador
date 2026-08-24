@@ -151,7 +151,7 @@ export default function App() {
         </div>
         
         {/* Espacio para Publicidad */}
-        <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", margin: "0 20px" }}>
+        <div className="publicidad-wrapper" style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", margin: "0 20px" }}>
             <div style={{ width: "100%", maxWidth: "450px", height: "45px", backgroundColor: "#f9fafb", border: "2px dashed #e5e7eb", borderRadius: "8px", display: "flex", justifyContent: "center", alignItems: "center", color: "#9ca3af", fontSize: "12px", fontWeight: "bold" }}>
                 ESPACIO PARA PUBLICIDAD
             </div>
