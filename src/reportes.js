@@ -65,6 +65,8 @@ export function prepararDatosVientres(animales, eventos, config, filtros = null)
 
     return {
       arete: animal.arete || "--",
+      areteRancho: animal.areteRancho || "--",
+      nombre: animal.nombre || "--",
       raza: animal.raza || "--",
       tipo: animal.tipo,
       edadMeses: edadMeses !== "--" ? `${edadMeses} m` : "--",
@@ -132,6 +134,8 @@ export function generarPDFVientres(animales, eventos, config, filtros = null) {
       head: [
         [
           "Arete",
+          "Arete R.",
+          "Nombre",
           "Raza",
           "Categoría",
           "Edad",
@@ -144,6 +148,8 @@ export function generarPDFVientres(animales, eventos, config, filtros = null) {
       ],
       body: datos.map((d) => [
         String(d.arete || ""),
+        String(d.areteRancho || ""),
+        String(d.nombre || ""),
         String(d.raza || ""),
         String(d.tipo || ""),
         String(d.edadMeses || ""),
@@ -182,6 +188,8 @@ export function generarExcelVientres(animales, eventos, config, filtros = null) 
 
     const datosExcel = datos.map((d) => ({
       "Arete": d.arete,
+      "Arete Rancho": d.areteRancho,
+      "Nombre": d.nombre,
       "Raza": d.raza,
       "Categoría": d.tipo,
       "Edad": d.edadMeses,

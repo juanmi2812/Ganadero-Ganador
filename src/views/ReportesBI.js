@@ -566,7 +566,7 @@ export default function ReportesBI({ usuario }) {
                 <div style={{ overflowX: "auto", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", textAlign: "left", whiteSpace: "nowrap" }}>
                         <thead style={{ backgroundColor: "#f9fafb", borderBottom: "2px solid #e5e7eb" }}>
-                            {reporteAvanzado === "vientres" && <tr><th style={{padding:"8px"}}>Arete</th><th style={{padding:"8px"}}>Categoría</th><th style={{padding:"8px"}}>Partos</th><th style={{padding:"8px"}}>Último Evento</th></tr>}
+                            {reporteAvanzado === "vientres" && <tr><th style={{padding:"8px"}}>Arete</th><th style={{padding:"8px"}}>Arete Rancho</th><th style={{padding:"8px"}}>Nombre</th><th style={{padding:"8px"}}>Categoría</th><th style={{padding:"8px"}}>Partos</th><th style={{padding:"8px"}}>Último Evento</th></tr>}
                             {reporteAvanzado === "reproduccion" && <tr><th style={{padding:"8px"}}>Mes</th><th style={{padding:"8px"}}>Palpadas</th><th style={{padding:"8px"}}>Gestantes</th><th style={{padding:"8px"}}>Anestro</th><th style={{padding:"8px"}}>% Preñez</th></tr>}
                             {reporteAvanzado === "proyeccion" && <tr><th style={{padding:"8px"}}>Mes Proyectado</th><th style={{padding:"8px"}}>Partos Esperados</th><th style={{padding:"8px"}}>Aretes</th></tr>}
                             {reporteAvanzado === "iep" && <tr><th style={{padding:"8px"}}>Arete</th><th style={{padding:"8px"}}>Tipo</th><th style={{padding:"8px"}}>Penúltimo Parto</th><th style={{padding:"8px"}}>Último Parto</th><th style={{padding:"8px"}}>Días Abiertos</th><th style={{padding:"8px"}}>IEP (Días)</th><th style={{padding:"8px"}}>IEP (Meses)</th><th style={{padding:"8px"}}>Clasificación</th></tr>}
@@ -577,7 +577,7 @@ export default function ReportesBI({ usuario }) {
                         </thead>
                         <tbody>
                             {reporteAvanzado === "vientres" && prepararDatosVientres(animales, eventos, config, filtrosActuales).slice(0, 10).map((d, i) => (
-                                <tr key={i} style={{ borderBottom: "1px solid #e5e7eb" }}><td style={{padding:"8px"}}>{d.arete}</td><td style={{padding:"8px"}}>{d.tipo}</td><td style={{padding:"8px"}}>{d.numPartos}</td><td style={{padding:"8px"}}>{d.ultimoEvento.substring(0, 25)}</td></tr>
+                                <tr key={i} style={{ borderBottom: "1px solid #e5e7eb" }}><td style={{padding:"8px"}}>{d.arete}</td><td style={{padding:"8px"}}>{d.areteRancho}</td><td style={{padding:"8px"}}>{d.nombre}</td><td style={{padding:"8px"}}>{d.tipo}</td><td style={{padding:"8px"}}>{d.numPartos}</td><td style={{padding:"8px"}}>{d.ultimoEvento.substring(0, 25)}</td></tr>
                             ))}
                             {reporteAvanzado === "reproduccion" && prepararDatosReproduccion(eventos, filtrosActuales).slice(0, 10).map((d, i) => (
                                 <tr key={i} style={{ borderBottom: "1px solid #e5e7eb" }}><td style={{padding:"8px",fontWeight:"bold"}}>{d.label}</td><td style={{padding:"8px"}}>{d.palpadas}</td><td style={{padding:"8px"}}>{d.gestantes}</td><td style={{padding:"8px"}}>{d.anestro}</td><td style={{padding:"8px",color:"#166534"}}>{d.porcentaje}</td></tr>
