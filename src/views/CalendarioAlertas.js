@@ -223,9 +223,12 @@ export default function CalendarioAlertas({ usuario }) {
   return (
     <div className="dashboard-container" style={{ padding: "0 16px" }}>
       <div className="header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          <h1>Calendario de Planeación</h1>
-          <p>Registra las actividades que planeas realizar. Lo ejecutado se carga desde "Mi Ganado".</p>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <img src={require("../assets/logo_calendario.jpg")} alt="Calendario" style={{ width: "64px", height: "64px", objectFit: "contain", borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "white" }} />
+          <div>
+            <h1 style={{ margin: 0, fontSize: "22px", fontWeight: 800, color: "#111827", letterSpacing: "-0.3px" }}>Calendario de Planeación</h1>
+            <p style={{ margin: "4px 0 0 0", fontSize: "14px", color: "#9ca3af" }}>Registra las actividades que planeas realizar. Lo ejecutado se carga desde "Mi Ganado".</p>
+          </div>
         </div>
         <button
           className="btn-primary"

@@ -232,7 +232,7 @@ export default function ReportesBI({ usuario }) {
 
   return (
     <div className="dashboard-container" style={{ padding: "0 16px", maxWidth: "1200px", margin: "0 auto", paddingBottom: "50px" }}>
-      <Header subtitle="Filtra visualizaciones de conteo de inventario." />
+      <Header title="Reportes y Análisis" subtitle="Filtra visualizaciones de conteo de inventario." logo={require("../assets/logo_reportes.jpg")} />
 
       <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", backgroundColor: "white", padding: "16px", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", marginBottom: "20px" }}>
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
