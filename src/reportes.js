@@ -889,26 +889,15 @@ export function prepararDatosCalendario(animales, eventos, alertas, filtros = nu
         });
 
         // --- SUGERIDO (SOP) ---
-        let keySOP = cat.label.includes("CRIAS") ? "Crias" : 
-                     (cat.label === "VACAS" ? "Vacas" : 
-                     (cat.label === "VAQUILLAS" ? "Vaquillas" : 
-                     (cat.label === "TORETES" ? "Toretes" : 
-                     (cat.label === "BECERROS" ? "Becerros" : "Becerras"))));
-
-        const sopActual = PROTOCOLO_SANITARIO[mesActualIdx]?.[keySOP] || [];
-        const sopSig = PROTOCOLO_SANITARIO[mesSiguienteIdx]?.[keySOP] || [];
-
         // Mezclar usando etiquetas de texto seguras para PDF
         const resActual = [
             ...new Set(evMesActual.map(e => `[HECHO] ${e.tipo}`)),
             ...new Set(alMesActual.map(al => `[PLAN] ${al.titulo.split(" ")[0]}`))
         ];
-        if (resActual.length === 0) resActual.push(...sopActual.map(s => `[SUG] ${s}`));
 
         const resSig = [
             ...new Set(alMesSig.map(al => `[PLAN] ${al.titulo.split(" ")[0]}`))
         ];
-        if (resSig.length === 0) resSig.push(...sopSig.map(s => `[SUG] ${s}`));
 
         return {
             categoria: cat.label,
@@ -931,7 +920,7 @@ export function generarPDFCalendario(animales, eventos, alertas, filtros = null)
         doc.rect(0, 0, doc.internal.pageSize.width, 28, "F");
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(18);
-        doc.text("CALENDARIO DE MANEJO SANITARIO", 14, 14);
+        doc.text("REPORTE DE MOVIMIENTOS", 14, 14);
         doc.setFontSize(10);
         doc.text(`Planificación vs Ejecución — Mes: ${mesStr}`, 14, 22);
 
@@ -940,7 +929,7 @@ export function generarPDFCalendario(animales, eventos, alertas, filtros = null)
         doc.rect(14, 32, 269, 10, "F");
         doc.setTextColor(50, 50, 50);
         doc.setFontSize(9);
-        doc.text("LEYENDA: [HECHO] Realizado | [PLAN] Programado en Calendario | [SUG] Sugerencia Técnica por Temporada", 20, 38);
+        doc.text("LEYENDA: [HECHO] Realizado | [PLAN] Programado en Calendario", 20, 38);
 
         autoTable(doc, {
             startY: 45,
@@ -964,7 +953,7 @@ export function generarPDFCalendario(animales, eventos, alertas, filtros = null)
             ])
         });
 
-        doc.save(`Calendario_Manejo_${format(new Date(), "yyyy-MM")}.pdf`);
+        doc.save(`Reporte_Movimientos_${format(new Date(), "yyyy-MM")}.pdf`);
     } catch (e) {
         console.error(e);
         alert("Error al generar PDF de Calendario");
@@ -987,8 +976,8 @@ export function generarExcelCalendario(animales, eventos, alertas, filtros = nul
             "S_ACT 3": d.actividadesSiguiente[2]
         }));
         const ws = XLSX.utils.json_to_sheet(wsData);
-        XLSX.utils.book_append_sheet(wb, ws, "Calendario");
-        XLSX.writeFile(wb, `Calendario_Manejo_${format(new Date(), "yyyy-MM")}.xlsx`);
+        XLSX.utils.book_append_sheet(wb, ws, "Movimientos");
+        XLSX.writeFile(wb, `Reporte_Movimientos_${format(new Date(), "yyyy-MM")}.xlsx`);
     } catch (e) { console.error(e); }
 }
 

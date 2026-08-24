@@ -487,7 +487,7 @@ export default function ReportesBI({ usuario }) {
                     <option value="iep">🟣 Detalle de Intervalo Entre Partos (IEP)</option>
                     <option value="hectareas">🚩 Producción por Hectárea</option>
                     <option value="desarrollo">📈 Desarrollo (GDP)</option>
-                    <option value="calendario">📅 Calendario de Manejo</option>
+                    <option value="calendario">📅 Reporte de Movimientos</option>
                     <option value="tratamientos">💊 Reporte de Tratamientos</option>
                 </select>
             </div>
