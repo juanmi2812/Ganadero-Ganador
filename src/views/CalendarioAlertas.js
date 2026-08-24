@@ -540,24 +540,26 @@ export default function CalendarioAlertas({ usuario }) {
                 </div>
               </div>
 
-              {CATALOGO_EVENTOS[datosEvento.tipo]?.length > 0 ? (
-                <div style={{ marginBottom: "16px" }}>
-                  <label style={labelStyle}>Insumo / Tipo Específico</label>
-                  <select value={datosEvento.resultado}
-                    onChange={e => setDatosEvento({ ...datosEvento, resultado: e.target.value })}
-                    style={{ ...inputStyle, border: "1px solid #3b82f6", backgroundColor: "#eff6ff" }} required>
-                    <option value="">-- Selecciona --</option>
-                    {CATALOGO_EVENTOS[datosEvento.tipo].map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              ) : (
-                <div style={{ marginBottom: "16px" }}>
-                  <label style={labelStyle}>Detalle / Observación</label>
-                  <input type="text" placeholder="Ej: 350 kg, Cría hembra sana..."
-                    value={datosEvento.resultado}
-                    onChange={e => setDatosEvento({ ...datosEvento, resultado: e.target.value })}
-                    style={inputStyle} required />
-                </div>
+              {datosEvento.tipo !== "Palpación" && (
+                CATALOGO_EVENTOS[datosEvento.tipo]?.length > 0 ? (
+                  <div style={{ marginBottom: "16px" }}>
+                    <label style={labelStyle}>Insumo / Tipo Específico</label>
+                    <select value={datosEvento.resultado}
+                      onChange={e => setDatosEvento({ ...datosEvento, resultado: e.target.value })}
+                      style={{ ...inputStyle, border: "1px solid #3b82f6", backgroundColor: "#eff6ff" }} required>
+                      <option value="">-- Selecciona --</option>
+                      {CATALOGO_EVENTOS[datosEvento.tipo].map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                ) : (
+                  <div style={{ marginBottom: "16px" }}>
+                    <label style={labelStyle}>Detalle / Observación</label>
+                    <input type="text" placeholder="Ej: 350 kg, Cría hembra sana..."
+                      value={datosEvento.resultado}
+                      onChange={e => setDatosEvento({ ...datosEvento, resultado: e.target.value })}
+                      style={inputStyle} required />
+                  </div>
+                )
               )}
 
               {/* Sección de Recordatorio Futuro */}
