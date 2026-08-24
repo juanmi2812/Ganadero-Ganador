@@ -1117,12 +1117,12 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
 
                 <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
                     <input type="date" value={datosEvento.fecha} onChange={(e) => setDatosEvento({...datosEvento, fecha: e.target.value})} style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} required />
-                    {datosEvento.tipo !== "Parto" && (
+                    {tipoFormularioIndiv === "tratamiento" && (
                       <input type="number" placeholder="Costo ($)" value={datosEvento.costo} onChange={(e) => setDatosEvento({...datosEvento, costo: e.target.value})} style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} />
                     )}
                   </div>
                 
-                <button type="submit" className="btn-primary" style={{ width: "100%" }}>Guardar Evento</button>
+                <button type="submit" className="btn-primary" style={{ width: "100%" }}>Guardar {tipoFormularioIndiv === "tratamiento" ? "Tratamiento" : "Evento"}</button>
               </form>
             )}
 
