@@ -12,8 +12,8 @@ import ConfiguracionPotreros from "./views/ConfiguracionPotreros";
 import ProduccionLeche from "./views/ProduccionLeche";
 import ConfiguracionEquipo from "./views/ConfiguracionEquipo";
 import Movilizacion from "./views/Movilizacion";
-import { Home, CalendarDays, BarChart3, Settings, LogOut, Plus, Map, CreditCard, Droplets, Users, Truck } from "lucide-react";
-import logoConvivet from "./assets/logo_gg.png";
+import { Home, CalendarDays, BarChart3, Settings, LogOut, Plus, Map, CreditCard, Droplets, Users, Truck, Download } from "lucide-react";
+import logoConvivet from "./assets/logo_convivet.jpg";
 import { auth, db, onAuthStateChanged, signOut, functions } from "./firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
@@ -39,6 +39,30 @@ export default function App() {
   const [vistaActiva, setVistaActiva] = useState("dashboard");
   const [abrirModalTratamientoMasivo, setAbrirModalTratamientoMasivo] = useState(false);
   const [forzarPaywall, setForzarPaywall] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallClick = () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+        setDeferredPrompt(null);
+      });
+    }
+  };
 
   // Detecta sesión activa al arrancar (persistencia automática de Firebase)
   useEffect(() => {
@@ -133,6 +157,15 @@ export default function App() {
             </div>
         </div>
         <div className="top-header-actions">
+          {deferredPrompt && (
+            <button
+              onClick={handleInstallClick}
+              title="Instalar App en el dispositivo"
+              style={{ display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#10b981", color: "white", padding: "6px 12px", borderRadius: "8px", fontWeight: "bold" }}
+            >
+              <Download size={16} /> Instalar App
+            </button>
+          )}
           {/* Importar solo visible para admin */}
           {usuario.rol === "admin" && (
             <>
