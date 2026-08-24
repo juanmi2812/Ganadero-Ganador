@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, Plus, Users } from "lucide-react";
-import logoConvivet from "../assets/logo_convivet.jpg";
+import logoConvivet from "../assets/logo_gg.png";
 import {
   db,
   iniciarSesionCorreo,

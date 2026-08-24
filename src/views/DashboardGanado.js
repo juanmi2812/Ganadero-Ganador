@@ -684,7 +684,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   return (
     <div className="dashboard-container">
       
-      <Header subtitle="Control de inventario y análisis de rendimiento.">
+      <Header subtitle="Control de inventario y análisis de rendimiento." logo={require("../assets/logo_ganado.jpg")}>
         {usuario?.rol !== "tecnico" && (
           <div style={{ display: "flex", gap: "10px" }}>
             <button 

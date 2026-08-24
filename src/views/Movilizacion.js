@@ -215,8 +215,8 @@ export default function Movilizacion({ usuario }) {
   return (
     <div className="dashboard-container" style={{ padding: "20px", paddingBottom: "100px", maxWidth: "1200px", margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "30px" }}>
-        <div style={{ backgroundColor: "#dcfce7", padding: "12px", borderRadius: "12px" }}>
-          <Truck size={28} color="#166534" />
+        <div style={{ padding: "0" }}>
+          <img src={require("../assets/logo_movilizacion.jpg")} alt="Movilización" style={{ width: "64px", height: "64px", objectFit: "contain", borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "white" }} />
         </div>
         <div>
           <h1 style={{ margin: 0, fontSize: "24px", color: "#111827" }}>Tránsito y Movilización</h1>

@@ -13,7 +13,7 @@ import ProduccionLeche from "./views/ProduccionLeche";
 import ConfiguracionEquipo from "./views/ConfiguracionEquipo";
 import Movilizacion from "./views/Movilizacion";
 import { Home, CalendarDays, BarChart3, Settings, LogOut, Plus, Map, CreditCard, Droplets, Users, Truck } from "lucide-react";
-import logoConvivet from "./assets/logo_convivet.jpg";
+import logoConvivet from "./assets/logo_gg.png";
 import { auth, db, onAuthStateChanged, signOut, functions } from "./firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
@@ -124,6 +124,13 @@ export default function App() {
         <div className="top-header-brand">
           <img src={logoConvivet} alt="Convivet" />
           <span>Ganadero Ganador</span>
+        </div>
+        
+        {/* Espacio para Publicidad */}
+        <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", margin: "0 20px" }}>
+            <div style={{ width: "100%", maxWidth: "450px", height: "45px", backgroundColor: "#f9fafb", border: "2px dashed #e5e7eb", borderRadius: "8px", display: "flex", justifyContent: "center", alignItems: "center", color: "#9ca3af", fontSize: "12px", fontWeight: "bold" }}>
+                ESPACIO PARA PUBLICIDAD
+            </div>
         </div>
         <div className="top-header-actions">
           {/* Importar solo visible para admin */}
