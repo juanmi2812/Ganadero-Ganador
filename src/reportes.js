@@ -298,7 +298,7 @@ export function generarPDFReproduccion(eventos, filtros = null) {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
-    doc.text("REPORTE DE REPRODUCCIÓN", 14, 14);
+    doc.text("RESUMEN DE PALPACIONES", 14, 14);
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.text(`Análisis de palpaciones — Últimos 12 meses (${fechaHoy})`, 14, 22);
@@ -336,7 +336,7 @@ export function generarPDFReproduccion(eventos, filtros = null) {
       ]),
     });
 
-    doc.save(`Reporte_Reproduccion_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+    doc.save(`Resumen_Palpaciones_${format(new Date(), "yyyy-MM-dd")}.pdf`);
   } catch (error) {
     console.error(error);
     alert("Error al generar PDF de Reproducción");
@@ -367,7 +367,7 @@ export function generarExcelReproduccion(eventos, filtros = null) {
     const blob = new Blob([excelBuffer], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
-    saveAs(blob, `Reporte_Reproduccion_${fechaHoy}.xlsx`);
+    saveAs(blob, `Resumen_Palpaciones_${fechaHoy}.xlsx`);
   } catch (error) {
     console.error(error);
     alert("Error al generar Excel de Reproducción");

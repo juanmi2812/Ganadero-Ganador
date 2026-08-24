@@ -482,7 +482,7 @@ export default function ReportesBI({ usuario }) {
                 >
                     <option value="">-- Elige un reporte --</option>
                     <option value="vientres">🐄 Reporte de Vientres</option>
-                    <option value="reproduccion">📈 Reporte de Reproducción</option>
+                    <option value="reproduccion">📊 Resumen de Palpaciones</option>
                     <option value="proyeccion">📅 Proyección de Partos</option>
                     <option value="iep">🟣 Detalle de Intervalo Entre Partos (IEP)</option>
                     <option value="hectareas">🚩 Producción por Hectárea</option>
