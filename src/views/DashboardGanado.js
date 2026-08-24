@@ -728,22 +728,33 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
         </div>
       </div>
 
-      <div className="filter-bar">
-        {["Todos", "Vaca", "Novillona", "Semental", "Torete", "Becerra", "Becerro", "En Venta", "Bajas"].map((tipo) => (
-          <button 
-            key={tipo} 
-            className={`filter-pill ${filtroActivo === tipo ? "active" : ""}`}
-            onClick={() => setFiltroActivo(tipo)}
+      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "16px" }}>
+          <select 
+            value={filtroActivo} 
+            onChange={(e) => setFiltroActivo(e.target.value)}
+            style={{ flex: 1, minWidth: "140px", padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db", backgroundColor: "white", color: "#374151", fontSize: "14px", cursor: "pointer" }}
           >
-            {tipo}
-            <span className="filter-badge" style={{
-              background: filtroActivo === tipo ? "var(--verde-primario)" : "var(--gris-400)"
-            }}>
-              {conteos[tipo] || 0}
-            </span>
-          </button>
-        ))}
-      </div>
+            {["Todos", "Vaca", "Novillona", "Semental", "Torete", "Becerra", "Becerro", "En Venta", "Bajas"].map((tipo) => (
+              <option key={tipo} value={tipo}>{tipo === "Todos" ? "Todos los Tipos" : tipo}</option>
+            ))}
+          </select>
+
+          <select 
+            value={filtroPotrero} 
+            onChange={(e) => setFiltroPotrero(e.target.value)}
+            style={{ flex: 1, minWidth: "140px", padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db", backgroundColor: "white", color: "#374151", fontSize: "14px", cursor: "pointer" }}
+          >
+            {listaPotreros.map(h => <option key={h} value={h}>{h === "Todos" ? "🏞️ Todos los Potreros" : `📍 ${h}`}</option>)}
+          </select>
+          
+          <select 
+            value={filtroGrupo} 
+            onChange={(e) => setFiltroGrupo(e.target.value)}
+            style={{ flex: 1, minWidth: "140px", padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db", backgroundColor: "white", color: "#374151", fontSize: "14px", cursor: "pointer" }}
+          >
+            {listaGrupos.map(g => <option key={g} value={g}>{g === "Todos" ? "🏷️ Todos los Grupos" : `🏷️ ${g}`}</option>)}
+          </select>
+        </div>
 
       <div className="search-bar" style={{ gap: "10px", alignItems: "center" }}>
         <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "10px", backgroundColor: "#f9fafb", padding: "0 12px", borderRadius: "8px", border: "1px solid #d1d5db" }}>
@@ -756,23 +767,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
             style={{ border: "none", width: "100%", padding: "10px 0", backgroundColor: "transparent", outline: "none" }}
           />
         </div>
-      </div>
-      
-      <div className="search-bar" style={{ gap: "10px", marginTop: "10px" }}>
-        <select 
-          value={filtroPotrero} 
-          onChange={(e) => setFiltroPotrero(e.target.value)}
-          style={{ padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db", backgroundColor: "white", color: "#374151", fontSize: "14px", cursor: "pointer", maxWidth: "200px" }}
-        >
-          {listaPotreros.map(h => <option key={h} value={h}>{h === "Todos" ? "🏞️ Todos los Potreros" : `🚩 ${h}`}</option>)}
-        </select>
-        <select 
-          value={filtroGrupo} 
-          onChange={(e) => setFiltroGrupo(e.target.value)}
-          style={{ padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db", backgroundColor: "white", color: "#374151", fontSize: "14px", cursor: "pointer", maxWidth: "200px" }}
-        >
-          {listaGrupos.map(g => <option key={g} value={g}>{g === "Todos" ? "🏷️ Todos los Grupos" : `🏷️ ${g}`}</option>)}
-        </select>
       </div>
 
       <div style={{ paddingBottom: "40px" }}>

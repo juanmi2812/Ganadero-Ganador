@@ -359,7 +359,7 @@ export default function CalendarioAlertas({ usuario }) {
                     </div>
 
                     {/* Estado + Botones de Acción */}
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px", flexShrink: 0, marginLeft: "10px" }}>
+                    <div style={{ display: "flex", flexDirection: "row", alignItems: "center", flexWrap: "wrap", width: "100%", justifyContent: "space-between", gap: "6px", flexShrink: 0, marginLeft: "0" }}>
                       <span style={{
                         display: "inline-flex", alignItems: "center", gap: "4px",
                         fontSize: "11px", fontWeight: "600", padding: "3px 8px", borderRadius: "12px",

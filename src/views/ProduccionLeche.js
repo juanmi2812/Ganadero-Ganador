@@ -106,7 +106,7 @@ export default function ProduccionLeche({ usuario }) {
 
   return (
     <div className="dashboard-container" style={{ padding: "20px", paddingBottom: "100px", maxWidth: "1200px", margin: "0 auto" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "30px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "30px" }}>
         <div style={{ padding: "0" }}>
           <img src={require("../assets/logo_leche.jpg")} alt="Leche" style={{ width: "64px", height: "64px", objectFit: "contain", borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "white" }} />
         </div>
@@ -116,29 +116,29 @@ export default function ProduccionLeche({ usuario }) {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "40px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "20px", marginBottom: "40px" }}>
         <button 
           onClick={() => setModalTanque(true)}
-          style={{ backgroundColor: "white", padding: "24px", borderRadius: "12px", border: "1px solid #e5e7eb", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", cursor: "pointer", transition: "all 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}
+          style={{ backgroundColor: "white", padding: "24px", borderRadius: "12px", border: "1px solid #e5e7eb", display: "flex", alignItems: "center", gap: "16px", cursor: "pointer", transition: "all 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}
           className="hover-card"
         >
-          <div style={{ backgroundColor: "#dbeafe", padding: "16px", borderRadius: "50%" }}>
-            <BarChart2 size={32} color="#2563eb" />
+          <div style={{ backgroundColor: "#dbeafe", padding: "12px", borderRadius: "12px", flexShrink: 0 }}>
+            <BarChart2 size={24} color="#2563eb" />
           </div>
-          <h3 style={{ margin: 0, color: "#1f2937", fontSize: "18px" }}>Registro en Tanque</h3>
-          <p style={{ margin: 0, color: "#6b7280", fontSize: "13px", textAlign: "center" }}>Registra la producción diaria global, crías y autoconsumo.</p>
+          <div style={{ textAlign: "left" }}><h3 style={{ margin: 0, color: "#1f2937", fontSize: "16px" }}>Registro en Tanque</h3>
+          <p style={{ margin: 0, color: "#6b7280", fontSize: "13px", textAlign: "left" }}>Registra la producción diaria global, crías y autoconsumo.</p></div>
         </button>
 
         <button 
           onClick={() => setModalIndividual(true)}
-          style={{ backgroundColor: "white", padding: "24px", borderRadius: "12px", border: "1px solid #e5e7eb", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", cursor: "pointer", transition: "all 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}
+          style={{ backgroundColor: "white", padding: "24px", borderRadius: "12px", border: "1px solid #e5e7eb", display: "flex", alignItems: "center", gap: "16px", cursor: "pointer", transition: "all 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}
           className="hover-card"
         >
-          <div style={{ backgroundColor: "#f3e8ff", padding: "16px", borderRadius: "50%" }}>
-            <List size={32} color="#9333ea" />
+          <div style={{ backgroundColor: "#f3e8ff", padding: "12px", borderRadius: "12px", flexShrink: 0 }}>
+            <List size={24} color="#9333ea" />
           </div>
-          <h3 style={{ margin: 0, color: "#1f2937", fontSize: "18px" }}>Registro Individual</h3>
-          <p style={{ margin: 0, color: "#6b7280", fontSize: "13px", textAlign: "center" }}>Anota cuántos litros dio una vaca específica hoy.</p>
+          <div style={{ textAlign: "left" }}><h3 style={{ margin: 0, color: "#1f2937", fontSize: "16px" }}>Registro Individual</h3>
+          <p style={{ margin: 0, color: "#6b7280", fontSize: "13px", textAlign: "left" }}>Anota cuántos litros dio una vaca específica hoy.</p></div>
         </button>
       </div>
 
@@ -182,7 +182,7 @@ export default function ProduccionLeche({ usuario }) {
 
         <div style={{ padding: "20px" }}>
           {cargando ? (
-            <p style={{ textAlign: "center", color: "#6b7280" }}>Cargando registros...</p>
+            <p style={{ textAlign: "left", color: "#6b7280" }}>Cargando registros...</p>
           ) : pestanaHistorial === "tanque" ? (
             registrosTanque.length > 0 ? (
               <div style={{ overflowX: "auto" }}>
@@ -219,7 +219,7 @@ export default function ProduccionLeche({ usuario }) {
                 </table>
               </div>
             ) : (
-              <p style={{ textAlign: "center", color: "#6b7280", padding: "20px 0" }}>No hay registros de tanque aún.</p>
+              <p style={{ textAlign: "left", color: "#6b7280", padding: "20px 0" }}>No hay registros de tanque aún.</p>
             )
           ) : (
             registrosIndividuales.length > 0 ? (
@@ -258,7 +258,7 @@ export default function ProduccionLeche({ usuario }) {
                 </table>
               </div>
             ) : (
-              <p style={{ textAlign: "center", color: "#6b7280", padding: "20px 0" }}>No hay registros individuales aún.</p>
+              <p style={{ textAlign: "left", color: "#6b7280", padding: "20px 0" }}>No hay registros individuales aún.</p>
             )
           )}
         </div>

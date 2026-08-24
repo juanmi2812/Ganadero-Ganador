@@ -346,7 +346,7 @@ export default function ConfiguracionPotreros({ usuario }) {
 
   return (
     <div className="dashboard-container">
-      <div className="page-header" style={{ marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="page-header" style={{ marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
         <div>
           <h1 style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <img src={require("../assets/logo_potreros.jpg")} alt="Potreros" style={{ width: "64px", height: "64px", objectFit: "contain", borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "white" }} />
@@ -387,8 +387,8 @@ export default function ConfiguracionPotreros({ usuario }) {
         </div>
 
         {usuario?.rol === "admin" && (
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <input type="text" placeholder="Ej: 30 189 1447 002" value={nuevaUpp} onChange={e => setNuevaUpp(e.target.value)} style={{...inputStyle, width: "250px", margin: 0}} />
+          <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+            <input type="text" placeholder="Ej: 30 189 1447 002" value={nuevaUpp} onChange={e => setNuevaUpp(e.target.value)} style={{...inputStyle, flex: 1, minWidth: "150px", margin: 0}} />
             <button onClick={agregarUpp} className="btn-primary" style={{ margin: 0, width: "auto" }} disabled={guardandoUpp || !nuevaUpp.trim()}>
               {guardandoUpp ? "Guardando..." : "Añadir UPP"}
             </button>
@@ -895,7 +895,7 @@ export default function ConfiguracionPotreros({ usuario }) {
                 {crearRecordatorio && (
                   <div style={{ marginTop: "10px" }}>
                     <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#14532d" }}>Fecha del Recordatorio</label>
-                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
                       <input
                         type="date"
                         value={fechaRecordatorio}
