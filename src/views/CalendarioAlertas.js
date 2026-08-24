@@ -529,7 +529,7 @@ export default function CalendarioAlertas({ usuario }) {
                   <select value={datosEvento.tipo}
                     onChange={e => setDatosEvento({ ...datosEvento, tipo: e.target.value, resultado: "" })}
                     style={inputStyle}>
-                    {TIPOS_EVENTO.map(t => <option key={t} value={t}>{t}</option>)}
+                    {TIPOS_EVENTO.filter(t => t !== "Parto" && t !== "Aborto").map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
@@ -544,12 +544,14 @@ export default function CalendarioAlertas({ usuario }) {
                 CATALOGO_EVENTOS[datosEvento.tipo]?.length > 0 ? (
                   <div style={{ marginBottom: "16px" }}>
                     <label style={labelStyle}>Insumo / Tipo Específico</label>
-                    <select value={datosEvento.resultado}
+                    <input list="insumos-list"
+                      placeholder="Selecciona o escribe uno nuevo..."
+                      value={datosEvento.resultado}
                       onChange={e => setDatosEvento({ ...datosEvento, resultado: e.target.value })}
-                      style={{ ...inputStyle, border: "1px solid #3b82f6", backgroundColor: "#eff6ff" }} required>
-                      <option value="">-- Selecciona --</option>
+                      style={{ ...inputStyle, border: "1px solid #3b82f6", backgroundColor: "#eff6ff" }} required />
+                    <datalist id="insumos-list">
                       {CATALOGO_EVENTOS[datosEvento.tipo].map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
+                    </datalist>
                   </div>
                 ) : (
                   <div style={{ marginBottom: "16px" }}>
