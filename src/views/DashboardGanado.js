@@ -1085,10 +1085,12 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                 </select>
 
                 {CATALOGO_EVENTOS[datosEvento.tipo]?.length > 0 && (
-                  <select value={datosEvento.resultado} onChange={(e) => setDatosEvento({...datosEvento, resultado: e.target.value})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #3b82f6", borderRadius: "4px", backgroundColor: "#eff6ff" }} required>
-                    <option value="">-- Selecciona el insumo / tipo --</option>
-                    {CATALOGO_EVENTOS[datosEvento.tipo].map(sub => <option key={sub} value={sub}>{sub}</option>)}
-                  </select>
+                  <>
+                    <input list="insumos-indiv" placeholder="Selecciona el insumo / tipo o escribe uno nuevo..." value={datosEvento.resultado} onChange={(e) => setDatosEvento({...datosEvento, resultado: e.target.value})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #3b82f6", borderRadius: "4px", backgroundColor: "#eff6ff", boxSizing: "border-box" }} required />
+                    <datalist id="insumos-indiv">
+                      {CATALOGO_EVENTOS[datosEvento.tipo].map(sub => <option key={sub} value={sub}>{sub}</option>)}
+                    </datalist>
+                  </>
                 )}
 
                 {(!CATALOGO_EVENTOS[datosEvento.tipo] || CATALOGO_EVENTOS[datosEvento.tipo].length === 0) && (
@@ -1171,10 +1173,16 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
               </select>
 
               {CATALOGO_EVENTOS[datosMasivos.tipo]?.length > 0 && (
-                <select value={datosMasivos.resultado} onChange={(e) => setDatosMasivos({...datosMasivos, resultado: e.target.value})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} required>
-                  <option value="">Selecciona una opción...</option>
-                  {CATALOGO_EVENTOS[datosMasivos.tipo].map(op => <option key={op} value={op}>{op}</option>)}
-                </select>
+                <>
+                  <input list="insumos-masivo" placeholder="Selecciona una opción o escribe una nueva..." value={datosMasivos.resultado} onChange={(e) => setDatosMasivos({...datosMasivos, resultado: e.target.value})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px", boxSizing: "border-box" }} required />
+                  <datalist id="insumos-masivo">
+                    {CATALOGO_EVENTOS[datosMasivos.tipo].map(op => <option key={op} value={op}>{op}</option>)}
+                  </datalist>
+                </>
+              )}
+
+              {(!CATALOGO_EVENTOS[datosMasivos.tipo] || CATALOGO_EVENTOS[datosMasivos.tipo].length === 0) && (
+                <input type="text" placeholder="Resultado / Observación..." value={datosMasivos.resultado} onChange={(e) => setDatosMasivos({...datosMasivos, resultado: e.target.value})} style={{ width: "100%", marginBottom: "10px", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px", boxSizing: "border-box" }} required />
               )}
 
               <input type="date" value={datosMasivos.fecha} onChange={(e) => setDatosMasivos({...datosMasivos, fecha: e.target.value})} style={{ width: "100%", marginBottom: "15px", padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} required />
