@@ -285,77 +285,86 @@ export default function ReportesBI({ usuario }) {
           </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", marginBottom: "24px" }}>
+      <div className="kpi-grid" style={{ marginBottom: "24px" }}>
         
         {/* KPI 1: Volumen */}
-        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #3b82f6", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
+        <div className="kpi-card" style={{ position: "relative" }}>
             <button onClick={() => setInfoKpi({titulo: "Volumen Filtrado", descripcion: "Muestra el número total de cabezas de ganado que coinciden con los filtros aplicados arriba.", calculo: "Conteo directo de animales activos en el inventario según categoría, estatus y género."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
-            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><Activity size={16}/> VOLUMEN FILTRADO</div>
-            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#111827", marginTop: "8px" }}>{cabezasTotales} <span style={{ fontSize:"14px", color: "#9ca3af"}}>cabezas</span></div>
+            <div style={{ fontSize: "22px", marginBottom: "6px" }}>🐄</div>
+            <div className="kpi-value" style={{ color: "#3b82f6" }}>{cabezasTotales}</div>
+            <div className="kpi-label">Volumen Filtrado</div>
+            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>Cabezas totales</div>
         </div>
 
         {/* KPI 2: Tasa de Preñez */}
-        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #10b981", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
+        <div className="kpi-card" style={{ position: "relative" }}>
             <button onClick={() => setInfoKpi({titulo: "Tasa de Preñez (Natalidad)", descripcion: "Mide la eficiencia reproductiva del hato, indicando qué proporción de las hembras están preñadas.", calculo: "(Vientres Gestantes / Total de Vientres en el rancho) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
-            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><TrendingUp size={16}/> TASA DE PREÑEZ</div>
-            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#10b981", marginTop: "8px" }}>{tasaPrenez}%</div>
+            <div style={{ fontSize: "22px", marginBottom: "6px" }}>📈</div>
+            <div className="kpi-value" style={{ color: "#10b981" }}>{tasaPrenez}%</div>
+            <div className="kpi-label">Tasa de Preñez</div>
             <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>{vientresGestantes} de {totalVientres} vientres gestantes</div>
         </div>
 
         {/* KPI: IEP - Intervalo Entre Partos */}
-        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #c026d3", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
+        <div className="kpi-card" style={{ position: "relative" }}>
             <button onClick={() => setInfoKpi({titulo: "Intervalo Entre Partos (IEP)", descripcion: "Promedio de días transcurridos entre dos partos consecutivos de la misma vaca. Es el indicador de oro de la eficiencia reproductiva.", calculo: "Suma de días entre partos / Conteo de intervalos válidos (365-410 días es la meta)."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
-            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><Activity size={16}/> INT. ENTRE PARTOS</div>
-            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#c026d3", marginTop: "8px" }}>{avgIEP || "--"} <span style={{ fontSize: "14px", color: "#9ca3af" }}>días</span></div>
-            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>Eficiencia reproductiva del hato</div>
+            <div style={{ fontSize: "22px", marginBottom: "6px" }}>⏱️</div>
+            <div className="kpi-value" style={{ color: "#c026d3" }}>{avgIEP || "--"}</div>
+            <div className="kpi-label">Int. Entre Partos</div>
+            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>Días (promedio)</div>
         </div>
 
         {/* KPI 3: Tasa de Infertilidad */}
-        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #ef4444", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
+        <div className="kpi-card" style={{ position: "relative" }}>
             <button onClick={() => setInfoKpi({titulo: "Tasa de Infertilidad", descripcion: "Identifica la proporción de vientres con posible infertilidad debido a su edad avanzada sin reportar crías.", calculo: "(Vientres ≥ 48m de edad sin parto / Total de Vientres) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
-            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><AlertTriangle size={16}/> TASA DE INFERTILIDAD</div>
-            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#ef4444", marginTop: "8px" }}>{porcentajeInfertilidad}%</div>
+            <div style={{ fontSize: "22px", marginBottom: "6px" }}>⚠️</div>
+            <div className="kpi-value" style={{ color: "#ef4444" }}>{porcentajeInfertilidad}%</div>
+            <div className="kpi-label">Tasa de Infertilidad</div>
             <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>Vientres ≥ 48m sin parto ({vientresInfertiles})</div>
         </div>
 
         {/* KPI 4: Bajas Generales */}
-        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #f97316", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
+        <div className="kpi-card" style={{ position: "relative" }}>
             <button onClick={() => setInfoKpi({titulo: "Índice de Bajas Totales", descripcion: "Evalúa las bajas totales del rancho por venta, muerte o robo. Mantener este número bajo es vital para la rentabilidad.", calculo: "(Cabezas dadas de baja / Inventario base estimado) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
-            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><Activity size={16}/> ÍNDICE DE BAJAS</div>
-            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#f97316", marginTop: "8px" }}>{tasaBajasGeneral}%</div>
+            <div style={{ fontSize: "22px", marginBottom: "6px" }}>🪦</div>
+            <div className="kpi-value" style={{ color: "#f97316" }}>{tasaBajasGeneral}%</div>
+            <div className="kpi-label">Índice de Bajas</div>
             <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>{muertesCount} bajas registradas</div>
         </div>
 
         {/* KPI 5: Carga Animal */}
-        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #8b5cf6", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
+        <div className="kpi-card" style={{ position: "relative" }}>
             <button onClick={() => setInfoKpi({titulo: "Carga Animal (Promedio)", descripcion: "Indica cuántos animales tienes pastando en promedio por cada hectárea de tu rancho.", calculo: "Total de Cabezas / Total de Hectáreas en los potreros."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
-            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><Activity size={16}/> CARGA ANIMAL</div>
-            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#8b5cf6", marginTop: "8px" }}>{cargaAnimalGlobal}</div>
+            <div style={{ fontSize: "22px", marginBottom: "6px" }}>🏞️</div>
+            <div className="kpi-value" style={{ color: "#8b5cf6" }}>{cargaAnimalGlobal}</div>
+            <div className="kpi-label">Carga Animal</div>
             <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>Cabezas por hectárea</div>
         </div>
 
         {/* KPI 6: Desecho */}
-        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #eab308", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
+        <div className="kpi-card" style={{ position: "relative" }}>
             <button onClick={() => setInfoKpi({titulo: "Tasa de Desecho (Culling)", descripcion: "Mide el porcentaje de vientres improductivos que fueron retirados o vendidos.", calculo: "(Ventas por Desecho / Total de Vacas actuales) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
-            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><Archive size={16}/> TASA DE DESECHO</div>
-            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#eab308", marginTop: "8px" }}>{metricas.desecho}%</div>
+            <div style={{ fontSize: "22px", marginBottom: "6px" }}>🗑️</div>
+            <div className="kpi-value" style={{ color: "#eab308" }}>{metricas.desecho}%</div>
+            <div className="kpi-label">Tasa de Desecho</div>
             <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>{metricas.conteoDesecho} vacas de desecho</div>
         </div>
 
         {/* KPI 7: Edad al Primer Parto */}
-        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #14b8a6", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
+        <div className="kpi-card" style={{ position: "relative" }}>
             <button onClick={() => setInfoKpi({titulo: "Edad al Primer Parto", descripcion: "Promedio de meses que tardan las hembras desde que nacen hasta que tienen su primera cría.", calculo: "Promedio de edad (meses) en la fecha del primer evento de parto registrado por vientre."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
-            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><Activity size={16}/> EDAD PRIMER PARTO</div>
-            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#14b8a6", marginTop: "8px" }}>{edadPrimerParto}</div>
+            <div style={{ fontSize: "22px", marginBottom: "6px" }}>🎂</div>
+            <div className="kpi-value" style={{ color: "#14b8a6" }}>{edadPrimerParto}</div>
+            <div className="kpi-label">Edad Primer Parto</div>
             <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>Meses (promedio)</div>
         </div>
 
-
         {/* KPI 9: Producción de Leche (Promedio Individual) */}
-        <div style={{ backgroundColor: "white", padding: "16px", borderRadius: "12px", borderLeft: "4px solid #8b5cf6", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", position: "relative" }}>
+        <div className="kpi-card" style={{ position: "relative" }}>
             <button onClick={() => setInfoKpi({titulo: "Promedio Leche Individual", descripcion: "Promedio de litros de leche producidos por vaca según los registros individuales.", calculo: "Suma de litros individuales / Número de registros individuales."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
-            <div style={{ color: "#6b7280", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}><Activity size={16}/> PROM. LECHE/VACA</div>
-            <div style={{ fontSize: "28px", fontWeight: "bold", color: "#8b5cf6", marginTop: "8px" }}>{promedioLeche}</div>
+            <div style={{ fontSize: "22px", marginBottom: "6px" }}>🥛</div>
+            <div className="kpi-value" style={{ color: "#8b5cf6" }}>{promedioLeche}</div>
+            <div className="kpi-label">Prom. Leche/Vaca</div>
             <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>Litros (histórico)</div>
         </div>
 
@@ -368,7 +377,7 @@ export default function ReportesBI({ usuario }) {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))", gap: "24px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px" }}>
         <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
           <h3 style={{ marginTop: 0, color: "#374151" }}>Agrupación por Categoría {vistaFinanciera ? "($ Invest)" : "(Cabezas)"}</h3>
           <div style={{ height: "300px", width: "100%", marginTop: "20px" }}>
@@ -379,7 +388,7 @@ export default function ReportesBI({ usuario }) {
                   cx="50%" cy="50%" 
                   innerRadius={50} outerRadius={70} 
                   paddingAngle={5} dataKey="value"
-                  label={({ name, value }) => vistaFinanciera ? `${name}: ${formatoMonedaCorta(value)}` : `${name}: ${value}`}
+                  
                 >
                   {datosCategoria.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={paletaActiva[index % paletaActiva.length]} />
@@ -422,7 +431,7 @@ export default function ReportesBI({ usuario }) {
                     cx="50%" cy="50%" 
                     innerRadius={50} outerRadius={70} 
                     paddingAngle={5} dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}
+                    
                   >
                     {datosGrupos.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={paletaActiva[(index + 2) % paletaActiva.length]} />
