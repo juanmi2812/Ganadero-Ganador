@@ -158,16 +158,22 @@ exports.createPortalSession = functions.https.onCall(async (data, context) => {
   return { url: session.url };
 });
 
+const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
+
 exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
   const sig = req.headers["stripe-signature"];
-  // Por ahora, sin verificar la firma para poder capturar el primer evento.
-  // En producción, aquí va el whsec_...
-  let event = req.body;
+  let event;
 
   try {
-    // Si viene crudo, parsearlo. Firebase Functions expone req.rawBody para firmas.
-    if (Buffer.isBuffer(req.rawBody)) {
-        event = JSON.parse(req.rawBody.toString());
+    if (stripeWebhookSecret) {
+      // Producción: Verificar firma usando req.rawBody
+      event = stripe.webhooks.constructEvent(req.rawBody, sig, stripeWebhookSecret);
+    } else {
+      // Desarrollo / Local sin secreto
+      event = req.body;
+      if (Buffer.isBuffer(req.rawBody)) {
+          event = JSON.parse(req.rawBody.toString());
+      }
     }
   } catch (err) {
     console.error("Webhook Error", err.message);
