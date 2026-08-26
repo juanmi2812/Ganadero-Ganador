@@ -1,5 +1,17 @@
 import React, { useState, useEffect } from "react";
-import Select from "react-select";
+import Select, { components } from "react-select";
+
+const CheckboxOption = (props) => (
+  <components.Option {...props}>
+    <input
+      type="checkbox"
+      checked={props.isSelected}
+      onChange={() => null}
+      style={{ marginRight: "8px" }}
+    />
+    <label>{props.label}</label>
+  </components.Option>
+);
 import { Search, X, Plus, Activity, Baby, Scale, AlertTriangle, TrendingUp } from "lucide-react";
 import { collection, onSnapshot, addDoc, query, where, doc, updateDoc, getDocs, deleteDoc } from "firebase/firestore"; 
 import { differenceInMonths } from "date-fns";
@@ -734,6 +746,9 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "10px", marginBottom: "16px" }}>
           <Select 
             isMulti
+            closeMenuOnSelect={false}
+            hideSelectedOptions={false}
+            components={{ Option: CheckboxOption }}
             options={["Todos", "Vaca", "Novillona", "Semental", "Torete", "Becerra", "Becerro", "En Venta", "Bajas"].map(t => ({value: t, label: t === "Todos" ? "Todos los Tipos" : t}))}
             value={filtroActivo.map(v => ({ value: v, label: v === "Todos" ? "Todos los Tipos" : v }))}
             onChange={(selected) => setFiltroActivo(selected.length ? selected.map(s => s.value) : ["Todos"])}
@@ -742,6 +757,9 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
           />
           <Select 
             isMulti
+            closeMenuOnSelect={false}
+            hideSelectedOptions={false}
+            components={{ Option: CheckboxOption }}
             options={listaPotreros.map(h => ({value: h, label: h === "Todos" ? "🏞️ Todos los Potreros" : `📍 ${h}`}))}
             value={filtroPotrero.map(v => ({ value: v, label: v === "Todos" ? "🏞️ Todos los Potreros" : `📍 ${v}` }))}
             onChange={(selected) => setFiltroPotrero(selected.length ? selected.map(s => s.value) : ["Todos"])}
@@ -750,6 +768,9 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
           />
           <Select 
             isMulti
+            closeMenuOnSelect={false}
+            hideSelectedOptions={false}
+            components={{ Option: CheckboxOption }}
             options={listaGrupos.map(g => ({value: g, label: g === "Todos" ? "🏷️ Todos los Grupos" : `🏷️ ${g}`}))}
             value={filtroGrupo.map(v => ({ value: v, label: v === "Todos" ? "🏷️ Todos los Grupos" : `🏷️ ${v}` }))}
             onChange={(selected) => setFiltroGrupo(selected.length ? selected.map(s => s.value) : ["Todos"])}

@@ -368,6 +368,10 @@ export default function CalendarioAlertas({ usuario }) {
                       }}>
                         {estado.icon} {estado.label}
                       </span>
+                    </div>
+
+                    {/* Botones de Acción abajo a la derecha */}
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", width: "100%", flexWrap: "wrap", marginTop: "4px" }}>
                       <div style={{ display: "flex", gap: "6px" }}>
                         {!alerta.completada && (
                           <button
