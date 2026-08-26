@@ -319,51 +319,52 @@ export default function CalendarioAlertas({ usuario }) {
                 const esPasada = !alerta.completada && isBefore(new Date(alerta.fechaProgramada + "T00:00:00"), hoy);
                 return (
                   <div key={alerta.id} style={{
-                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    display: "flex", flexDirection: "column", gap: "10px",
                     padding: "12px 0", borderBottom: "1px solid #f3f4f6",
                   }}>
-                    {/* Fecha */}
-                    <div style={{ display: "flex", gap: "12px", alignItems: "center", flex: 1 }}>
-                      <div style={{
-                        minWidth: "50px", textAlign: "center",
-                        backgroundColor: alerta.completada ? "#f0fdf4" : esPasada ? "#fef2f2" : "#eff6ff",
-                        borderRadius: "8px", padding: "6px 4px", flexShrink: 0,
-                      }}>
-                        <div style={{ fontSize: "18px", fontWeight: "700", color: alerta.completada ? "#166534" : esPasada ? "#dc2626" : "#1d4ed8" }}>
-                          {alerta.fechaProgramada?.slice(8)}
+                    {/* Fecha y Detalle en row, y Estado a la derecha */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", width: "100%" }}>
+                      {/* Fecha */}
+                      <div style={{ display: "flex", gap: "12px", alignItems: "center", flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          minWidth: "50px", textAlign: "center",
+                          backgroundColor: alerta.completada ? "#f0fdf4" : esPasada ? "#fef2f2" : "#eff6ff",
+                          borderRadius: "8px", padding: "6px 4px", flexShrink: 0,
+                        }}>
+                          <div style={{ fontSize: "18px", fontWeight: "700", color: alerta.completada ? "#166534" : esPasada ? "#dc2626" : "#1d4ed8" }}>
+                            {alerta.fechaProgramada?.slice(8)}
+                          </div>
+                          <div style={{ fontSize: "10px", color: alerta.completada ? "#166534" : esPasada ? "#dc2626" : "#1d4ed8", textTransform: "uppercase" }}>
+                            {format(new Date(alerta.fechaProgramada + "T00:00:00"), "MMM", { locale: es })}
+                          </div>
                         </div>
-                        <div style={{ fontSize: "10px", color: alerta.completada ? "#166534" : esPasada ? "#dc2626" : "#1d4ed8", textTransform: "uppercase" }}>
-                          {format(new Date(alerta.fechaProgramada + "T00:00:00"), "MMM", { locale: es })}
+                        {/* Detalle */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: "600", fontSize: "14px", color: "#111827" }}>{alerta.tipo}</div>
+                          {alerta.resultado && <div style={{ fontSize: "12px", color: "#6b7280" }}>{alerta.resultado}</div>}
+                          {alerta.titulo && (
+                            <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {alerta.titulo.split("-")[1]?.trim() || alerta.titulo}
+                            </div>
+                          )}
+                          {alerta.fechaRecordatorio && (
+                            <div style={{
+                              fontSize: "11px", fontWeight: "600", marginTop: "4px",
+                              display: "flex", alignItems: "center", gap: "4px",
+                              color: hoy >= new Date(alerta.fechaRecordatorio + "T00:00:00") && !alerta.completada ? "#ea580c" : "#9ca3af"
+                            }}>
+                              <Bell size={12} />
+                              {hoy >= new Date(alerta.fechaRecordatorio + "T00:00:00") && !alerta.completada ? "¡Recordatorio Activo!" : `Recordatorio: ${alerta.fechaRecordatorio.slice(8)}/${alerta.fechaRecordatorio.slice(5, 7)}`}
+                            </div>
+                          )}
                         </div>
                       </div>
-                      {/* Detalle */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: "600", fontSize: "14px", color: "#111827" }}>{alerta.tipo}</div>
-                        {alerta.resultado && <div style={{ fontSize: "12px", color: "#6b7280" }}>{alerta.resultado}</div>}
-                        {alerta.titulo && (
-                          <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: "2px" }}>
-                            {alerta.titulo.split("—")[1]?.trim() || alerta.titulo}
-                          </div>
-                        )}
-                        {alerta.fechaRecordatorio && (
-                          <div style={{
-                            fontSize: "11px", fontWeight: "600", marginTop: "4px",
-                            display: "flex", alignItems: "center", gap: "4px",
-                            color: hoy >= new Date(alerta.fechaRecordatorio + "T00:00:00") && !alerta.completada ? "#ea580c" : "#9ca3af"
-                          }}>
-                            <Bell size={12} />
-                            {hoy >= new Date(alerta.fechaRecordatorio + "T00:00:00") && !alerta.completada ? "¡Recordatorio Activo!" : `Recordatorio: ${alerta.fechaRecordatorio.slice(8)}/${alerta.fechaRecordatorio.slice(5, 7)}`}
-                          </div>
-                        )}
-                      </div>
-                    </div>
 
-                    {/* Estado + Botones de Acción */}
-                    <div style={{ display: "flex", flexDirection: "row", alignItems: "center", flexWrap: "wrap", width: "100%", justifyContent: "space-between", gap: "6px", flexShrink: 0, marginLeft: "0" }}>
+                      {/* Estado Pill a la derecha superior */}
                       <span style={{
                         display: "inline-flex", alignItems: "center", gap: "4px",
-                        fontSize: "11px", fontWeight: "600", padding: "3px 8px", borderRadius: "12px",
-                        backgroundColor: estado.bg, color: estado.color, whiteSpace: "nowrap",
+                        fontSize: "11px", fontWeight: "600", padding: "4px 8px", borderRadius: "12px",
+                        backgroundColor: estado.bg, color: estado.color, whiteSpace: "nowrap", flexShrink: 0
                       }}>
                         {estado.icon} {estado.label}
                       </span>

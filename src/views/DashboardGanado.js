@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Select from "react-select";
 import { Search, X, Plus, Activity, Baby, Scale, AlertTriangle, TrendingUp } from "lucide-react";
 import { collection, onSnapshot, addDoc, query, where, doc, updateDoc, getDocs, deleteDoc } from "firebase/firestore"; 
 import { differenceInMonths } from "date-fns";
@@ -12,9 +13,9 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   const [potrerosCol, setPotrerosCol] = useState([]);
   const [gruposCol, setGruposCol] = useState([]);
   const [busqueda, setBusqueda] = useState("");
-  const [filtroActivo, setFiltroActivo] = useState("Todos");
-  const [filtroPotrero, setFiltroPotrero] = useState("Todos");
-  const [filtroGrupo, setFiltroGrupo] = useState("Todos");
+  const [filtroActivo, setFiltroActivo] = useState(["Todos"]);
+  const [filtroPotrero, setFiltroPotrero] = useState(["Todos"]);
+  const [filtroGrupo, setFiltroGrupo] = useState(["Todos"]);
   const [config, setConfig] = useState(null); // Finanzas
   
   const [animalActivo, setAnimalActivo] = useState(null);
@@ -285,19 +286,21 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     const cumpleBusqueda = animal.arete?.toLowerCase().includes(busqueda.toLowerCase());
     if (!cumpleBusqueda) return false;
 
-    const cumplePotrero = filtroPotrero === "Todos" || (animal.potrero || animal.hectarea) === filtroPotrero;
+    const cumplePotrero = filtroPotrero.includes("Todos") || filtroPotrero.includes(animal.potrero || animal.hectarea);
     if (!cumplePotrero) return false;
 
-    const cumpleGrupo = filtroGrupo === "Todos" || animal.grupo === filtroGrupo;
+    const cumpleGrupo = filtroGrupo.includes("Todos") || filtroGrupo.includes(animal.grupo);
     if (!cumpleGrupo) return false;
 
-    if (filtroActivo === "Todos") return true;
-    if (filtroActivo === "Bajas") return animal.estado?.includes('Baja');
-    if (filtroActivo === "En Venta") return animal.estado === "Disponible para Venta" || animal.estado === "Desecho";
-    if (filtroActivo === "Machos") return animal.sexo?.toLowerCase() === "macho" && !animal.estado?.includes('Baja');
-    if (filtroActivo === "Hembras") return animal.sexo?.toLowerCase() === "hembra" && !animal.estado?.includes('Baja');
+    if (filtroActivo.includes("Todos")) return true;
     
-    return animal.tipo === filtroActivo && !animal.estado?.includes('Baja') && animal.estado !== "Disponible para Venta" && animal.estado !== "Desecho";
+    return filtroActivo.some(f => {
+      if (f === "Bajas") return animal.estado?.includes('Baja');
+      if (f === "En Venta") return animal.estado === "Disponible para Venta" || animal.estado === "Desecho";
+      if (f === "Machos") return animal.sexo?.toLowerCase() === "macho" && !animal.estado?.includes('Baja');
+      if (f === "Hembras") return animal.sexo?.toLowerCase() === "hembra" && !animal.estado?.includes('Baja');
+      return animal.tipo === f && !animal.estado?.includes('Baja') && animal.estado !== "Disponible para Venta" && animal.estado !== "Desecho";
+    });
   });
 
   const listaPotreros = ["Todos", ...new Set([...inventario.map(a => a.potrero || a.hectarea), ...potrerosCol.map(p => p.nombre)].filter(Boolean))].sort();
@@ -706,55 +709,54 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
       </Header>
 
       <div className="kpi-grid">
-        <div className="kpi-card" onClick={() => setFiltroActivo("Todos")} style={{cursor: "pointer", border: filtroActivo === "Todos" ? "2px solid var(--verde-primario)" : "1px solid #e5e7eb"}}>
+        <div className="kpi-card" onClick={() => setFiltroActivo(["Todos"])} style={{cursor: "pointer", border: filtroActivo.includes("Todos") ? "2px solid var(--verde-primario)" : "1px solid #e5e7eb"}}>
           <div style={{ fontSize: "22px", marginBottom: "6px" }}>🐄</div>
           <div className="kpi-value">{conteos.Todos}</div>
           <div className="kpi-label">Total Cabezas</div>
         </div>
-        <div className="kpi-card" onClick={() => setFiltroActivo("Machos")} style={{cursor: "pointer", border: filtroActivo === "Machos" ? "2px solid #1565c0" : "1px solid #e5e7eb"}}>
+        <div className="kpi-card" onClick={() => setFiltroActivo(["Machos"])} style={{cursor: "pointer", border: filtroActivo.includes("Machos") ? "2px solid #1565c0" : "1px solid #e5e7eb"}}>
           <div style={{ fontSize: "22px", marginBottom: "6px" }}>♂️</div>
           <div className="kpi-value" style={{ color: "#1565c0" }}>{machos}</div>
           <div className="kpi-label">Machos</div>
         </div>
-        <div className="kpi-card" onClick={() => setFiltroActivo("Hembras")} style={{cursor: "pointer", border: filtroActivo === "Hembras" ? "2px solid #7b1fa2" : "1px solid #e5e7eb"}}>
+        <div className="kpi-card" onClick={() => setFiltroActivo(["Hembras"])} style={{cursor: "pointer", border: filtroActivo.includes("Hembras") ? "2px solid #7b1fa2" : "1px solid #e5e7eb"}}>
           <div style={{ fontSize: "22px", marginBottom: "6px" }}>♀️</div>
           <div className="kpi-value" style={{ color: "#7b1fa2" }}>{hembras}</div>
           <div className="kpi-label">Hembras</div>
         </div>
-        <div className="kpi-card" onClick={() => setFiltroActivo("En Venta")} style={{cursor: "pointer", border: filtroActivo === "En Venta" ? "2px solid #ef6c00" : "1px solid #e5e7eb"}}>
+        <div className="kpi-card" onClick={() => setFiltroActivo(["En Venta"])} style={{cursor: "pointer", border: filtroActivo.includes("En Venta") ? "2px solid #ef6c00" : "1px solid #e5e7eb"}}>
           <div style={{ fontSize: "22px", marginBottom: "6px" }}>💰</div>
           <div className="kpi-value" style={{ color: "#ef6c00" }}>{conteos["En Venta"]}</div>
           <div className="kpi-label">En Venta</div>
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "16px" }}>
-          <select 
-            value={filtroActivo} 
-            onChange={(e) => setFiltroActivo(e.target.value)}
-            style={{ flex: 1, minWidth: "140px", padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db", backgroundColor: "white", color: "#374151", fontSize: "14px", cursor: "pointer" }}
-          >
-            {["Todos", "Vaca", "Novillona", "Semental", "Torete", "Becerra", "Becerro", "En Venta", "Bajas"].map((tipo) => (
-              <option key={tipo} value={tipo}>{tipo === "Todos" ? "Todos los Tipos" : tipo}</option>
-            ))}
-          </select>
-
-          <select 
-            value={filtroPotrero} 
-            onChange={(e) => setFiltroPotrero(e.target.value)}
-            style={{ flex: 1, minWidth: "140px", padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db", backgroundColor: "white", color: "#374151", fontSize: "14px", cursor: "pointer" }}
-          >
-            {listaPotreros.map(h => <option key={h} value={h}>{h === "Todos" ? "🏞️ Todos los Potreros" : `📍 ${h}`}</option>)}
-          </select>
-          
-          <select 
-            value={filtroGrupo} 
-            onChange={(e) => setFiltroGrupo(e.target.value)}
-            style={{ flex: 1, minWidth: "140px", padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db", backgroundColor: "white", color: "#374151", fontSize: "14px", cursor: "pointer" }}
-          >
-            {listaGrupos.map(g => <option key={g} value={g}>{g === "Todos" ? "🏷️ Todos los Grupos" : `🏷️ ${g}`}</option>)}
-          </select>
-        </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "10px", marginBottom: "16px" }}>
+          <Select 
+            isMulti
+            options={["Todos", "Vaca", "Novillona", "Semental", "Torete", "Becerra", "Becerro", "En Venta", "Bajas"].map(t => ({value: t, label: t === "Todos" ? "Todos los Tipos" : t}))}
+            value={filtroActivo.map(v => ({ value: v, label: v === "Todos" ? "Todos los Tipos" : v }))}
+            onChange={(selected) => setFiltroActivo(selected.length ? selected.map(s => s.value) : ["Todos"])}
+            placeholder="Tipos..."
+            styles={{ container: base => ({ ...base, flex: 1 }) }}
+          />
+          <Select 
+            isMulti
+            options={listaPotreros.map(h => ({value: h, label: h === "Todos" ? "🏞️ Todos los Potreros" : `📍 ${h}`}))}
+            value={filtroPotrero.map(v => ({ value: v, label: v === "Todos" ? "🏞️ Todos los Potreros" : `📍 ${v}` }))}
+            onChange={(selected) => setFiltroPotrero(selected.length ? selected.map(s => s.value) : ["Todos"])}
+            placeholder="Potreros..."
+            styles={{ container: base => ({ ...base, flex: 1 }) }}
+          />
+          <Select 
+            isMulti
+            options={listaGrupos.map(g => ({value: g, label: g === "Todos" ? "🏷️ Todos los Grupos" : `🏷️ ${g}`}))}
+            value={filtroGrupo.map(v => ({ value: v, label: v === "Todos" ? "🏷️ Todos los Grupos" : `🏷️ ${v}` }))}
+            onChange={(selected) => setFiltroGrupo(selected.length ? selected.map(s => s.value) : ["Todos"])}
+            placeholder="Grupos..."
+            styles={{ container: base => ({ ...base, flex: 1 }) }}
+          />
+      </div>
 
       <div className="search-bar" style={{ gap: "10px", alignItems: "center" }}>
         <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "10px", backgroundColor: "#f9fafb", padding: "0 12px", borderRadius: "8px", border: "1px solid #d1d5db" }}>
