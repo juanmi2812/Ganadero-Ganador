@@ -12,7 +12,7 @@ const CheckboxOption = (props) => (
     <label>{props.label}</label>
   </components.Option>
 );
-import { Search, X, Plus, Activity, Baby, Scale, AlertTriangle, TrendingUp } from "lucide-react";
+import { Search, X, Plus, Activity, Baby, Scale, AlertTriangle, TrendingUp, Trash2 } from "lucide-react";
 import { collection, onSnapshot, addDoc, query, where, doc, updateDoc, getDocs, deleteDoc } from "firebase/firestore"; 
 import { differenceInMonths } from "date-fns";
 import { db } from "../firebase";
@@ -378,6 +378,23 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
       } catch (error) {
         console.error(error);
         alert("Hubo un error al intentar eliminar el evento.");
+      }
+    }
+  };
+
+  const eliminarAnimalBD = async () => {
+    if (window.confirm("🚨 ¡ADVERTENCIA! Estás a punto de eliminar este animal y todo su historial de eventos de forma PERMANENTE. Esta acción no se puede deshacer.\n\n¿Estás absolutamente seguro de que deseas eliminarlo?")) {
+      try {
+        await deleteDoc(doc(db, "animales", animalActivo.id));
+        const qEventos = query(collection(db, "eventos"), where("animalId", "==", animalActivo.id));
+        const evtSnap = await getDocs(qEventos);
+        for (const evt of evtSnap.docs) {
+          await deleteDoc(doc(db, "eventos", evt.id));
+        }
+        setAnimalActivo(null);
+      } catch (error) {
+        console.error("Error al eliminar animal:", error);
+        alert("Hubo un error al eliminar el animal.");
       }
     }
   };
@@ -1066,6 +1083,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                   <button className="btn-outline" style={{ flex: 1, margin: 0, minWidth: "120px", borderColor: "#6b7280", color: "#6b7280" }} onClick={marcarDesecho}>🗑️ Descartar</button>
                 )}
                 <button className="btn-outline" style={{ flex: 1, minWidth: "100px", color: "#ef4444", borderColor: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }} onClick={() => { setMostrandoBaja(!mostrandoBaja); setMostrandoFormulario(false); }}><AlertTriangle size={18} /> Baja</button>
+                <button className="btn-outline" style={{ flex: 1, minWidth: "100px", color: "#991b1b", borderColor: "#991b1b", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }} onClick={eliminarAnimalBD}><Trash2 size={18} /> Eliminar</button>
               </div>
             )}
 
@@ -1134,9 +1152,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
 
                 <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
                     <input type="date" value={datosEvento.fecha} onChange={(e) => setDatosEvento({...datosEvento, fecha: e.target.value})} style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} required />
-                    {tipoFormularioIndiv === "tratamiento" && (
-                      <input type="number" placeholder="Costo ($)" value={datosEvento.costo} onChange={(e) => setDatosEvento({...datosEvento, costo: e.target.value})} style={{ flex: 1, padding: "8px", border: "1px solid #d1d5db", borderRadius: "4px" }} />
-                    )}
                   </div>
                 
                 <button type="submit" className="btn-primary" style={{ width: "100%" }}>Guardar {tipoFormularioIndiv === "tratamiento" ? "Tratamiento" : "Evento"}</button>
