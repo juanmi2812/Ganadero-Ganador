@@ -64,8 +64,18 @@ export default function App() {
     }
   };
 
-  // Detecta sesión activa al arrancar (persistencia automática de Firebase)
+  // Detecta sesión activa al arrancar
   useEffect(() => {
+    // Revisar si venimos de un pago exitoso
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("pago") === "exito") {
+      alert("✅ ¡Pago procesado en Stripe! Estamos esperando la confirmación del servidor (Webhook) para activar tu cuenta. Esto puede tardar unos segundos.");
+      window.history.replaceState(null, "", window.location.pathname);
+    } else if (params.get("pago") === "cancelado") {
+      alert("⚠️ El pago fue cancelado.");
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
