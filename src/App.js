@@ -71,7 +71,15 @@ export default function App() {
         try {
           const perfil = await getDoc(doc(db, "usuarios", firebaseUser.uid));
           if (perfil.exists()) {
-            setUsuario({ uid: firebaseUser.uid, ...perfil.data() });
+            let userData = perfil.data();
+            
+            // Bypass manual para juanantonio.sotelo
+            if (userData.correo && userData.correo.toLowerCase().includes("juanantonio.sotelo") && !userData.suscripcionActiva) {
+              await updateDoc(doc(db, "usuarios", firebaseUser.uid), { suscripcionActiva: true, estadoSuscripcion: "active" });
+              userData.suscripcionActiva = true;
+            }
+            
+            setUsuario({ uid: firebaseUser.uid, ...userData });
           } else {
             // Perfil no existe todavía (puede estar en medio del registro) → solo mostrar Login
             setUsuario(null);
