@@ -52,10 +52,11 @@ export default function ConfiguracionPotreros({ usuario }) {
   const [guardandoTraslado, setGuardandoTraslado] = useState(false);
   const [exitoTraslado, setExitoTraslado] = useState("");
 
-  // UPPs
+  // UPPs y Perfil del Rancho
   const [ranchoDoc, setRanchoDoc] = useState(null);
   const [nuevaUpp, setNuevaUpp] = useState("");
   const [guardandoUpp, setGuardandoUpp] = useState(false);
+  const [guardandoPerfil, setGuardandoPerfil] = useState(false);
 
   useEffect(() => {
     if (!usuario?.ranchoId) return;
@@ -75,6 +76,21 @@ export default function ConfiguracionPotreros({ usuario }) {
 
     return () => { unsubP(); unsubG(); unsubR(); };
   }, [usuario]);
+
+  // ─── Perfil del Rancho ───────────────────────────────────────────────────────
+  
+  const guardarPerfilRancho = async (campo, valor) => {
+    if (!ranchoDoc) return;
+    setGuardandoPerfil(true);
+    try {
+      await updateDoc(doc(db, "ranchos", usuario.ranchoId), {
+        [campo]: valor
+      });
+    } catch (error) {
+      console.error("Error actualizando perfil del rancho:", error);
+    }
+    setGuardandoPerfil(false);
+  };
 
   // ─── UPPs ────────────────────────────────────────────────────────────────────
   
@@ -365,6 +381,74 @@ export default function ConfiguracionPotreros({ usuario }) {
         >
           💊 Cargar Tratamiento
         </button>
+      </div>
+
+      {/* 📊 PERFIL OPERATIVO (Benchmark) */}
+      <div className="card" style={{ padding: "20px", marginBottom: "20px", borderLeft: "4px solid #3b82f6" }}>
+        <h2 style={{ margin: "0 0 10px 0", fontSize: "18px", color: "#1e40af" }}>Perfil Operativo y Benchmark</h2>
+        <p style={{ fontSize: "13px", color: "var(--gris-400)", marginBottom: "15px" }}>Configura estos datos para poder comparar el rendimiento de tu rancho (Benchmark) contra ranchos similares de tu región. Todos los datos de comparación son 100% anónimos.</p>
+        
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" }}>
+          <div>
+            <label style={labelStyle}>Vocación Principal del Rancho</label>
+            <select 
+              value={ranchoDoc?.vocacion || ""} 
+              onChange={(e) => guardarPerfilRancho("vocacion", e.target.value)}
+              style={inputStyle}
+              disabled={guardandoPerfil || usuario?.rol !== "admin"}
+            >
+              <option value="">-- Selecciona Vocación --</option>
+              <option value="Leche">Establo Lechero (Leche)</option>
+              <option value="Cría">Pie de Cría (Venta de Becerros)</option>
+              <option value="Engorda">Feedlot / Engorda (Carne)</option>
+              <option value="Doble Propósito">Doble Propósito (Leche y Cría)</option>
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>Estado / Región</label>
+            <select 
+              value={ranchoDoc?.estadoRegion || ""} 
+              onChange={(e) => guardarPerfilRancho("estadoRegion", e.target.value)}
+              style={inputStyle}
+              disabled={guardandoPerfil || usuario?.rol !== "admin"}
+            >
+              <option value="">-- Selecciona Estado --</option>
+              <option value="Aguascalientes">Aguascalientes</option>
+              <option value="Baja California">Baja California</option>
+              <option value="Baja California Sur">Baja California Sur</option>
+              <option value="Campeche">Campeche</option>
+              <option value="Chiapas">Chiapas</option>
+              <option value="Chihuahua">Chihuahua</option>
+              <option value="Coahuila">Coahuila</option>
+              <option value="Colima">Colima</option>
+              <option value="Ciudad de México">Ciudad de México</option>
+              <option value="Durango">Durango</option>
+              <option value="Guanajuato">Guanajuato</option>
+              <option value="Guerrero">Guerrero</option>
+              <option value="Hidalgo">Hidalgo</option>
+              <option value="Jalisco">Jalisco</option>
+              <option value="Estado de México">Estado de México</option>
+              <option value="Michoacán">Michoacán</option>
+              <option value="Morelos">Morelos</option>
+              <option value="Nayarit">Nayarit</option>
+              <option value="Nuevo León">Nuevo León</option>
+              <option value="Oaxaca">Oaxaca</option>
+              <option value="Puebla">Puebla</option>
+              <option value="Querétaro">Querétaro</option>
+              <option value="Quintana Roo">Quintana Roo</option>
+              <option value="San Luis Potosí">San Luis Potosí</option>
+              <option value="Sinaloa">Sinaloa</option>
+              <option value="Sonora">Sonora</option>
+              <option value="Tabasco">Tabasco</option>
+              <option value="Tamaulipas">Tamaulipas</option>
+              <option value="Tlaxcala">Tlaxcala</option>
+              <option value="Veracruz">Veracruz</option>
+              <option value="Yucatán">Yucatán</option>
+              <option value="Zacatecas">Zacatecas</option>
+              <option value="Otro País">Otro País</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* ══ UPPs (Unidades de Producción Pecuaria) ══════════════════════════════════════════════════ */}
