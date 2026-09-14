@@ -22,6 +22,8 @@ const firebaseConfig = {
   appId: "1:327622024275:web:de43032167c765c8a43aa6",
 };
 
+import { getStorage } from "firebase/storage";
+
 // Inicializamos la aplicación de Firebase
 const app = initializeApp(firebaseConfig);
 
@@ -29,6 +31,7 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app); // Esta es la línea mágica que arregla el error
 export const functions = getFunctions(app);
+export const storage = getStorage(app);
 export const googleProvider = new GoogleAuthProvider();
 export const appleProvider = new OAuthProvider("apple.com");
 
