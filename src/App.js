@@ -231,7 +231,7 @@ export default function App() {
 
       {/* === CONTENIDO PRINCIPAL === */}
       <div className="page-wrapper">
-        {vistaActiva === "dashboard" && <DashboardGanado usuario={usuario} abrirModalTratamientoMasivo={abrirModalTratamientoMasivo} setAbrirModalTratamientoMasivo={setAbrirModalTratamientoMasivo} />}
+        {vistaActiva === "dashboard" && <DashboardGanado usuario={usuario} abrirModalTratamientoMasivo={abrirModalTratamientoMasivo} setAbrirModalTratamientoMasivo={setAbrirModalTratamientoMasivo} setVistaActiva={setVistaActiva} />}
         {vistaActiva === "nuevo" && <NuevoAnimal onTerminar={() => setVistaActiva("dashboard")} usuario={usuario} />}
         {vistaActiva === "calendario" && <CalendarioAlertas usuario={usuario} />}
         {vistaActiva === "reportes" && <ReportesBI usuario={usuario} />}

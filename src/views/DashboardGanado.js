@@ -19,9 +19,10 @@ import { db } from "../firebase";
 import Header from "../components/Header";
 import { CATALOGO_EVENTOS, TIPOS_EVENTO_GANADO, EVENTOS_GANADO, TRATAMIENTOS_GANADO } from "../catalogoEventos";
 
-export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, setAbrirModalTratamientoMasivo }) {
+export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, setAbrirModalTratamientoMasivo, setVistaActiva }) {
   // --- ESTADOS ---
   const [inventario, setInventario] = useState([]);
+  const [cargandoInventario, setCargandoInventario] = useState(true);
   const [potrerosCol, setPotrerosCol] = useState([]);
   const [gruposCol, setGruposCol] = useState([]);
   const [busqueda, setBusqueda] = useState("");
@@ -181,6 +182,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     const cancelarSuscripcion = onSnapshot(q, (snapshot) => {
         const listaAnimales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setInventario(listaAnimales);
+        setCargandoInventario(false);
       }
     );
 
@@ -712,6 +714,45 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     if (sexo?.toLowerCase() === "macho") return "♂️";
     return "♀️";
   };
+
+  if (!cargandoInventario && inventario.length === 0) {
+    return (
+      <div className="dashboard-container">
+        <Header subtitle="Control de inventario y análisis de rendimiento." logo={require("../assets/logo_ganado.jpg")} />
+        
+        <div style={{ textAlign: "center", padding: "60px 20px", marginTop: "20px", backgroundColor: "#fff", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+          <h2 style={{ fontSize: "28px", color: "#111827", marginBottom: "16px" }}>¡Bienvenido a Ganadero Ganador! 🐄</h2>
+          <p style={{ fontSize: "18px", color: "#4b5563", maxWidth: "600px", margin: "0 auto 32px" }}>
+            Tu inventario está vacío. Para empezar a ver el análisis y rendimiento de tu ganado, necesitas cargar tus animales. Sigue estos 2 sencillos pasos:
+          </p>
+  
+          <div style={{ display: "flex", justifyContent: "center", gap: "20px", flexWrap: "wrap" }}>
+            <button 
+              className="btn-primary" 
+              onClick={() => setVistaActiva && setVistaActiva("rancho")}
+              style={{ backgroundColor: "#3b82f6", borderColor: "#3b82f6", padding: "14px 28px", fontSize: "16px", borderRadius: "8px", margin: 0, width: "auto" }}
+            >
+              1. Configurar Potreros
+            </button>
+            <button 
+              className="btn-primary" 
+              onClick={() => setVistaActiva && setVistaActiva("importar")}
+              style={{ backgroundColor: "#10b981", borderColor: "#10b981", padding: "14px 28px", fontSize: "16px", borderRadius: "8px", margin: 0, width: "auto" }}
+            >
+              2. Importar Ganado (Excel)
+            </button>
+            <button 
+              className="btn-outline" 
+              onClick={() => setVistaActiva && setVistaActiva("nuevo")}
+              style={{ padding: "14px 28px", fontSize: "16px", borderRadius: "8px", margin: 0, width: "auto" }}
+            >
+              O Registrar Manualmente
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-container">
