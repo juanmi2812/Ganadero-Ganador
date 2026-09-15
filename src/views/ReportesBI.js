@@ -121,6 +121,7 @@ export default function ReportesBI({ usuario }) {
   });
 
   const datosFiltrados = inventarioEnriquecido.filter(a => {
+    if (a.estado?.includes('Baja')) return false; // Solo animales activos
     if (filtroCategoria !== "Todas" && a.tipo !== filtroCategoria) return false;
     if (filtroGenero !== "Todos" && a.generoFormat !== filtroGenero.toLowerCase()) return false;
     if (filtroAlerta === "Fertilidad" && a.estado !== "Alerta: Revisión de Fertilidad") return false;
@@ -128,28 +129,29 @@ export default function ReportesBI({ usuario }) {
     return true;
   });
 
-  const cabezasTotales = datosFiltrados.length;
+  const cabezasTotalesActivas = datosFiltrados.length;
+  const animalesActivosSinFiltro = inventarioEnriquecido.filter(a => !a.estado?.includes('Baja'));
   
-  const vientresTotales = inventarioEnriquecido.filter(a => a.tipo === "Vaca" || a.tipo === "Novillona").length;
-  const vientresInfertiles = inventarioEnriquecido.filter(a => a.estado === "Alerta: Revisión de Fertilidad").length;
+  const vientresActivos = animalesActivosSinFiltro.filter(a => a.tipo === "Vaca" || a.tipo === "Novillona");
+  const vientresTotales = vientresActivos.length;
+  
+  const vientresInfertiles = vientresActivos.filter(a => a.estado === "Alerta: Revisión de Fertilidad").length;
   const porcentajeInfertilidad = vientresTotales > 0 ? Math.round((vientresInfertiles / vientresTotales) * 100) : 0;
 
-  // --- NUEVAS MÉTRICAS ---
-  const totalVientres = inventarioEnriquecido.filter(a => a.tipo === "Vaca" || a.tipo === "Novillona").length;
-  const vientresGestantes = inventarioEnriquecido.filter(a => (a.tipo === "Vaca" || a.tipo === "Novillona") && a.estado === "Gestante").length;
-  const tasaPrenez = totalVientres > 0 ? Math.round((vientresGestantes / totalVientres) * 100) : 0;
+  const vientresGestantes = vientresActivos.filter(a => a.estado === "Gestante").length;
+  const tasaPrenez = vientresTotales > 0 ? Math.round((vientresGestantes / vientresTotales) * 100) : 0;
 
   const metricas = calcularMetricasProductividad(animales, eventos);
-  const muertesCount = metricas.mortalidad.conteoM_D + metricas.mortalidad.conteoM_V; // Estas son muertes en becerros/vacas
-  const totalBajasGenerales = animales.filter(a => a.estado && a.estado.includes("Baja")).length;
-  const baseBajas = cabezasTotales + totalBajasGenerales; // Aproximación al inventario base
-  const tasaBajasGeneral = baseBajas > 0 ? ((totalBajasGenerales / baseBajas) * 100).toFixed(1) : 0;
+  const muertesCount = metricas.mortalidad.conteoM_D + metricas.mortalidad.conteoM_V; 
+  const totalBajasGenerales = inventarioEnriquecido.filter(a => a.estado?.includes("Baja")).length;
+  const inventarioHistoricoTotal = inventarioEnriquecido.length; // Base real (Vivos + Bajas)
+  const tasaBajasGeneral = inventarioHistoricoTotal > 0 ? ((totalBajasGenerales / inventarioHistoricoTotal) * 100).toFixed(1) : 0;
 
-  const animalesMuertosPuros = animales.filter(a => a.estado === "Baja - Muerte").length;
-  const tasaMortalidadPura = baseBajas > 0 ? ((animalesMuertosPuros / baseBajas) * 100).toFixed(1) : 0;
+  const animalesMuertosPuros = inventarioEnriquecido.filter(a => a.estado === "Baja - Muerte").length;
+  const tasaMortalidadPura = inventarioHistoricoTotal > 0 ? ((animalesMuertosPuros / inventarioHistoricoTotal) * 100).toFixed(1) : 0;
 
   const totalHectareas = potreros.reduce((sum, p) => sum + (parseFloat(p.hectareas) || 0), 0);
-  const cargaAnimalGlobal = totalHectareas > 0 ? (cabezasTotales / totalHectareas).toFixed(1) : 0;
+  const cargaAnimalGlobal = totalHectareas > 0 ? (animalesActivosSinFiltro.length / totalHectareas).toFixed(1) : 0;
 
   const dataProyeccion = prepararDatosProyeccionPartos(animales, eventos);
   const avgIEP = dataProyeccion.stats.avgIEP;
@@ -295,7 +297,7 @@ export default function ReportesBI({ usuario }) {
         <div className="kpi-card" style={{ position: "relative" }}>
             <button onClick={() => setInfoKpi({titulo: "Volumen Filtrado", descripcion: "Muestra el número total de cabezas de ganado que coinciden con los filtros aplicados arriba.", calculo: "Conteo directo de animales activos en el inventario según categoría, estatus y género."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
             <div style={{ fontSize: "22px", marginBottom: "6px" }}>🐄</div>
-            <div className="kpi-value" style={{ color: "#3b82f6" }}>{cabezasTotales}</div>
+            <div className="kpi-value" style={{ color: "#3b82f6" }}>{cabezasTotalesActivas}</div>
             <div className="kpi-label">Volumen Filtrado</div>
             <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>Cabezas totales</div>
         </div>

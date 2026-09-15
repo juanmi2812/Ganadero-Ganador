@@ -227,13 +227,26 @@ async function correrBenchmarkGlobal() {
     console.log("Iniciando cálculo de Benchmarks...");
     const ranchosSnap = await db.collection("ranchos").get();
     const animalesSnap = await db.collection("animales").get();
+    const eventosSnap = await db.collection("eventos").where("tipo", "==", "Repeso").get();
 
     const animalesPorRancho = {};
     animalesSnap.forEach(doc => {
       const a = doc.data();
+      a.id = doc.id; // Asegurar tener el ID
       if (!a.ranchoId) return;
       if (!animalesPorRancho[a.ranchoId]) animalesPorRancho[a.ranchoId] = [];
       animalesPorRancho[a.ranchoId].push(a);
+    });
+
+    const repesosPorAnimal = {};
+    eventosSnap.forEach(doc => {
+      const e = doc.data();
+      if (!e.animalId) return;
+      if (!repesosPorAnimal[e.animalId]) repesosPorAnimal[e.animalId] = [];
+      repesosPorAnimal[e.animalId].push({
+        peso: parseFloat(e.resultado?.toString().replace(/[^0-9.]/g, '')) || 0,
+        fecha: new Date(e.fecha + "T00:00:00")
+      });
     });
 
     const promediosPorVocacion = {};
@@ -278,18 +291,33 @@ async function correrBenchmarkGlobal() {
       const tasaPrenez = vientres > 0 ? (vientresGestantes / vientres) * 100 : null;
 
       let gdpRancho = null;
-      const animalesConPeso = animales.filter(a => a.pesoAnteriorKg && a.pesoKg && a.fechaPesoAnterior && a.fechaPesoAnterior !== a.fechaNacimiento);
-      if (animalesConPeso.length > 0) {
-        let sumaGdp = 0;
-        animalesConPeso.forEach(a => {
-          const dias = (new Date() - new Date(a.fechaPesoAnterior)) / (1000 * 60 * 60 * 24);
-          if (dias > 0) {
-            const gdp = (a.pesoKg - a.pesoAnteriorKg) / dias;
-            if (gdp > 0 && gdp < 5) sumaGdp += gdp;
+      let sumaGdp = 0;
+      let countGdp = 0;
+      animales.forEach(a => {
+        const repesos = repesosPorAnimal[a.id] || [];
+        if (repesos.length > 0) {
+          repesos.sort((x, y) => y.fecha - x.fecha);
+          const pesoInicial = parseFloat(a.peso?.toString().replace(/[^0-9.]/g, '')) || 0;
+          let gdp = 0;
+          if (repesos.length > 1) {
+            const ganancia = repesos[0].peso - repesos[1].peso;
+            const diff = Math.abs(repesos[0].fecha - repesos[1].fecha);
+            const dias = Math.ceil(diff / (1000 * 60 * 60 * 24)) || 1;
+            gdp = ganancia / dias;
+          } else {
+            const fechaInic = new Date((a.fechaNacimiento || a.fechaRegistro || new Date().toISOString().split('T')[0]) + "T00:00:00");
+            const ganancia = repesos[0].peso - pesoInicial;
+            const diff = Math.abs(repesos[0].fecha - fechaInic);
+            const dias = Math.ceil(diff / (1000 * 60 * 60 * 24)) || 1;
+            gdp = ganancia / dias;
           }
-        });
-        gdpRancho = sumaGdp / animalesConPeso.length;
-      }
+          if (gdp > 0 && gdp < 5) {
+            sumaGdp += gdp;
+            countGdp++;
+          }
+        }
+      });
+      if (countGdp > 0) gdpRancho = sumaGdp / countGdp;
 
       const procesarCategoria = (categoriaObj) => {
         categoriaObj.totalRanchos++;
@@ -361,3 +389,8 @@ async function correrBenchmarkGlobal() {
     await db.collection("benchmarks").doc("ultimo").set(dataFinal);
     console.log("Benchmarks calculados y guardados exitosamente.");
 }
+
+exports.forzarBenchmark2 = functions.https.onRequest(async (req, res) => {
+    await correrBenchmarkGlobal();
+    res.send("Forzado 2 GDP Fix");
+});

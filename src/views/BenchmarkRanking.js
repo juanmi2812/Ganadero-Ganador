@@ -95,7 +95,20 @@ export default function BenchmarkRanking({ usuario }) {
 
         const animalesQ = query(collection(db, "animales"), where("ranchoId", "==", usuario.ranchoId));
         const animalesSnap = await getDocs(animalesQ);
-        const animales = animalesSnap.docs.map(d => d.data());
+        const animales = animalesSnap.docs.map(d => ({ ...d.data(), id: d.id }));
+
+        const eventosQ = query(collection(db, "eventos"), where("ranchoId", "==", usuario.ranchoId), where("tipo", "==", "Repeso"));
+        const eventosSnap = await getDocs(eventosQ);
+        const repesosPorAnimal = {};
+        eventosSnap.forEach(doc => {
+          const e = doc.data();
+          if (!e.animalId) return;
+          if (!repesosPorAnimal[e.animalId]) repesosPorAnimal[e.animalId] = [];
+          repesosPorAnimal[e.animalId].push({
+            peso: parseFloat(e.resultado?.toString().replace(/[^0-9.]/g, '')) || 0,
+            fecha: new Date(e.fecha + "T00:00:00")
+          });
+        });
         
         const totalCabezas = animales.length;
         if (totalCabezas > 0) {
@@ -106,18 +119,33 @@ export default function BenchmarkRanking({ usuario }) {
             const vientresGestantes = animales.filter(a => a.estado === "Gestante").length;
             if (vientres > 0) setMiPrenez((vientresGestantes / vientres) * 100);
 
-            const animalesConPeso = animales.filter(a => a.pesoAnteriorKg && a.pesoKg && a.fechaPesoAnterior && a.fechaPesoAnterior !== a.fechaNacimiento);
-            if (animalesConPeso.length > 0) {
-              let sumaGdp = 0;
-              animalesConPeso.forEach(a => {
-                const dias = (new Date() - new Date(a.fechaPesoAnterior)) / (1000 * 60 * 60 * 24);
-                if (dias > 0) {
-                  const gdp = (a.pesoKg - a.pesoAnteriorKg) / dias;
-                  if (gdp > 0 && gdp < 5) sumaGdp += gdp;
+            let sumaGdp = 0;
+            let countGdp = 0;
+            animales.forEach(a => {
+              const repesos = repesosPorAnimal[a.id] || [];
+              if (repesos.length > 0) {
+                repesos.sort((x, y) => y.fecha - x.fecha);
+                const pesoInicial = parseFloat(a.peso?.toString().replace(/[^0-9.]/g, '')) || 0;
+                let gdp = 0;
+                if (repesos.length > 1) {
+                  const ganancia = repesos[0].peso - repesos[1].peso;
+                  const diff = Math.abs(repesos[0].fecha - repesos[1].fecha);
+                  const dias = Math.ceil(diff / (1000 * 60 * 60 * 24)) || 1;
+                  gdp = ganancia / dias;
+                } else {
+                  const fechaInic = new Date((a.fechaNacimiento || a.fechaRegistro || new Date().toISOString().split('T')[0]) + "T00:00:00");
+                  const ganancia = repesos[0].peso - pesoInicial;
+                  const diff = Math.abs(repesos[0].fecha - fechaInic);
+                  const dias = Math.ceil(diff / (1000 * 60 * 60 * 24)) || 1;
+                  gdp = ganancia / dias;
                 }
-              });
-              setMiGdp(sumaGdp / animalesConPeso.length);
-            }
+                if (gdp > 0 && gdp < 5) {
+                  sumaGdp += gdp;
+                  countGdp++;
+                }
+              }
+            });
+            if (countGdp > 0) setMiGdp(sumaGdp / countGdp);
         }
 
         setCargando(false);
