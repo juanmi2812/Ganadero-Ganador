@@ -1,20 +1,26 @@
 {
   "files": {
-    "main.css": "/static/css/main.ae373ef5.css",
-    "main.js": "/static/js/main.6c2bb237.js",
+    "main.css": "/static/css/main.b7c1da10.css",
+    "main.js": "/static/js/main.c6dfca09.js",
     "static/js/239.6319a787.chunk.js": "/static/js/239.6319a787.chunk.js",
     "static/js/977.6692a4b7.chunk.js": "/static/js/977.6692a4b7.chunk.js",
     "static/js/455.12b6cd56.chunk.js": "/static/js/455.12b6cd56.chunk.js",
+    "static/media/logo_potreros.jpg": "/static/media/logo_potreros.072c6f6b38abd89c0f24.jpg",
+    "static/media/logo_movilizacion.jpg": "/static/media/logo_movilizacion.1680dd091baf71e5c2e7.jpg",
+    "static/media/logo_ganado.jpg": "/static/media/logo_ganado.72616ec6ac1622e1934b.jpg",
+    "static/media/logo_leche.jpg": "/static/media/logo_leche.ff515638601f0b6fccdb.jpg",
+    "static/media/logo_calendario.jpg": "/static/media/logo_calendario.579ca045d0eaf4fd224d.jpg",
+    "static/media/logo_reportes.jpg": "/static/media/logo_reportes.accc8f37deda4b7b16cf.jpg",
     "static/media/logo_convivet.jpg": "/static/media/logo_convivet.0c0b3289b78b362690aa.jpg",
     "index.html": "/index.html",
-    "main.ae373ef5.css.map": "/static/css/main.ae373ef5.css.map",
-    "main.6c2bb237.js.map": "/static/js/main.6c2bb237.js.map",
+    "main.b7c1da10.css.map": "/static/css/main.b7c1da10.css.map",
+    "main.c6dfca09.js.map": "/static/js/main.c6dfca09.js.map",
     "239.6319a787.chunk.js.map": "/static/js/239.6319a787.chunk.js.map",
     "977.6692a4b7.chunk.js.map": "/static/js/977.6692a4b7.chunk.js.map",
     "455.12b6cd56.chunk.js.map": "/static/js/455.12b6cd56.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.ae373ef5.css",
-    "static/js/main.6c2bb237.js"
+    "static/css/main.b7c1da10.css",
+    "static/js/main.c6dfca09.js"
   ]
 }

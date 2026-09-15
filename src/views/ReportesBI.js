@@ -140,9 +140,13 @@ export default function ReportesBI({ usuario }) {
   const tasaPrenez = totalVientres > 0 ? Math.round((vientresGestantes / totalVientres) * 100) : 0;
 
   const metricas = calcularMetricasProductividad(animales, eventos);
-  const muertesCount = metricas.mortalidad.conteoM_D + metricas.mortalidad.conteoM_V;
-  const baseBajas = cabezasTotales + muertesCount; // Aproximación al inventario anual
-  const tasaBajasGeneral = baseBajas > 0 ? ((muertesCount / baseBajas) * 100).toFixed(1) : 0;
+  const muertesCount = metricas.mortalidad.conteoM_D + metricas.mortalidad.conteoM_V; // Estas son muertes en becerros/vacas
+  const totalBajasGenerales = animales.filter(a => a.estado && a.estado.includes("Baja")).length;
+  const baseBajas = cabezasTotales + totalBajasGenerales; // Aproximación al inventario base
+  const tasaBajasGeneral = baseBajas > 0 ? ((totalBajasGenerales / baseBajas) * 100).toFixed(1) : 0;
+
+  const animalesMuertosPuros = animales.filter(a => a.estado === "Baja - Muerte").length;
+  const tasaMortalidadPura = baseBajas > 0 ? ((animalesMuertosPuros / baseBajas) * 100).toFixed(1) : 0;
 
   const totalHectareas = potreros.reduce((sum, p) => sum + (parseFloat(p.hectareas) || 0), 0);
   const cargaAnimalGlobal = totalHectareas > 0 ? (cabezasTotales / totalHectareas).toFixed(1) : 0;
@@ -326,10 +330,19 @@ export default function ReportesBI({ usuario }) {
         {/* KPI 4: Bajas Generales */}
         <div className="kpi-card" style={{ position: "relative" }}>
             <button onClick={() => setInfoKpi({titulo: "Índice de Bajas Totales", descripcion: "Evalúa las bajas totales del rancho por venta, muerte o robo. Mantener este número bajo es vital para la rentabilidad.", calculo: "(Cabezas dadas de baja / Inventario base estimado) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
-            <div style={{ fontSize: "22px", marginBottom: "6px" }}>🪦</div>
+            <div style={{ fontSize: "22px", marginBottom: "6px" }}>👋</div>
             <div className="kpi-value" style={{ color: "#f97316" }}>{tasaBajasGeneral}%</div>
             <div className="kpi-label">Índice de Bajas</div>
-            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>{muertesCount} bajas registradas</div>
+            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>{totalBajasGenerales} bajas totales</div>
+        </div>
+
+        {/* KPI: Mortalidad */}
+        <div className="kpi-card" style={{ position: "relative" }}>
+            <button onClick={() => setInfoKpi({titulo: "Tasa de Mortalidad", descripcion: "Mide estrictamente las pérdidas del inventario por muerte (enfermedad, accidentes, depredadores, etc).", calculo: "(Muertes Registradas / Inventario base) * 100."})} style={{ position: "absolute", top: "12px", right: "12px", background: "#f3f4f6", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} title="Ver información del cálculo" onMouseOver={e => e.currentTarget.style.background = "#e5e7eb"} onMouseOut={e => e.currentTarget.style.background = "#f3f4f6"}><Info size={16}/></button>
+            <div style={{ fontSize: "22px", marginBottom: "6px" }}>🪦</div>
+            <div className="kpi-value" style={{ color: "#ef4444" }}>{tasaMortalidadPura}%</div>
+            <div className="kpi-label">Tasa de Mortalidad</div>
+            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>{animalesMuertosPuros} muertes</div>
         </div>
 
         {/* KPI 5: Carga Animal */}

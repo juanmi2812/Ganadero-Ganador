@@ -219,6 +219,11 @@ exports.calcularBenchmarksDiarios = functions.pubsub
   .schedule("0 4 * * *") // Se ejecuta a las 4:00 AM todos los días
   .timeZone("America/Mexico_City")
   .onRun(async (context) => {
+      await correrBenchmarkGlobal();
+      return null;
+  });
+
+async function correrBenchmarkGlobal() {
     console.log("Iniciando cálculo de Benchmarks...");
     const ranchosSnap = await db.collection("ranchos").get();
     const animalesSnap = await db.collection("animales").get();
@@ -337,5 +342,4 @@ exports.calcularBenchmarksDiarios = functions.pubsub
     await db.collection("benchmarks").doc("ultimo").set(dataFinal);
     
     console.log("Benchmarks calculados y guardados exitosamente.");
-    return null;
-  });
+}

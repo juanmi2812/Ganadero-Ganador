@@ -110,6 +110,20 @@ export default function BenchmarkRanking({ usuario }) {
 
       <div style={{ padding: "20px", maxWidth: "1000px", margin: "0 auto" }}>
         
+        {/* Cuadro de Información */}
+        <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: "15px 20px", borderRadius: "10px", marginBottom: "25px", display: "flex", gap: "15px", alignItems: "flex-start" }}>
+          <div style={{ backgroundColor: "#eff6ff", color: "#3b82f6", padding: "8px", borderRadius: "50%" }}>
+            <Activity size={20} />
+          </div>
+          <div>
+            <h4 style={{ margin: "0 0 5px 0", color: "#1e293b", fontSize: "15px" }}>¿Cómo funciona el Ranking?</h4>
+            <p style={{ margin: "0", color: "#475569", fontSize: "13px", lineHeight: "1.5" }}>
+              Todos los días de madrugada, nuestro robot analiza de forma <strong>100% anónima</strong> a todos los ranchos de la comunidad. 
+              Agrupa a los ranchos según su <strong>Vocación</strong> (ej. Engorda) y <strong>Ubicación</strong> (ej. Veracruz), y calcula un promedio exacto de los Indicadores Clave (KPIs) usando su inventario real. Esto te permite saber si tus estrategias de manejo, nutrición o sanidad están dando mejores resultados que la media de tu región.
+            </p>
+          </div>
+        </div>
+        
         {perfilIncompleto ? (
           <div style={{ backgroundColor: "#eff6ff", border: "1px solid #bfdbfe", padding: "30px", borderRadius: "12px", textAlign: "center" }}>
             <AlertTriangle size={48} color="#3b82f6" style={{ margin: "0 auto 15px" }} />
