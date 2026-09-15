@@ -2,9 +2,72 @@ import React, { useState, useEffect } from "react";
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import Header from "../components/Header";
-import { Trophy, TrendingUp, AlertTriangle, Activity, Map, BarChart2 } from "lucide-react";
+import { Trophy, TrendingUp, AlertTriangle, Activity, Map, BarChart2, Medal } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+
+const calcularPosicion = (valor, arrayRankings, inverso) => {
+  if (!arrayRankings || arrayRankings.length === 0) return { posicion: 1, total: 1 };
+  let pos = 1;
+  for (let i = 0; i < arrayRankings.length; i++) {
+    if (inverso) {
+      if (valor > arrayRankings[i]) pos++; // Mortalidad (menor es mejor)
+    } else {
+      if (valor < arrayRankings[i]) pos++; // Preñez y GDP (mayor es mejor)
+    }
+  }
+  return { posicion: pos, total: arrayRankings.length };
+};
+
+const RendimientoCard = ({ titulo, miValor, promedio, formato, inverso, arrayRankings }) => {
+  const diff = miValor - promedio;
+  // Si inverso es true (como mortalidad), un diff negativo es bueno.
+  const isMejor = inverso ? diff <= 0 : diff >= 0;
+  
+  const { posicion, total } = calcularPosicion(miValor, arrayRankings, inverso);
+  let colorMedalla = "#9ca3af"; // gris
+  if (posicion === 1) colorMedalla = "#fbbf24"; // oro
+  else if (posicion === 2) colorMedalla = "#94a3b8"; // plata
+  else if (posicion === 3) colorMedalla = "#b45309"; // bronce
+
+  return (
+    <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "12px", padding: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+      <h4 style={{ margin: "0 0 15px", color: "#4b5563", fontSize: "14px", textTransform: "uppercase", letterSpacing: "0.5px", textAlign: "center" }}>
+        {titulo}
+      </h4>
+      
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ textAlign: "center", flex: 1 }}>
+          <p style={{ margin: "0 0 5px", fontSize: "12px", color: "#6b7280" }}>Mi Rancho</p>
+          <p style={{ margin: 0, fontSize: "24px", fontWeight: "bold", color: "#1f2937" }}>
+            {miValor.toFixed(2)}{formato}
+          </p>
+        </div>
+
+        <div style={{ padding: "0 15px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div style={{ 
+            display: "inline-flex", alignItems: "center", gap: "4px", padding: "4px 10px", borderRadius: "20px", fontSize: "12px", fontWeight: "bold",
+            backgroundColor: isMejor ? "#dcfce7" : "#fee2e2", color: isMejor ? "#16a34a" : "#dc2626"
+          }}>
+            <Trophy size={14} /> {isMejor ? "¡Superior!" : "Por debajo"}
+          </div>
+          {arrayRankings && (
+            <div style={{ marginTop: "10px", display: "flex", alignItems: "center", gap: "4px", color: colorMedalla, fontWeight: "bold", fontSize: "13px" }}>
+              <Medal size={16}/> Lugar {posicion} de {total}
+            </div>
+          )}
+        </div>
+
+        <div style={{ textAlign: "center", flex: 1 }}>
+          <p style={{ margin: "0 0 5px", fontSize: "12px", color: "#6b7280" }}>Promedio</p>
+          <p style={{ margin: 0, fontSize: "24px", fontWeight: "bold", color: "#4b5563" }}>
+            {promedio.toFixed(2)}{formato}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function BenchmarkRanking({ usuario }) {
   const [rancho, setRancho] = useState(null);
@@ -13,6 +76,9 @@ export default function BenchmarkRanking({ usuario }) {
 
   const [miMortalidad, setMiMortalidad] = useState(0);
   const [miGdp, setMiGdp] = useState(0);
+  const [miPrenez, setMiPrenez] = useState(0);
+
+  const [kpiSeleccionado, setKpiSeleccionado] = useState("mortalidad");
 
   useEffect(() => {
     const cargarDatos = async () => {
@@ -27,7 +93,6 @@ export default function BenchmarkRanking({ usuario }) {
         const bSnap = await getDoc(doc(db, "benchmarks", "ultimo"));
         if (bSnap.exists()) setBenchmarks(bSnap.data());
 
-        // Calcular los valores REALES de mi rancho
         const animalesQ = query(collection(db, "animales"), where("ranchoId", "==", usuario.ranchoId));
         const animalesSnap = await getDocs(animalesQ);
         const animales = animalesSnap.docs.map(d => d.data());
@@ -36,6 +101,10 @@ export default function BenchmarkRanking({ usuario }) {
         if (totalCabezas > 0) {
             const bajasMuerte = animales.filter(a => a.estado === "Baja - Muerte").length;
             setMiMortalidad((bajasMuerte / totalCabezas) * 100);
+
+            const vientres = animales.filter(a => a.tipo === "Vaca" || a.tipo === "Novillona").length;
+            const vientresGestantes = animales.filter(a => a.estado === "Gestante").length;
+            if (vientres > 0) setMiPrenez((vientresGestantes / vientres) * 100);
 
             const animalesConPeso = animales.filter(a => a.pesoAnteriorKg && a.pesoKg && a.fechaPesoAnterior && a.fechaPesoAnterior !== a.fechaNacimiento);
             if (animalesConPeso.length > 0) {
@@ -53,56 +122,28 @@ export default function BenchmarkRanking({ usuario }) {
 
         setCargando(false);
       } catch (e) {
-        console.error(e);
+        console.error("Error al cargar benchmark:", e);
         setCargando(false);
       }
     };
     cargarDatos();
   }, [usuario]);
 
-  if (cargando) return <div style={{ padding: "40px", textAlign: "center" }}>Cargando Benchmark...</div>;
+  if (cargando) {
+    return (
+      <div style={{ padding: "40px", textAlign: "center", color: "#6b7280" }}>
+        <Activity size={32} className="spin-animation" style={{ marginBottom: "10px" }}/>
+        <p>Cargando datos de la comunidad...</p>
+      </div>
+    );
+  }
 
-  const perfilIncompleto = !rancho || !rancho.vocacion || !rancho.estadoRegion;
   const miVocacion = rancho?.vocacion || "Desconocida";
   const miEstado = rancho?.estadoRegion || "Desconocido";
+  const perfilIncompleto = miVocacion === "Desconocida" && miEstado === "Desconocido";
 
   const benchVocacion = benchmarks?.porVocacion?.[miVocacion];
   const benchEstado = benchmarks?.porEstado?.[miEstado];
-
-  const RendimientoCard = ({ titulo, miValor, promedio, formato = "", inverso = false }) => {
-    if (!promedio) return null;
-    let esMejor = inverso ? miValor <= promedio : miValor >= promedio;
-    
-    return (
-      <div style={{ background: "#fff", padding: "20px", borderRadius: "12px", border: "1px solid #e5e7eb", boxShadow: "0 2px 4px rgba(0,0,0,0.02)", display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <h4 style={{ margin: "0 0 15px 0", color: "#4b5563", fontSize: "14px", textTransform: "uppercase", letterSpacing: "0.5px", textAlign: "center" }}>{titulo}</h4>
-        
-        <div style={{ display: "flex", alignItems: "center", gap: "20px", width: "100%", justifyContent: "space-around" }}>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "5px" }}>Mi Rancho</div>
-            <div style={{ fontSize: "24px", fontWeight: "bold", color: "#111827" }}>{miValor.toFixed(2)}{formato}</div>
-          </div>
-          
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            {esMejor ? (
-              <div style={{ color: "#10b981", display: "flex", alignItems: "center", gap: "4px", backgroundColor: "#d1fae5", padding: "4px 8px", borderRadius: "20px", fontSize: "12px", fontWeight: "bold" }}>
-                <Trophy size={14} /> ¡Superior!
-              </div>
-            ) : (
-              <div style={{ color: "#ef4444", display: "flex", alignItems: "center", gap: "4px", backgroundColor: "#fee2e2", padding: "4px 8px", borderRadius: "20px", fontSize: "12px", fontWeight: "bold" }}>
-                <AlertTriangle size={14} /> Por debajo
-              </div>
-            )}
-          </div>
-
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "5px" }}>Promedio</div>
-            <div style={{ fontSize: "24px", fontWeight: "bold", color: "#4b5563" }}>{promedio.toFixed(2)}{formato}</div>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="dashboard-container">
@@ -157,6 +198,13 @@ export default function BenchmarkRanking({ usuario }) {
               </div>
             </div>
 
+            {/* Selector de KPI */}
+            <div style={{ display: "flex", gap: "10px", marginBottom: "25px", borderBottom: "1px solid #e5e7eb", paddingBottom: "15px", overflowX: "auto" }}>
+              <button onClick={() => setKpiSeleccionado("mortalidad")} style={{ padding: "8px 16px", borderRadius: "20px", border: "none", cursor: "pointer", fontWeight: "bold", background: kpiSeleccionado === "mortalidad" ? "#1f2937" : "#e5e7eb", color: kpiSeleccionado === "mortalidad" ? "#fff" : "#4b5563" }}>Mortalidad</button>
+              <button onClick={() => setKpiSeleccionado("prenez")} style={{ padding: "8px 16px", borderRadius: "20px", border: "none", cursor: "pointer", fontWeight: "bold", background: kpiSeleccionado === "prenez" ? "#1f2937" : "#e5e7eb", color: kpiSeleccionado === "prenez" ? "#fff" : "#4b5563" }}>Tasa de Preñez</button>
+              <button onClick={() => setKpiSeleccionado("gdp")} style={{ padding: "8px 16px", borderRadius: "20px", border: "none", cursor: "pointer", fontWeight: "bold", background: kpiSeleccionado === "gdp" ? "#1f2937" : "#e5e7eb", color: kpiSeleccionado === "gdp" ? "#fff" : "#4b5563" }}>Ganancia de Peso (GDP)</button>
+            </div>
+
             <div style={{ marginBottom: "30px" }}>
               <h3 style={{ fontSize: "18px", color: "#374151", borderBottom: "2px solid #e5e7eb", paddingBottom: "10px", marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px" }}>
                 <BarChart2 size={20} /> Comparativa por Vocación ({miVocacion})
@@ -166,25 +214,36 @@ export default function BenchmarkRanking({ usuario }) {
                 <p style={{ color: "#6b7280" }}>Aún no hay suficientes ranchos de esta vocación para generar un promedio confiable.</p>
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px" }}>
-                  <RendimientoCard 
-                    titulo="Tasa de Mortalidad" 
-                    miValor={miMortalidad} 
-                    promedio={benchVocacion.promedioMortalidad} 
-                    formato="%" 
-                    inverso={true} 
-                  />
-                  {(miVocacion === "Engorda" || miVocacion === "Doble Propósito") && (
+                  {kpiSeleccionado === "mortalidad" && (
+                    <RendimientoCard 
+                      titulo="Tasa de Mortalidad" 
+                      miValor={miMortalidad} 
+                      promedio={benchVocacion.promedioMortalidad} 
+                      formato="%" 
+                      inverso={true} 
+                      arrayRankings={benchVocacion.rankings?.mortalidad}
+                    />
+                  )}
+                  {kpiSeleccionado === "prenez" && (
+                    <RendimientoCard 
+                      titulo="Tasa de Preñez" 
+                      miValor={miPrenez} 
+                      promedio={benchVocacion.promedioPrenez || 0} 
+                      formato="%" 
+                      inverso={false} 
+                      arrayRankings={benchVocacion.rankings?.prenez}
+                    />
+                  )}
+                  {kpiSeleccionado === "gdp" && (
                     <RendimientoCard 
                       titulo="Ganancia Diaria de Peso (GDP)" 
                       miValor={miGdp} 
-                      promedio={benchVocacion.promedioGdp} 
+                      promedio={benchVocacion.promedioGdp || 0} 
                       formato=" kg/día" 
                       inverso={false} 
+                      arrayRankings={benchVocacion.rankings?.gdp}
                     />
                   )}
-                  <div style={{ background: "#f8fafc", padding: "15px", borderRadius: "12px", border: "1px dashed #cbd5e1", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b", fontSize: "13px" }}>
-                    Comparándote contra {benchVocacion.ranchosParticipantes} ranchos de la misma vocación.
-                  </div>
                 </div>
               )}
             </div>
@@ -198,16 +257,36 @@ export default function BenchmarkRanking({ usuario }) {
                 <p style={{ color: "#6b7280" }}>Aún no hay suficientes ranchos en este estado para generar un promedio regional.</p>
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px" }}>
-                  <RendimientoCard 
-                    titulo="Tasa de Mortalidad (Regional)" 
-                    miValor={miMortalidad} 
-                    promedio={benchEstado.promedioMortalidad} 
-                    formato="%" 
-                    inverso={true} 
-                  />
-                  <div style={{ background: "#f8fafc", padding: "15px", borderRadius: "12px", border: "1px dashed #cbd5e1", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b", fontSize: "13px" }}>
-                    Comparándote contra {benchEstado.ranchosParticipantes} ranchos en {miEstado}.
-                  </div>
+                  {kpiSeleccionado === "mortalidad" && (
+                    <RendimientoCard 
+                      titulo="Tasa de Mortalidad (Regional)" 
+                      miValor={miMortalidad} 
+                      promedio={benchEstado.promedioMortalidad} 
+                      formato="%" 
+                      inverso={true}
+                      arrayRankings={benchEstado.rankings?.mortalidad} 
+                    />
+                  )}
+                  {kpiSeleccionado === "prenez" && (
+                    <RendimientoCard 
+                      titulo="Tasa de Preñez (Regional)" 
+                      miValor={miPrenez} 
+                      promedio={benchEstado.promedioPrenez || 0} 
+                      formato="%" 
+                      inverso={false} 
+                      arrayRankings={benchEstado.rankings?.prenez}
+                    />
+                  )}
+                  {kpiSeleccionado === "gdp" && (
+                    <RendimientoCard 
+                      titulo="Ganancia Diaria de Peso (Regional)" 
+                      miValor={miGdp} 
+                      promedio={benchEstado.promedioGdp || 0} 
+                      formato=" kg/día" 
+                      inverso={false} 
+                      arrayRankings={benchEstado.rankings?.gdp}
+                    />
+                  )}
                 </div>
               )}
             </div>

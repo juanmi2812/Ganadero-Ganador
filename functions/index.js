@@ -228,7 +228,6 @@ async function correrBenchmarkGlobal() {
     const ranchosSnap = await db.collection("ranchos").get();
     const animalesSnap = await db.collection("animales").get();
 
-    // Agrupar animales por ranchoId
     const animalesPorRancho = {};
     animalesSnap.forEach(doc => {
       const a = doc.data();
@@ -240,28 +239,24 @@ async function correrBenchmarkGlobal() {
     const promediosPorVocacion = {};
     const promediosPorEstado = {};
 
-    const inicializarVocacion = (vocacion) => {
-      if (!promediosPorVocacion[vocacion]) {
-        promediosPorVocacion[vocacion] = {
-          totalRanchos: 0,
-          totalCabezas: 0,
-          mortalidadSuma: 0,
-          natalidadSuma: 0,
-          gdpSuma: 0
-        };
-      }
-    };
+    const baseEstructura = () => ({
+      totalRanchos: 0,
+      totalCabezas: 0,
+      mortalidadSuma: 0,
+      gdpSuma: 0,
+      gdpCount: 0,
+      prenezSuma: 0,
+      prenezCount: 0,
+      valoresMortalidad: [],
+      valoresGdp: [],
+      valoresPrenez: []
+    });
 
+    const inicializarVocacion = (vocacion) => {
+      if (!promediosPorVocacion[vocacion]) promediosPorVocacion[vocacion] = baseEstructura();
+    };
     const inicializarEstado = (estado) => {
-      if (!promediosPorEstado[estado]) {
-        promediosPorEstado[estado] = {
-          totalRanchos: 0,
-          totalCabezas: 0,
-          mortalidadSuma: 0,
-          natalidadSuma: 0,
-          gdpSuma: 0
-        };
-      }
+      if (!promediosPorEstado[estado]) promediosPorEstado[estado] = baseEstructura();
     };
 
     ranchosSnap.forEach(doc => {
@@ -269,21 +264,20 @@ async function correrBenchmarkGlobal() {
       const vocacion = rancho.vocacion || "Desconocida";
       const estado = rancho.estadoRegion || "Desconocido";
 
-      // Ignorar si no tienen configurado el perfil
       if (vocacion === "Desconocida" && estado === "Desconocido") return;
 
       const animales = animalesPorRancho[doc.id] || [];
       const totalCabezas = animales.length;
-      if (totalCabezas === 0) return; // No aporta al benchmark
+      if (totalCabezas === 0) return;
 
-      // Cálculos básicos locales del rancho
       const bajasMuerte = animales.filter(a => a.estado === "Baja - Muerte").length;
-      const vientres = animales.filter(a => a.tipo === "Vaca" || a.tipo === "Novillona").length;
-      
       const tasaMortalidad = (bajasMuerte / totalCabezas) * 100;
       
-      // GDP promedio (Simplificado)
-      let gdpRancho = 0;
+      const vientres = animales.filter(a => a.tipo === "Vaca" || a.tipo === "Novillona").length;
+      const vientresGestantes = animales.filter(a => a.estado === "Gestante").length;
+      const tasaPrenez = vientres > 0 ? (vientresGestantes / vientres) * 100 : null;
+
+      let gdpRancho = null;
       const animalesConPeso = animales.filter(a => a.pesoAnteriorKg && a.pesoKg && a.fechaPesoAnterior && a.fechaPesoAnterior !== a.fechaNacimiento);
       if (animalesConPeso.length > 0) {
         let sumaGdp = 0;
@@ -291,41 +285,67 @@ async function correrBenchmarkGlobal() {
           const dias = (new Date() - new Date(a.fechaPesoAnterior)) / (1000 * 60 * 60 * 24);
           if (dias > 0) {
             const gdp = (a.pesoKg - a.pesoAnteriorKg) / dias;
-            if (gdp > 0 && gdp < 5) sumaGdp += gdp; // Filtro de anomalías
+            if (gdp > 0 && gdp < 5) sumaGdp += gdp;
           }
         });
         gdpRancho = sumaGdp / animalesConPeso.length;
       }
 
+      const procesarCategoria = (categoriaObj) => {
+        categoriaObj.totalRanchos++;
+        categoriaObj.totalCabezas += totalCabezas;
+        
+        categoriaObj.mortalidadSuma += tasaMortalidad;
+        categoriaObj.valoresMortalidad.push(tasaMortalidad);
+
+        if (gdpRancho !== null) {
+          categoriaObj.gdpSuma += gdpRancho;
+          categoriaObj.gdpCount++;
+          categoriaObj.valoresGdp.push(gdpRancho);
+        }
+
+        if (tasaPrenez !== null) {
+          categoriaObj.prenezSuma += tasaPrenez;
+          categoriaObj.prenezCount++;
+          categoriaObj.valoresPrenez.push(tasaPrenez);
+        }
+      };
+
       if (vocacion !== "Desconocida") {
         inicializarVocacion(vocacion);
-        promediosPorVocacion[vocacion].totalRanchos++;
-        promediosPorVocacion[vocacion].totalCabezas += totalCabezas;
-        promediosPorVocacion[vocacion].mortalidadSuma += tasaMortalidad;
-        promediosPorVocacion[vocacion].gdpSuma += gdpRancho;
+        procesarCategoria(promediosPorVocacion[vocacion]);
       }
 
       if (estado !== "Desconocido") {
         inicializarEstado(estado);
-        promediosPorEstado[estado].totalRanchos++;
-        promediosPorEstado[estado].totalCabezas += totalCabezas;
-        promediosPorEstado[estado].mortalidadSuma += tasaMortalidad;
-        promediosPorEstado[estado].gdpSuma += gdpRancho;
+        procesarCategoria(promediosPorEstado[estado]);
       }
     });
 
-    // Calcular promedios finales
     const procesarAgrupacion = (agrupacion) => {
       const result = {};
       Object.keys(agrupacion).forEach(key => {
         const obj = agrupacion[key];
         const tr = obj.totalRanchos;
         if (tr > 0) {
+          // Ordenar arrays para poder calcular el ranking exacto.
+          // Mortalidad (menor es mejor)
+          const rankMortalidad = obj.valoresMortalidad.sort((a, b) => a - b);
+          // GDP y Preñez (mayor es mejor)
+          const rankGdp = obj.valoresGdp.sort((a, b) => b - a);
+          const rankPrenez = obj.valoresPrenez.sort((a, b) => b - a);
+
           result[key] = {
             ranchosParticipantes: tr,
             promedioCabezas: obj.totalCabezas / tr,
             promedioMortalidad: obj.mortalidadSuma / tr,
-            promedioGdp: obj.gdpSuma / tr
+            promedioGdp: obj.gdpCount > 0 ? obj.gdpSuma / obj.gdpCount : 0,
+            promedioPrenez: obj.prenezCount > 0 ? obj.prenezSuma / obj.prenezCount : 0,
+            rankings: {
+              mortalidad: rankMortalidad,
+              gdp: rankGdp,
+              prenez: rankPrenez
+            }
           };
         }
       });
@@ -338,8 +358,6 @@ async function correrBenchmarkGlobal() {
       porEstado: procesarAgrupacion(promediosPorEstado)
     };
 
-    // Guardar en Firestore (sobrescribe siempre 'ultimo' para que la app consuma 1 solo documento)
     await db.collection("benchmarks").doc("ultimo").set(dataFinal);
-    
     console.log("Benchmarks calculados y guardados exitosamente.");
 }
