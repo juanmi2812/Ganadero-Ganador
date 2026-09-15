@@ -389,8 +389,3 @@ async function correrBenchmarkGlobal() {
     await db.collection("benchmarks").doc("ultimo").set(dataFinal);
     console.log("Benchmarks calculados y guardados exitosamente.");
 }
-
-exports.forzarBenchmark2 = functions.https.onRequest(async (req, res) => {
-    await correrBenchmarkGlobal();
-    res.send("Forzado 2 GDP Fix");
-});

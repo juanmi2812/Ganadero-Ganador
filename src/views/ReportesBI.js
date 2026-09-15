@@ -160,7 +160,7 @@ export default function ReportesBI({ usuario }) {
   const gdpPromedio = metricas.gdp.m_12m !== "0.000" ? metricas.gdp.m_12m : (metricas.gdp.h_12m !== "0.000" ? metricas.gdp.h_12m : "--");
   
   const totalAbortos = eventos.filter(e => e.tipo === "Aborto").length;
-  const tasaAbortos = totalVientres > 0 ? ((totalAbortos / totalVientres) * 100).toFixed(1) : "0.0";
+  const tasaAbortos = vientresTotales > 0 ? ((totalAbortos / vientresTotales) * 100).toFixed(1) : "0.0";
 
   let promedioLeche = "0.0";
   if (lecheIndividual && lecheIndividual.length > 0) {
@@ -308,7 +308,7 @@ export default function ReportesBI({ usuario }) {
             <div style={{ fontSize: "22px", marginBottom: "6px" }}>📈</div>
             <div className="kpi-value" style={{ color: "#10b981" }}>{tasaPrenez}%</div>
             <div className="kpi-label">Tasa de Preñez</div>
-            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>{vientresGestantes} de {totalVientres} vientres gestantes</div>
+            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>{vientresGestantes} de {vientresTotales} vientres gestantes</div>
         </div>
 
         {/* KPI: IEP - Intervalo Entre Partos */}
