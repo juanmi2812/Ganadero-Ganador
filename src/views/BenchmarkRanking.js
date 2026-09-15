@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import Header from "../components/Header";
 import { Trophy, TrendingUp, AlertTriangle, Activity, Map, BarChart2 } from "lucide-react";
@@ -27,8 +27,29 @@ export default function BenchmarkRanking({ usuario }) {
         const bSnap = await getDoc(doc(db, "benchmarks", "ultimo"));
         if (bSnap.exists()) setBenchmarks(bSnap.data());
 
-        setMiMortalidad(1.2); // Valores mock rápidos para el MVP visual
-        setMiGdp(0.95);
+        // Calcular los valores REALES de mi rancho
+        const animalesQ = query(collection(db, "animales"), where("ranchoId", "==", usuario.ranchoId));
+        const animalesSnap = await getDocs(animalesQ);
+        const animales = animalesSnap.docs.map(d => d.data());
+        
+        const totalCabezas = animales.length;
+        if (totalCabezas > 0) {
+            const bajasMuerte = animales.filter(a => a.estado === "Baja - Muerte").length;
+            setMiMortalidad((bajasMuerte / totalCabezas) * 100);
+
+            const animalesConPeso = animales.filter(a => a.pesoAnteriorKg && a.pesoKg && a.fechaPesoAnterior && a.fechaPesoAnterior !== a.fechaNacimiento);
+            if (animalesConPeso.length > 0) {
+              let sumaGdp = 0;
+              animalesConPeso.forEach(a => {
+                const dias = (new Date() - new Date(a.fechaPesoAnterior)) / (1000 * 60 * 60 * 24);
+                if (dias > 0) {
+                  const gdp = (a.pesoKg - a.pesoAnteriorKg) / dias;
+                  if (gdp > 0 && gdp < 5) sumaGdp += gdp;
+                }
+              });
+              setMiGdp(sumaGdp / animalesConPeso.length);
+            }
+        }
 
         setCargando(false);
       } catch (e) {
