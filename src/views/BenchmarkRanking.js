@@ -203,14 +203,14 @@ export default function BenchmarkRanking({ usuario }) {
           <div style={{ backgroundColor: "#f9fafb", border: "1px solid #e5e7eb", padding: "30px", borderRadius: "12px", textAlign: "center" }}>
             <Activity size={48} color="#9ca3af" style={{ margin: "0 auto 15px" }} />
             <h2 style={{ margin: "0 0 10px", color: "#374151" }}>Calculando Promedios...</h2>
-            <p style={{ color: "#6b7280" }}>El motor de Benchmark se ejecuta todas las madrugadas. Regresa mañana para ver tu posición en el Ranking.</p>
+            <p style={{ color: "#6b7280" }}>El motor del Ranking Regional se ejecuta todas las madrugadas. Regresa mañana para ver tu posición en la tabla.</p>
           </div>
         ) : (
           <>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "10px" }}>
               <div>
                 <h2 style={{ margin: 0, fontSize: "22px", color: "#111827", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <Trophy color="#f59e0b" /> Ranking y Benchmark
+                  <Trophy color="#f59e0b" /> Ranking Regional
                 </h2>
                 <p style={{ margin: "5px 0 0", color: "#6b7280", fontSize: "14px" }}>
                   Actualizado: {format(new Date(benchmarks.ultimaActualizacion), "dd MMM yyyy, HH:mm", { locale: es })}

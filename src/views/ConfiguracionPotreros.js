@@ -385,24 +385,41 @@ export default function ConfiguracionPotreros({ usuario }) {
 
       {/* 📊 PERFIL OPERATIVO (Benchmark) */}
       <div className="card" style={{ padding: "20px", marginBottom: "20px", borderLeft: "4px solid #3b82f6" }}>
-        <h2 style={{ margin: "0 0 10px 0", fontSize: "18px", color: "#1e40af" }}>Perfil Operativo y Benchmark</h2>
-        <p style={{ fontSize: "13px", color: "var(--gris-400)", marginBottom: "15px" }}>Configura estos datos para poder comparar el rendimiento de tu rancho (Benchmark) contra ranchos similares de tu región. Todos los datos de comparación son 100% anónimos.</p>
+        <h2 style={{ margin: "0 0 10px 0", fontSize: "18px", color: "#1e40af" }}>Perfil Operativo y Ranking Regional</h2>
+        <p style={{ fontSize: "13px", color: "var(--gris-400)", marginBottom: "15px" }}>Configura estos datos para poder comparar el rendimiento de tu rancho en el Ranking Regional contra ranchos similares. Todos los datos de comparación son 100% anónimos.</p>
         
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" }}>
           <div>
-            <label style={labelStyle}>Vocación Principal del Rancho</label>
-            <select 
-              value={ranchoDoc?.vocacion || ""} 
-              onChange={(e) => guardarPerfilRancho("vocacion", e.target.value)}
-              style={inputStyle}
-              disabled={guardandoPerfil || usuario?.rol !== "admin"}
-            >
-              <option value="">-- Selecciona Vocación --</option>
-              <option value="Leche">Establo Lechero (Leche)</option>
-              <option value="Cría">Pie de Cría (Venta de Becerros)</option>
-              <option value="Engorda">Feedlot / Engorda (Carne)</option>
-              <option value="Doble Propósito">Doble Propósito (Leche y Cría)</option>
-            </select>
+            <div>
+              <label style={labelStyle}>Vocación del Rancho (Puedes seleccionar varias)</label>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "5px" }}>
+                {[
+                  { id: "Leche", label: "Establo Lechero (Leche)" },
+                  { id: "Cría", label: "Pie de Cría (Venta de Becerros)" },
+                  { id: "Engorda", label: "Feedlot / Engorda (Carne)" },
+                  { id: "Doble Propósito", label: "Doble Propósito (Leche y Cría)" }
+                ].map(op => {
+                  const currentArr = Array.isArray(ranchoDoc?.vocacion) ? ranchoDoc.vocacion : (ranchoDoc?.vocacion ? [ranchoDoc.vocacion] : []);
+                  const isChecked = currentArr.includes(op.id);
+                  return (
+                    <label key={op.id} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", color: "#374151" }}>
+                      <input 
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => {
+                           let newArr = [...currentArr];
+                           if (e.target.checked) newArr.push(op.id);
+                           else newArr = newArr.filter(x => x !== op.id);
+                           guardarPerfilRancho("vocacion", newArr);
+                        }}
+                        disabled={guardandoPerfil || usuario?.rol !== "admin"}
+                      />
+                      {op.label}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
           </div>
           <div>
             <label style={labelStyle}>Estado / Región</label>

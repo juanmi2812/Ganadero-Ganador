@@ -274,10 +274,12 @@ async function correrBenchmarkGlobal() {
 
     ranchosSnap.forEach(doc => {
       const rancho = doc.data();
-      const vocacion = rancho.vocacion || "Desconocida";
+      let vocaciones = rancho.vocacion || ["Desconocida"];
+      if (!Array.isArray(vocaciones)) vocaciones = [vocaciones];
+      if (vocaciones.length === 0) vocaciones = ["Desconocida"];
       const estado = rancho.estadoRegion || "Desconocido";
 
-      if (vocacion === "Desconocida" && estado === "Desconocido") return;
+      if (vocaciones.includes("Desconocida") && estado === "Desconocido") return;
 
       const animales = animalesPorRancho[doc.id] || [];
       const totalCabezas = animales.length;
@@ -339,10 +341,14 @@ async function correrBenchmarkGlobal() {
         }
       };
 
-      if (vocacion !== "Desconocida") {
-        inicializarVocacion(vocacion);
-        procesarCategoria(promediosPorVocacion[vocacion]);
-      }
+      // Usando las vocaciones del inicio del ciclo
+
+      vocaciones.forEach(v => {
+         if (v !== "Desconocida") {
+           inicializarVocacion(v);
+           procesarCategoria(promediosPorVocacion[v]);
+         }
+      });
 
       if (estado !== "Desconocido") {
         inicializarEstado(estado);
