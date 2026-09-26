@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { collection, query, where, onSnapshot, addDoc, updateDoc, doc } from "firebase/firestore";
+import { collection, query, where, onSnapshot, addDoc, updateDoc, doc, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import { Truck, MapPin, Calendar, FileText, CheckCircle, ShieldCheck } from "lucide-react";
 import jsPDF from "jspdf";
@@ -20,7 +20,12 @@ export default function Movilizacion({ usuario }) {
   const [chofer, setChofer] = useState("");
   const [placas, setPlacas] = useState("");
   const [ruta, setRuta] = useState("");
-  const [ganadera, setGanadera] = useState("");
+  
+  // Ganaderas
+  const [ganaderasDisponibles, setGanaderasDisponibles] = useState([]);
+  const [ganaderaIdSeleccionada, setGanaderaIdSeleccionada] = useState("");
+  const [ganaderaDataSeleccionada, setGanaderaDataSeleccionada] = useState(null);
+
   const [fechaCita, setFechaCita] = useState("");
   const [horaCita, setHoraCita] = useState("");
 
@@ -50,9 +55,30 @@ export default function Movilizacion({ usuario }) {
       }
     });
 
+    // Cargar catálogo de Ganaderas registradas
+    const fetchGanaderas = async () => {
+      try {
+        const snap = await getDocs(collection(db, "ganaderas"));
+        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setGanaderasDisponibles(data);
+      } catch (err) {
+        console.error("Error al cargar ganaderas", err);
+      }
+    };
+    fetchGanaderas();
+
     setCargando(false);
     return () => { unsubAnimales(); unsubConfig(); };
   }, [usuario]);
+
+  // Manejar selección de ganadera
+  const handleSeleccionGanadera = (id) => {
+    setGanaderaIdSeleccionada(id);
+    const g = ganaderasDisponibles.find(x => x.id === id);
+    setGanaderaDataSeleccionada(g || null);
+    setFechaCita("");
+    setHoraCita("");
+  };
 
   const toggleSeleccion = (id) => {
     if (seleccionados.includes(id)) {
@@ -98,7 +124,8 @@ export default function Movilizacion({ usuario }) {
         if (!animal) return;
 
         const tipoEvento = tipoMovimiento === "Venta" ? "Venta" : "Traslado";
-        const resMov = `Destino: ${destinoNombre} (UPP: ${destinoUPP}) | Ganadera: ${ganadera}`;
+        const ganaderaNombreReal = ganaderaDataSeleccionada ? ganaderaDataSeleccionada.nombre : "Ganadera Local";
+        const resMov = `Destino: ${destinoNombre} (UPP: ${destinoUPP}) | Ganadera: ${ganaderaNombreReal}`;
         
         await addDoc(collection(db, "eventos"), {
           animalId: animal.id,
@@ -120,7 +147,38 @@ export default function Movilizacion({ usuario }) {
 
       await Promise.all(promesasEventos);
 
-      // 3. Generar PDF
+      // 3. Crear cita en la Ganadera seleccionada
+      if (ganaderaIdSeleccionada) {
+        const animalesCita = seleccionados.map(id => {
+          const a = animales.find(x => x.id === id);
+          return {
+            id: a.id,
+            arete: a.arete || "",
+            tipo: a.tipo || "",
+            sexo: a.sexo || "",
+            pesoActual: a.pesoActual || 0
+          };
+        });
+
+        await addDoc(collection(db, "citas_movilizacion"), {
+          ranchoId: usuario.ranchoId,
+          ranchoNombre: usuario.ranchoNombre || "Rancho Desconocido",
+          ganaderaId: ganaderaIdSeleccionada,
+          ganaderaNombre: ganaderaDataSeleccionada?.nombre || "Ganadera",
+          tipoMovimiento,
+          estado: "Pendiente",
+          fechaCita,
+          horaCita,
+          destinoUPP,
+          destinoNombre,
+          chofer,
+          placas,
+          animales: animalesCita,
+          fechaCreacion: new Date().toISOString()
+        });
+      }
+
+      // 4. Generar PDF
       const docPdf = new jsPDF();
       docPdf.setFontSize(22);
       docPdf.setTextColor(22, 101, 52); // verde
@@ -159,7 +217,8 @@ export default function Movilizacion({ usuario }) {
       docPdf.text("Cita Asociación Ganadera (Validación)", 14, 78);
       docPdf.setFontSize(11);
       docPdf.setTextColor(80);
-      docPdf.text(`Asociación: ${ganadera}`, 14, 84);
+      const ganaderaNombreReal = ganaderaDataSeleccionada ? ganaderaDataSeleccionada.nombre : "Ganadera Local";
+      docPdf.text(`Asociación: ${ganaderaNombreReal}`, 14, 84);
       docPdf.text(`Fecha y Hora: ${fechaCita} a las ${horaCita}`, 14, 90);
 
       const animalesTabla = seleccionados.map(id => {
@@ -194,9 +253,9 @@ export default function Movilizacion({ usuario }) {
         );
       }
 
-      docPdf.save(`Movilizacion_${fechaCita}_${ganadera}.pdf`);
+      docPdf.save(`Movilizacion_${fechaCita}_${ganaderaNombreReal}.pdf`);
       
-      setExito("Movilización registrada correctamente y guía descargada.");
+      setExito("Movilización registrada correctamente. Cita enviada a la Ganadera y guía descargada.");
       
       // Limpiar Formulario si es traslado
       if (tipoMovimiento === "Traslado") {
@@ -292,21 +351,39 @@ export default function Movilizacion({ usuario }) {
 
             <div className="input-group" style={{ marginTop: "12px" }}>
               <label>Agendar Cita en Ganadera (Validación)</label>
-              <select value={ganadera} onChange={(e) => setGanadera(e.target.value)} required style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db", backgroundColor: "#fdf4ff", color: "#86198f", fontWeight: "bold" }}>
+              <select value={ganaderaIdSeleccionada} onChange={(e) => handleSeleccionGanadera(e.target.value)} required style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db", backgroundColor: "#fdf4ff", color: "#86198f", fontWeight: "bold" }}>
                 <option value="">-- Selecciona Asociación Ganadera --</option>
-                <option value="Ganadera Tuxpan">Ganadera Tuxpan</option>
-                <option value="Ganadera Álamo">Ganadera Álamo</option>
+                {ganaderasDisponibles.map(g => (
+                  <option key={g.id} value={g.id}>{g.nombre}</option>
+                ))}
               </select>
             </div>
+
+            {ganaderaDataSeleccionada && (
+              <div style={{ padding: "10px", backgroundColor: "#f3f4f6", borderRadius: "8px", marginTop: "10px", fontSize: "13px", color: "#4b5563" }}>
+                <strong>Horario de Atención:</strong> {ganaderaDataSeleccionada.horariosAtencion?.inicio || "09:00"} - {ganaderaDataSeleccionada.horariosAtencion?.fin || "14:00"}<br/>
+                <strong>Días:</strong> {ganaderaDataSeleccionada.horariosAtencion?.dias?.join(", ") || "Lunes a Viernes"}
+              </div>
+            )}
 
             <div style={{ display: "flex", gap: "12px", marginTop: "12px" }}>
               <div className="input-group" style={{ flex: 1, margin: 0 }}>
                 <label>Fecha de Cita</label>
-                <input type="date" value={fechaCita} onChange={(e) => setFechaCita(e.target.value)} required style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db" }} />
+                <input type="date" value={fechaCita} onChange={(e) => setFechaCita(e.target.value)} required style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db" }} disabled={!ganaderaIdSeleccionada} />
               </div>
               <div className="input-group" style={{ flex: 1, margin: 0 }}>
                 <label>Hora de Cita</label>
-                <input type="time" value={horaCita} onChange={(e) => setHoraCita(e.target.value)} required style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db" }} />
+                <input 
+                  type="time" 
+                  value={horaCita} 
+                  onChange={(e) => setHoraCita(e.target.value)} 
+                  required 
+                  disabled={!ganaderaIdSeleccionada}
+                  min={ganaderaDataSeleccionada?.horariosAtencion?.inicio || "09:00"}
+                  max={ganaderaDataSeleccionada?.horariosAtencion?.fin || "14:00"}
+                  step={ganaderaDataSeleccionada?.duracionCitaMinutos ? ganaderaDataSeleccionada.duracionCitaMinutos * 60 : 3600}
+                  style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db" }} 
+                />
               </div>
             </div>
             

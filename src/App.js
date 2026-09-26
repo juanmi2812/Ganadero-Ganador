@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Login from "./views/Login";
 import Suscripcion from "./views/Suscripcion";
+import GanaderaApp from "./views/GanaderaApp";
 
 import ImportadorMasivo from "./views/ImportadorMasivo";
 import DashboardGanado from "./views/DashboardGanado";
@@ -141,7 +142,12 @@ export default function App() {
     return <Login alIniciarSesion={setUsuario} />;
   }
 
-  // Lógica de Suscripción / Paywall
+  // Si el usuario es de una Asociación Ganadera, renderizar su propio layout
+  if (usuario.tipoEntidad === "ganadera") {
+    return <GanaderaApp usuario={usuario} cerrarSesion={cerrarSesion} />;
+  }
+
+  // Lógica de Suscripción / Paywall para Ranchos
   const tieneSuscripcionActiva = usuario.suscripcionActiva === true;
   const hoy = new Date();
   const finPrueba = usuario.fechaFinPrueba ? new Date(usuario.fechaFinPrueba) : new Date(0); // Si no tiene, se venció

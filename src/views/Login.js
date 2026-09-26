@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Plus, Users } from "lucide-react";
+import { ArrowLeft, Plus, Users, ShieldCheck } from "lucide-react";
 import logoConvivet from "../assets/logo_convivet.jpg";
 import {
   db,
@@ -23,8 +23,11 @@ export default function Login({ alIniciarSesion }) {
   const [correo, setCorreo] = useState("");
   const [password, setPassword] = useState("");
 
-  // Admin
+  // Admin Rancho
   const [nombreRancho, setNombreRancho] = useState("");
+
+  // Ganadera
+  const [nombreGanadera, setNombreGanadera] = useState("");
 
   // Empleado
   const [ranchoSeleccionado, setRanchoSeleccionado] = useState("");
@@ -38,6 +41,7 @@ export default function Login({ alIniciarSesion }) {
     setCorreo("");
     setPassword("");
     setNombreRancho("");
+    setNombreGanadera("");
     setRanchoSeleccionado("");
   };
 
@@ -61,6 +65,7 @@ export default function Login({ alIniciarSesion }) {
   };
 
   // ─── Registro Admin ───────────────────────────────────────────────────────
+  // ─── Registro Admin Rancho ───────────────────────────────────────────────────
   const manejarRegistroAdmin = async (e) => {
     e.preventDefault();
     if (!nombre.trim()) { setError("El nombre es obligatorio."); return; }
@@ -78,29 +83,63 @@ export default function Login({ alIniciarSesion }) {
       const hoy = new Date();
       hoy.setDate(hoy.getDate() + 30);
       
-      await setDoc(doc(db, "usuarios", cred.user.uid), {
+      const perfil = {
         nombre: nombre.trim(),
         correo: correo.trim(),
         rol: "admin",
+        tipoEntidad: "rancho",
         ranchoId: ranchoRef.id,
         ranchoNombre: nombreRancho.trim(),
         fechaFinPrueba: hoy.toISOString(),
-      });
-      alIniciarSesion({
-        uid: cred.user.uid,
-        nombre: nombre.trim(),
-        correo: correo.trim(),
-        rol: "admin",
-        ranchoId: ranchoRef.id,
-        ranchoNombre: nombreRancho.trim(),
-        fechaFinPrueba: hoy.toISOString(),
-      });
+      };
+      await setDoc(doc(db, "usuarios", cred.user.uid), perfil);
+      alIniciarSesion({ uid: cred.user.uid, ...perfil });
     } catch (err) {
       setError(mensajeError(err.code || err.message));
     } finally {
       setCargando(false);
     }
   };
+
+  // ─── Registro Ganadera ──────────────────────────────────────────────────────
+  const manejarRegistroGanadera = async (e) => {
+    e.preventDefault();
+    if (!nombre.trim()) { setError("El nombre es obligatorio."); return; }
+    if (!nombreGanadera.trim()) { setError("El nombre de la Ganadera es obligatorio."); return; }
+    setError("");
+    setCargando(true);
+    try {
+      const cred = await registrarCorreo(correo, password);
+      const ganaderaRef = doc(collection(db, "ganaderas"));
+      await setDoc(ganaderaRef, {
+        nombre: nombreGanadera.trim(),
+        adminUid: cred.user.uid,
+        fechaCreacion: new Date().toISOString(),
+        horariosAtencion: {
+          dias: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"],
+          inicio: "09:00",
+          fin: "14:00"
+        },
+        duracionCitaMinutos: 60
+      });
+      
+      const perfil = {
+        nombre: nombre.trim(),
+        correo: correo.trim(),
+        rol: "admin_ganadera",
+        tipoEntidad: "ganadera",
+        ganaderaId: ganaderaRef.id,
+        ganaderaNombre: nombreGanadera.trim(),
+      };
+      await setDoc(doc(db, "usuarios", cred.user.uid), perfil);
+      alIniciarSesion({ uid: cred.user.uid, ...perfil });
+    } catch (err) {
+      setError(mensajeError(err.code || err.message));
+    } finally {
+      setCargando(false);
+    }
+  };
+
 
   // ─── Google ───────────────────────────────────────────────────────────────
   const loginGoogle = async () => {
@@ -125,31 +164,58 @@ export default function Login({ alIniciarSesion }) {
     }
   };
 
-  // ─── Completar registro Google como Admin ─────────────────────────────────
+  // ─── Completar registro Google como Admin Rancho o Ganadera ───────────────────
   const completarGoogleAdmin = async (e) => {
     e.preventDefault();
-    if (!nombreRancho.trim()) { setError("El nombre del rancho es obligatorio."); return; }
+    if (pantalla === "google-admin" && !nombreRancho.trim()) { setError("El nombre del rancho es obligatorio."); return; }
+    if (pantalla === "google-ganadera" && !nombreGanadera.trim()) { setError("El nombre de la Ganadera es obligatorio."); return; }
     if (!googleUser) { setError("Error: sesión de Google perdida. Intenta de nuevo."); return; }
     setCargando(true);
     try {
       const uid = googleUser.uid;
-      const ranchoRef = doc(collection(db, "ranchos"));
-      await setDoc(ranchoRef, {
-        nombre: nombreRancho.trim(),
-        adminUid: uid,
-        fechaCreacion: new Date().toISOString(),
-      });
-      const hoy = new Date();
-      hoy.setDate(hoy.getDate() + 30);
+      let perfil;
 
-      const perfil = {
-        nombre: nombre || googleUser.displayName || "",
-        correo: googleUser.email || "",
-        rol: "admin",
-        ranchoId: ranchoRef.id,
-        ranchoNombre: nombreRancho.trim(),
-        fechaFinPrueba: hoy.toISOString(),
-      };
+      if (pantalla === "google-admin") {
+        const ranchoRef = doc(collection(db, "ranchos"));
+        await setDoc(ranchoRef, {
+          nombre: nombreRancho.trim(),
+          adminUid: uid,
+          fechaCreacion: new Date().toISOString(),
+        });
+        const hoy = new Date();
+        hoy.setDate(hoy.getDate() + 30);
+        perfil = {
+          nombre: nombre || googleUser.displayName || "",
+          correo: googleUser.email || "",
+          rol: "admin",
+          tipoEntidad: "rancho",
+          ranchoId: ranchoRef.id,
+          ranchoNombre: nombreRancho.trim(),
+          fechaFinPrueba: hoy.toISOString(),
+        };
+      } else {
+        const ganaderaRef = doc(collection(db, "ganaderas"));
+        await setDoc(ganaderaRef, {
+          nombre: nombreGanadera.trim(),
+          adminUid: uid,
+          fechaCreacion: new Date().toISOString(),
+          horariosAtencion: {
+            dias: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"],
+            inicio: "09:00",
+            fin: "14:00"
+          },
+          duracionCitaMinutos: 60
+        });
+        perfil = {
+          nombre: nombre || googleUser.displayName || "",
+          correo: googleUser.email || "",
+          rol: "admin_ganadera",
+          tipoEntidad: "ganadera",
+          ganaderaId: ganaderaRef.id,
+          ganaderaNombre: nombreGanadera.trim(),
+        };
+      }
+
       await setDoc(doc(db, "usuarios", uid), perfil);
       alIniciarSesion({ uid, ...perfil });
     } catch (err) {
@@ -247,8 +313,19 @@ export default function Login({ alIniciarSesion }) {
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <Plus size={22} color="#16a34a" />
                 <div>
-                  <div style={{ fontWeight: "700", color: "#15803d", fontSize: "15px" }}>Dueño / Administrador</div>
-                  <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "2px" }}>Crea un nuevo rancho y gestiona todo</div>
+                  <div style={{ fontWeight: "700", color: "#15803d", fontSize: "15px" }}>Dueño de Rancho</div>
+                  <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "2px" }}>Crea un nuevo rancho y gestiona tu ganado</div>
+                </div>
+              </div>
+            </button>
+
+            <button onClick={() => { ir(pantalla === "elegir-registro-google" ? "google-ganadera" : "registro-ganadera"); }}
+              style={{ width: "100%", padding: "16px", borderRadius: "10px", border: "2px solid #2563eb", backgroundColor: "#eff6ff", cursor: "pointer", textAlign: "left", marginBottom: "12px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <ShieldCheck size={22} color="#2563eb" />
+                <div>
+                  <div style={{ fontWeight: "700", color: "#1d4ed8", fontSize: "15px" }}>Asociación Ganadera</div>
+                  <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "2px" }}>Recibe citas y autoriza movimientos</div>
                 </div>
               </div>
             </button>
@@ -291,6 +368,47 @@ export default function Login({ alIniciarSesion }) {
               )}
               <button type="submit" className="btn-primary" style={{ width: "100%", marginTop: "4px", backgroundColor: "#16a34a", borderColor: "#16a34a" }} disabled={cargando}>
                 {cargando ? "Creando cuenta..." : "Crear Cuenta de Administrador"}
+              </button>
+            </form>
+          </>
+        )}
+
+        {/* ══════════ PANTALLA: REGISTRO GANADERA ══════════ */}
+        {(pantalla === "registro-ganadera" || pantalla === "google-ganadera") && (
+          <>
+            <button onClick={() => ir("elegir-registro")} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", display: "flex", alignItems: "center", gap: "4px", fontSize: "13px", marginBottom: "16px", padding: 0 }}>
+              <ArrowLeft size={14} /> Volver
+            </button>
+            <h2 style={{ margin: "0 0 4px 0", color: "#111827" }}>Asociación Ganadera</h2>
+            <p style={{ color: "#6b7280", fontSize: "14px", marginBottom: "18px" }}>Crea tu cuenta institucional</p>
+            {error && <ErrorBox msg={error} />}
+            <form onSubmit={pantalla === "google-ganadera" ? completarGoogleAdmin : manejarRegistroGanadera}>
+              <div style={groupStyle}>
+                <label style={labelStyle}>Tu Nombre</label>
+                <input style={inputStyle} type="text" placeholder="Ej. Juan García"
+                  value={nombre} onChange={e => setNombre(e.target.value)} required />
+              </div>
+              <div style={groupStyle}>
+                <label style={labelStyle}>Nombre de la Asociación</label>
+                <input style={inputStyle} type="text" placeholder="Ej. Asociación Ganadera Local"
+                  value={nombreGanadera} onChange={e => setNombreGanadera(e.target.value)} required />
+              </div>
+              {pantalla !== "google-ganadera" && (
+                <>
+                  <div style={groupStyle}>
+                    <label style={labelStyle}>Correo Electrónico</label>
+                    <input style={inputStyle} type="email" placeholder="admin@ganadera.com"
+                      value={correo} onChange={e => setCorreo(e.target.value)} required />
+                  </div>
+                  <div style={groupStyle}>
+                    <label style={labelStyle}>Contraseña (mínimo 6 caracteres)</label>
+                    <input style={inputStyle} type="password" placeholder="••••••••"
+                      value={password} onChange={e => setPassword(e.target.value)} required />
+                  </div>
+                </>
+              )}
+              <button type="submit" className="btn-primary" style={{ width: "100%", marginTop: "4px", backgroundColor: "#2563eb", borderColor: "#2563eb" }} disabled={cargando}>
+                {cargando ? "Creando cuenta..." : "Crear Cuenta Institucional"}
               </button>
             </form>
           </>
