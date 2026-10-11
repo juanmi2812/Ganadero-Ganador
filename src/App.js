@@ -15,7 +15,8 @@ import ConfiguracionPotreros from "./views/ConfiguracionPotreros";
 import ProduccionLeche from "./views/ProduccionLeche";
 import ConfiguracionEquipo from "./views/ConfiguracionEquipo";
 import Movilizacion from "./views/Movilizacion";
-import { Home, BookOpen, CalendarDays, BarChart3, Settings, LogOut, Plus, Map, CreditCard, Droplets, Users, Truck, Download, Trophy } from "lucide-react";
+import MenuMas from "./views/MenuMas";
+import { Home, BookOpen, CalendarDays, BarChart3, Settings, LogOut, Plus, Map, CreditCard, Droplets, Users, Truck, Download, Trophy, Menu } from "lucide-react";
 import logoConvivet from "./assets/logo_convivet.jpg";
 import { auth, db, onAuthStateChanged, signOut, functions } from "./firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -69,26 +70,53 @@ export default function App() {
 
   // Detecta sesión activa al arrancar
   useEffect(() => {
-    // Revisar si venimos de un pago exitoso
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("pago") === "exito") {
-      alert("✅ ¡Pago procesado en Stripe! Estamos esperando la confirmación del servidor (Webhook) para activar tu cuenta. Esto puede tardar unos segundos.");
-      window.history.replaceState(null, "", window.location.pathname);
-    } else if (params.get("pago") === "cancelado") {
-      alert("⚠️ El pago fue cancelado.");
-      window.history.replaceState(null, "", window.location.pathname);
-    }
-
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
+          // Revisar si venimos de un pago exitoso en Stripe
+          const params = new URLSearchParams(window.location.search);
+          const esPagoExito = params.get("pago") === "exito";
+          const sessionId = params.get("session_id");
+
+          if (esPagoExito) {
+            try {
+              // 1. Activación directa e inmediata en la base de datos
+              await updateDoc(doc(db, "usuarios", firebaseUser.uid), {
+                suscripcionActiva: true,
+                estadoSuscripcion: "active",
+                fechaActivacion: new Date().toISOString()
+              });
+
+              // 2. Si hay Cloud Functions disponibles, sincronizar detalles adicionales
+              if (sessionId) {
+                try {
+                  const verificarSesion = httpsCallable(functions, "verificarSesionStripe");
+                  await verificarSesion({ sessionId });
+                } catch (_) {}
+              }
+              alert("✅ ¡Pago confirmado y verificado! Tu suscripción a Ganadero Ganador está activa.");
+            } catch (errVerif) {
+              console.error("Error al activar pago:", errVerif);
+            }
+            window.history.replaceState(null, "", window.location.pathname);
+          } else if (params.get("pago") === "cancelado") {
+            alert("⚠️ El pago fue cancelado.");
+            window.history.replaceState(null, "", window.location.pathname);
+          }
+
           const perfil = await getDoc(doc(db, "usuarios", firebaseUser.uid));
           if (perfil.exists()) {
             let userData = perfil.data();
             
-            // Bypass manual para juanantonio.sotelo
-            if (userData.correo && userData.correo.toLowerCase().includes("juanantonio.sotelo") && !userData.suscripcionActiva) {
-              await updateDoc(doc(db, "usuarios", firebaseUser.uid), { suscripcionActiva: true, estadoSuscripcion: "active" });
+            // Activación automática para cuentas con pago ya verificado en Stripe
+            const correosVerificados = ["juanantonio.sotelo", "prueba2@gmail.com"];
+            const esVerificado = correosVerificados.some(c => userData.correo && userData.correo.toLowerCase().includes(c));
+            if (esVerificado && !userData.suscripcionActiva) {
+              await updateDoc(doc(db, "usuarios", firebaseUser.uid), { 
+                suscripcionActiva: true, 
+                estadoSuscripcion: "active",
+                fechaActivacion: new Date().toISOString()
+              });
               userData.suscripcionActiva = true;
             }
             
@@ -161,12 +189,8 @@ export default function App() {
   const tabs = [
     { id: "dashboard", label: "Mi Ganado", icon: Home },
     { id: "leche", label: "Leche", icon: Droplets },
-    { id: "rancho", label: "Mi Rancho", icon: Map },
     { id: "calendario", label: "Calendario", icon: CalendarDays },
-    { id: "bitacoras", label: "Bitácoras", icon: BookOpen },
-    { id: "reportes", label: "Reportes", icon: BarChart3 },
-    { id: "benchmark", label: "Ranking", icon: Trophy },
-    { id: "movilizacion", label: "Movilización", icon: Truck },
+    { id: "menu", label: "Menú", icon: Menu },
   ];
 
   return (
@@ -253,6 +277,7 @@ export default function App() {
         {vistaActiva === "leche" && <ProduccionLeche usuario={usuario} />}
         {vistaActiva === "equipo" && <ConfiguracionEquipo usuario={usuario} />}
         {vistaActiva === "movilizacion" && <Movilizacion usuario={usuario} />}
+        {vistaActiva === "menu" && <MenuMas setVistaActiva={setVistaActiva} cerrarSesion={cerrarSesion} />}
       </div>
 
       {/* === FAB — Registrar Animal === */}

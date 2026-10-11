@@ -1,3 +1,4 @@
+process.env.GCLOUD_PROJECT = process.env.GCLOUD_PROJECT || "control-ganadero-1518e";
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { differenceInMonths } = require("date-fns");
@@ -146,9 +147,9 @@ exports.createPortalSession = functions.https.onCall(async (data, context) => {
   const uid = context.auth.uid;
   const userDoc = await db.collection("usuarios").doc(uid).get();
   const userData = userDoc.data();
-  const customerId = userData.stripeCustomerId;
+  const customerId = userData?.stripeCustomerId;
 
-  if (!customerId) throw new functions.https.HttpsError("failed-precondition", "No hay cliente Stripe");
+  if (!customerId) throw new functions.https.HttpsError("failed-precondition", "No hay cliente Stripe registrado");
 
   const session = await stripe.billingPortal.sessions.create({
     customer: customerId,
@@ -156,6 +157,90 @@ exports.createPortalSession = functions.https.onCall(async (data, context) => {
   });
 
   return { url: session.url };
+});
+
+// Función de verificación síncrona inmediata al volver de Stripe Checkout
+exports.verificarSesionStripe = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "Debe iniciar sesión");
+  const { sessionId } = data;
+  if (!sessionId) throw new functions.https.HttpsError("invalid-argument", "sessionId requerido");
+
+  const uid = context.auth.uid;
+
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (session.payment_status === "paid" || session.status === "complete") {
+      const customerId = session.customer;
+      const subscriptionId = session.subscription;
+
+      await db.collection("usuarios").doc(uid).update({
+        suscripcionActiva: true,
+        estadoSuscripcion: "active",
+        stripeCustomerId: customerId || null,
+        stripeSubscriptionId: subscriptionId || null,
+        fechaActivacion: new Date().toISOString()
+      });
+
+      console.log(`✅ Suscripción activada exitosamente para usuario ${uid} con sesión ${sessionId}`);
+      return { activa: true, customerId, subscriptionId };
+    } else {
+      return { activa: false, status: session.status, paymentStatus: session.payment_status };
+    }
+  } catch (error) {
+    console.error("Error al verificar sesión de Stripe:", error);
+    throw new functions.https.HttpsError("internal", error.message);
+  }
+});
+
+// Función para verificar si el usuario tiene suscripción activa en Stripe (Fallback general)
+exports.verificarEstadoSuscripcion = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "Debe iniciar sesión");
+  const uid = context.auth.uid;
+
+  try {
+    const userDoc = await db.collection("usuarios").doc(uid).get();
+    const userData = userDoc.data() || {};
+    let customerId = userData.stripeCustomerId;
+
+    // Si no tiene stripeCustomerId guardado, buscar en Stripe por su email
+    if (!customerId && context.auth.token.email) {
+      const customers = await stripe.customers.list({ email: context.auth.token.email, limit: 1 });
+      if (customers.data.length > 0) {
+        customerId = customers.data[0].id;
+        await userDoc.ref.update({ stripeCustomerId: customerId });
+      }
+    }
+
+    if (!customerId) {
+      return { activa: false, razon: "No existe cliente en Stripe" };
+    }
+
+    // Buscar suscripciones activas
+    const subs = await stripe.subscriptions.list({
+      customer: customerId,
+      status: "active",
+      limit: 1
+    });
+
+    if (subs.data.length > 0) {
+      const sub = subs.data[0];
+      await userDoc.ref.update({
+        suscripcionActiva: true,
+        estadoSuscripcion: sub.status,
+        stripeSubscriptionId: sub.id,
+        planId: sub.items.data[0]?.price?.id || null,
+        intervaloCobro: sub.items.data[0]?.price?.recurring?.interval || "month"
+      });
+      return { activa: true, subId: sub.id, plan: sub.items.data[0]?.price?.id };
+    } else {
+      // Verificar si está en periodo de prueba de Stripe o vencida
+      return { activa: false, razon: "Sin suscripciones activas en Stripe" };
+    }
+  } catch (error) {
+    console.error("Error al verificar estado de suscripción:", error);
+    throw new functions.https.HttpsError("internal", error.message);
+  }
 });
 
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
@@ -166,47 +251,105 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
 
   try {
     if (stripeWebhookSecret) {
-      // Producción: Verificar firma usando req.rawBody
       event = stripe.webhooks.constructEvent(req.rawBody, sig, stripeWebhookSecret);
     } else {
-      // Desarrollo / Local sin secreto
       event = req.body;
       if (Buffer.isBuffer(req.rawBody)) {
-          event = JSON.parse(req.rawBody.toString());
+        event = JSON.parse(req.rawBody.toString());
       }
     }
   } catch (err) {
-    console.error("Webhook Error", err.message);
+    console.error("Webhook Error:", err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
   try {
+    console.log(`Evento de Stripe recibido: ${event.type}`);
+
     switch (event.type) {
-      case "checkout.session.completed":
-      case "invoice.payment_succeeded": {
-        const customerId = event.data.object.customer;
-        // Buscar al usuario por customerId
-        const usersSnap = await db.collection("usuarios").where("stripeCustomerId", "==", customerId).get();
-        if (!usersSnap.empty) {
-          const userRef = usersSnap.docs[0].ref;
-          await userRef.update({ suscripcionActiva: true, estadoSuscripcion: "active" });
+      case "checkout.session.completed": {
+        const session = event.data.object;
+        const uid = session.metadata?.firebaseUID;
+        const customerId = session.customer;
+        const subscriptionId = session.subscription;
+
+        if (uid) {
+          await db.collection("usuarios").doc(uid).update({
+            suscripcionActiva: true,
+            estadoSuscripcion: "active",
+            stripeCustomerId: customerId || null,
+            stripeSubscriptionId: subscriptionId || null,
+            fechaActivacion: new Date().toISOString()
+          });
+          console.log(`Usuario ${uid} activado vía checkout.session.completed`);
+        } else if (customerId) {
+          const usersSnap = await db.collection("usuarios").where("stripeCustomerId", "==", customerId).get();
+          for (const uDoc of usersSnap.docs) {
+            await uDoc.ref.update({
+              suscripcionActiva: true,
+              estadoSuscripcion: "active",
+              stripeSubscriptionId: subscriptionId || null
+            });
+          }
         }
         break;
       }
+
+      case "invoice.payment_succeeded": {
+        const invoice = event.data.object;
+        const customerId = invoice.customer;
+        const subscriptionId = invoice.subscription;
+
+        if (customerId) {
+          const usersSnap = await db.collection("usuarios").where("stripeCustomerId", "==", customerId).get();
+          for (const uDoc of usersSnap.docs) {
+            await uDoc.ref.update({
+              suscripcionActiva: true,
+              estadoSuscripcion: "active",
+              stripeSubscriptionId: subscriptionId || null
+            });
+          }
+          console.log(`Pago recurrente exitoso registrado para cliente ${customerId}`);
+        }
+        break;
+      }
+
+      case "customer.subscription.updated": {
+        const sub = event.data.object;
+        const customerId = sub.customer;
+        const isActive = sub.status === "active" || sub.status === "trialing";
+
+        if (customerId) {
+          const usersSnap = await db.collection("usuarios").where("stripeCustomerId", "==", customerId).get();
+          for (const uDoc of usersSnap.docs) {
+            await uDoc.ref.update({
+              suscripcionActiva: isActive,
+              estadoSuscripcion: sub.status
+            });
+          }
+        }
+        break;
+      }
+
       case "customer.subscription.deleted":
       case "customer.subscription.canceled": {
         const customerId = event.data.object.customer;
-        const usersSnap = await db.collection("usuarios").where("stripeCustomerId", "==", customerId).get();
-        if (!usersSnap.empty) {
-          const userRef = usersSnap.docs[0].ref;
-          await userRef.update({ suscripcionActiva: false, estadoSuscripcion: "canceled" });
+        if (customerId) {
+          const usersSnap = await db.collection("usuarios").where("stripeCustomerId", "==", customerId).get();
+          for (const uDoc of usersSnap.docs) {
+            await uDoc.ref.update({
+              suscripcionActiva: false,
+              estadoSuscripcion: "canceled"
+            });
+          }
+          console.log(`Suscripción cancelada para cliente ${customerId}`);
         }
         break;
       }
     }
     res.json({ received: true });
   } catch (err) {
-    console.error(err);
+    console.error("Error al procesar evento de Stripe:", err);
     res.status(500).end();
   }
 });

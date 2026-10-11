@@ -80,26 +80,26 @@ export default function GanaderaCitas({ usuario }) {
         <div style={{ display: "grid", gap: "15px" }}>
           {citas.map(cita => (
             <div key={cita.id} className="card" style={{ padding: "0", overflow: "hidden", borderLeft: "4px solid #f59e0b" }}>
-              <div style={{ padding: "15px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "white" }}>
-                <div>
+              <div style={{ padding: "15px 20px", display: "flex", flexWrap: "wrap", gap: "15px", justifyContent: "space-between", alignItems: "center", backgroundColor: "white" }}>
+                <div style={{ flex: "1 1 300px" }}>
                   <div style={{ fontWeight: "bold", color: "#111827", fontSize: "16px", marginBottom: "4px" }}>
                     {cita.ranchoNombre}
                   </div>
-                  <div style={{ color: "#4b5563", fontSize: "14px", display: "flex", gap: "15px" }}>
+                  <div style={{ color: "#4b5563", fontSize: "14px", display: "flex", flexWrap: "wrap", gap: "10px" }}>
                     <span>📅 {format(new Date(`${cita.fechaCita}T00:00:00`), "dd/MM/yyyy")} a las {cita.horaCita}</span>
                     <span>🐄 {cita.animales?.length || 0} cabezas ({cita.tipoMovimiento})</span>
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <button onClick={() => setCitaSeleccionada(citaSeleccionada?.id === cita.id ? null : cita)} style={{ display: "flex", alignItems: "center", gap: "5px", padding: "8px 12px", borderRadius: "8px", border: "1px solid #d1d5db", background: "white", cursor: "pointer", fontWeight: "600", color: "#374151" }}>
-                    <Eye size={16} /> Ver Detalles
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", width: "100%", flex: "1 1 auto" }}>
+                  <button onClick={() => setCitaSeleccionada(citaSeleccionada?.id === cita.id ? null : cita)} style={{ display: "flex", flex: 1, justifyContent: "center", alignItems: "center", gap: "5px", padding: "8px 12px", borderRadius: "8px", border: "1px solid #d1d5db", background: "white", cursor: "pointer", fontWeight: "600", color: "#374151" }}>
+                    <Eye size={16} /> Detalles
                   </button>
                   {puedeAprobar && (
                     <>
-                      <button onClick={() => cambiarEstadoCita(cita.id, "Aprobada")} style={{ display: "flex", alignItems: "center", gap: "5px", padding: "8px 12px", borderRadius: "8px", border: "none", background: "#10b981", color: "white", cursor: "pointer", fontWeight: "600" }}>
+                      <button onClick={() => cambiarEstadoCita(cita.id, "Aprobada")} style={{ display: "flex", flex: 1, justifyContent: "center", alignItems: "center", gap: "5px", padding: "8px 12px", borderRadius: "8px", border: "none", background: "#10b981", color: "white", cursor: "pointer", fontWeight: "600" }}>
                         <CheckCircle size={16} /> Aprobar
                       </button>
-                      <button onClick={() => cambiarEstadoCita(cita.id, "Rechazada")} style={{ display: "flex", alignItems: "center", gap: "5px", padding: "8px 12px", borderRadius: "8px", border: "none", background: "#ef4444", color: "white", cursor: "pointer", fontWeight: "600" }}>
+                      <button onClick={() => cambiarEstadoCita(cita.id, "Rechazada")} style={{ display: "flex", flex: 1, justifyContent: "center", alignItems: "center", gap: "5px", padding: "8px 12px", borderRadius: "8px", border: "none", background: "#ef4444", color: "white", cursor: "pointer", fontWeight: "600" }}>
                         <XCircle size={16} /> Rechazar
                       </button>
                     </>

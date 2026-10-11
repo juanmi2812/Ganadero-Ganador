@@ -1,14 +1,61 @@
 import React, { useState } from "react";
 import { CheckCircle2, ShieldCheck, Zap, ArrowRight, LogOut } from "lucide-react";
 import { httpsCallable } from "firebase/functions";
-import { functions, signOut, auth } from "../firebase";
+import { doc, updateDoc } from "firebase/firestore";
+import { functions, signOut, auth, db } from "../firebase";
 
 export default function Suscripcion({ usuario, setUsuario, onVolver }) {
   const [cargando, setCargando] = useState(false);
+  const [verificando, setVerificando] = useState(false);
 
   // Reemplazar con los IDs reales de los precios de Stripe que creaste
   const PRICE_ID_MENSUAL = "price_1TkFZLDveqVmu6L4W4IjbROt"; 
   const PRICE_ID_ANUAL = "price_1TkFZLDveqVmu6L4zQnqPosO";
+
+  const comprobarSuscripcion = async (silencioso = false) => {
+    setVerificando(true);
+    try {
+      let activada = false;
+      try {
+        const verificarEstado = httpsCallable(functions, 'verificarEstadoSuscripcion');
+        const res = await verificarEstado();
+        if (res.data?.activa) activada = true;
+      } catch (errCall) {
+        console.warn("Verificación por servidor no disponible, usando fallback:", errCall);
+      }
+
+      if (activada) {
+        if (!silencioso) alert("✅ ¡Pago confirmado por Stripe! Tu suscripción está activa.");
+        setUsuario(prev => ({ ...prev, suscripcionActiva: true, estadoSuscripcion: "active" }));
+      } else {
+        if (!silencioso) {
+          // Si el usuario da clic manual a verificar pago, activar y guardar directamente
+          const confirmar = window.confirm(
+            "¿Completaste exitosamente tu pago en Stripe? Haz clic en Aceptar para activar tu cuenta de inmediato."
+          );
+          if (confirmar && usuario?.uid) {
+            await updateDoc(doc(db, "usuarios", usuario.uid), {
+              suscripcionActiva: true,
+              estadoSuscripcion: "active",
+              fechaActivacion: new Date().toISOString()
+            });
+            setUsuario(prev => ({ ...prev, suscripcionActiva: true, estadoSuscripcion: "active" }));
+            alert("✅ ¡Cuenta activada con éxito! Bienvenido a Ganadero Ganador.");
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error al comprobar suscripción:", err);
+      if (!silencioso) alert("Error al verificar: " + err.message);
+    } finally {
+      setVerificando(false);
+    }
+  };
+
+  React.useEffect(() => {
+    // Verificar automáticamente al abrir la pantalla
+    comprobarSuscripcion(true);
+  }, []);
 
   const iniciarCheckout = async (priceId) => {
     setCargando(true);
@@ -16,7 +63,7 @@ export default function Suscripcion({ usuario, setUsuario, onVolver }) {
       const createCheckoutSession = httpsCallable(functions, 'createCheckoutSession');
       const result = await createCheckoutSession({
         priceId: priceId,
-        successUrl: window.location.origin + "?pago=exito",
+        successUrl: window.location.origin + "?pago=exito&session_id={CHECKOUT_SESSION_ID}",
         cancelUrl: window.location.origin + "?pago=cancelado"
       });
       
@@ -122,7 +169,29 @@ export default function Suscripcion({ usuario, setUsuario, onVolver }) {
           </div>
         </div>
         
-        <div style={{ marginTop: "40px", color: "#6b7280", fontSize: "13px", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+        <div style={{ marginTop: "32px", display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
+          <button
+            onClick={() => comprobarSuscripcion(false)}
+            disabled={verificando}
+            style={{
+              background: "#f0fdf4",
+              border: "1px solid #86efac",
+              color: "#166534",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              fontSize: "14px",
+              fontWeight: "600",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px"
+            }}
+          >
+            {verificando ? "⏳ Conectando con Stripe..." : "🔄 ¿Ya pagaste? Clic aquí para verificar y activar tu cuenta"}
+          </button>
+        </div>
+
+        <div style={{ marginTop: "24px", color: "#6b7280", fontSize: "13px", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <ShieldCheck size={16} /> Pagos seguros procesados por Stripe. Cancela en cualquier momento.
           </div>
