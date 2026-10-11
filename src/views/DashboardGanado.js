@@ -296,8 +296,43 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   const stats = obtenerEstadisticasPeso();
   const finanzas = obtenerRentabilidad();
 
+  // --- HELPERS NORMALIZADORES PARA KPIS Y ESTADOS ---
+  const esBajaAnimal = (a) => {
+    if (!a || !a.estado) return false;
+    const est = String(a.estado).toLowerCase().trim();
+    return est.includes("baja") || est.includes("muerte") || est.includes("muerto");
+  };
+
+  const esVentaAnimal = (a) => {
+    if (!a || !a.estado) return false;
+    const est = String(a.estado).toLowerCase().trim();
+    return est === "disponible para venta" || est === "desecho" || est.includes("venta") || est.includes("desecho");
+  };
+
+  const esMachoAnimal = (a) => {
+    if (!a) return false;
+    const s = String(a.sexo || "").toLowerCase().trim();
+    if (s === "macho" || s === "m") return true;
+    if (s === "hembra" || s === "h") return false;
+    const t = String(a.tipo || "").toLowerCase().trim();
+    return ["semental", "torete", "becerro", "toro"].includes(t);
+  };
+
+  const esHembraAnimal = (a) => {
+    if (!a) return false;
+    const s = String(a.sexo || "").toLowerCase().trim();
+    if (s === "hembra" || s === "h") return true;
+    if (s === "macho" || s === "m") return false;
+    const t = String(a.tipo || "").toLowerCase().trim();
+    return ["vaca", "novillona", "novilla", "becerra", "vientre"].includes(t);
+  };
+
   const ganadoFiltrado = inventario.filter((animal) => {
-    const cumpleBusqueda = animal.arete?.toLowerCase().includes(busqueda.toLowerCase());
+    const query = busqueda.toLowerCase().trim();
+    const cumpleBusqueda = !query || 
+      animal.arete?.toLowerCase().includes(query) ||
+      animal.nombre?.toLowerCase().includes(query) ||
+      animal.areteRancho?.toLowerCase().includes(query);
     if (!cumpleBusqueda) return false;
 
     const cumplePotrero = filtroPotrero.includes("Todos") || filtroPotrero.includes(animal.potrero || animal.hectarea);
@@ -306,14 +341,24 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     const cumpleGrupo = filtroGrupo.includes("Todos") || filtroGrupo.includes(animal.grupo);
     if (!cumpleGrupo) return false;
 
-    if (filtroActivo.includes("Todos")) return true;
+    if (filtroActivo.includes("Todos")) {
+      return !esBajaAnimal(animal) || inventario.every(esBajaAnimal);
+    }
     
     return filtroActivo.some(f => {
-      if (f === "Bajas") return animal.estado?.includes('Baja');
-      if (f === "En Venta") return animal.estado === "Disponible para Venta" || animal.estado === "Desecho";
-      if (f === "Machos") return animal.sexo?.toLowerCase() === "macho" && !animal.estado?.includes('Baja');
-      if (f === "Hembras") return animal.sexo?.toLowerCase() === "hembra" && !animal.estado?.includes('Baja');
-      return animal.tipo === f && !animal.estado?.includes('Baja') && animal.estado !== "Disponible para Venta" && animal.estado !== "Desecho";
+      if (f === "Bajas") return esBajaAnimal(animal);
+      if (f === "En Venta") return esVentaAnimal(animal);
+      if (f === "Machos") return esMachoAnimal(animal) && !esBajaAnimal(animal);
+      if (f === "Hembras") return esHembraAnimal(animal) && !esBajaAnimal(animal);
+      
+      const tipoNorm = String(animal.tipo || "").toLowerCase().trim();
+      const fNorm = f.toLowerCase().trim();
+      const coincide = tipoNorm === fNorm || 
+        (fNorm === "novillona" && tipoNorm === "novilla") ||
+        (fNorm === "vaca" && tipoNorm === "vientre") ||
+        (fNorm === "semental" && tipoNorm === "toro");
+      
+      return coincide && !esBajaAnimal(animal) && !esVentaAnimal(animal);
     });
   });
 
@@ -682,37 +727,64 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     } catch (error) { console.error(error); }
   };
 
+  // Cálculo robusto de KPIs (activos)
+  const animalesActivosList = inventario.filter(a => !esBajaAnimal(a));
+  const totalCabezas = animalesActivosList.length > 0 
+    ? animalesActivosList.length 
+    : inventario.length;
+
+  const conteoMachosActivos = inventario.filter(a => esMachoAnimal(a) && !esBajaAnimal(a)).length;
+  const conteoHembrasActivas = inventario.filter(a => esHembraAnimal(a) && !esBajaAnimal(a)).length;
+  const conteoVentaActivos = inventario.filter(a => esVentaAnimal(a) && !esBajaAnimal(a)).length;
+
+  const machos = (conteoMachosActivos > 0 || conteoHembrasActivas > 0)
+    ? conteoMachosActivos
+    : inventario.filter(esMachoAnimal).length;
+
+  const hembras = (conteoMachosActivos > 0 || conteoHembrasActivas > 0)
+    ? conteoHembrasActivas
+    : inventario.filter(esHembraAnimal).length;
+
   const conteos = {
-    Todos: inventario.filter(a => !a.estado?.includes('Baja')).length,
-    Vaca: inventario.filter(a => a.tipo === "Vaca" && !a.estado?.includes('Baja')).length,
-    Novillona: inventario.filter(a => a.tipo === "Novillona" && !a.estado?.includes('Baja')).length,
-    Semental: inventario.filter(a => a.tipo === "Semental" && !a.estado?.includes('Baja')).length,
-    Torete: inventario.filter(a => a.tipo === "Torete" && !a.estado?.includes('Baja')).length,
-    Becerra: inventario.filter(a => a.tipo === "Becerra" && !a.estado?.includes('Baja')).length,
-    Becerro: inventario.filter(a => a.tipo === "Becerro" && !a.estado?.includes('Baja')).length,
-    "En Venta": inventario.filter(a => a.estado === "Disponible para Venta" || a.estado === "Desecho").length,
-    Bajas: inventario.filter(a => a.estado?.includes('Baja')).length,
+    Todos: totalCabezas,
+    Vaca: inventario.filter(a => {
+      const t = String(a.tipo || "").toLowerCase().trim();
+      return (t === "vaca" || t === "vientre") && !esBajaAnimal(a);
+    }).length,
+    Novillona: inventario.filter(a => {
+      const t = String(a.tipo || "").toLowerCase().trim();
+      return (t === "novillona" || t === "novilla") && !esBajaAnimal(a);
+    }).length,
+    Semental: inventario.filter(a => {
+      const t = String(a.tipo || "").toLowerCase().trim();
+      return (t === "semental" || t === "toro") && !esBajaAnimal(a);
+    }).length,
+    Torete: inventario.filter(a => String(a.tipo || "").toLowerCase().trim() === "torete" && !esBajaAnimal(a)).length,
+    Becerra: inventario.filter(a => String(a.tipo || "").toLowerCase().trim() === "becerra" && !esBajaAnimal(a)).length,
+    Becerro: inventario.filter(a => String(a.tipo || "").toLowerCase().trim() === "becerro" && !esBajaAnimal(a)).length,
+    "En Venta": conteoVentaActivos > 0 ? conteoVentaActivos : inventario.filter(esVentaAnimal).length,
+    Bajas: inventario.filter(esBajaAnimal).length,
   };
 
-  const machos = inventario.filter(a => a.sexo?.toLowerCase() === "macho" && !a.estado?.includes('Baja')).length;
-  const hembras = inventario.filter(a => a.sexo?.toLowerCase() === "hembra" && !a.estado?.includes('Baja')).length;
-
   const getStatusClass = (estado) => {
-    if (!estado || estado === "Sano") return "status-sano";
-    if (estado.includes("Alerta") || estado.includes("Baja")) return "status-alerta";
-    if (estado === "Disponible para Venta") return "status-venta";
-    if (estado === "Desecho") return "status-desecho";
+    if (!estado) return "status-sano";
+    const est = String(estado).toLowerCase().trim();
+    if (est === "sano" || est === "santo") return "status-sano";
+    if (est.includes("alerta") || est.includes("baja") || est.includes("muerte")) return "status-alerta";
+    if (est.includes("venta")) return "status-venta";
+    if (est.includes("desecho")) return "status-desecho";
     return "status-sano";
   };
 
   const getAnimalEmoji = (tipo, sexo) => {
-    if (tipo === "Semental") return "🐂";
-    if (tipo === "Vaca") return "🐄";
-    if (tipo === "Torete") return "🐃";
-    if (tipo === "Novillona") return "🐮";
-    if (tipo === "Becerro" || tipo === "Becerra") return "🐄";
-    if (sexo?.toLowerCase() === "macho") return "♂️";
-    return "♀️";
+    const t = String(tipo || "").toLowerCase().trim();
+    if (t === "semental" || t === "toro") return "🐂";
+    if (t === "vaca" || t === "vientre") return "🐄";
+    if (t === "torete") return "🐃";
+    if (t === "novillona" || t === "novilla") return "🐮";
+    if (t === "becerro" || t === "becerra") return "🐄";
+    if (esMachoAnimal({ sexo, tipo })) return "🐂";
+    return "🐄";
   };
 
   if (!cargandoInventario && inventario.length === 0) {
@@ -864,7 +936,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
             key={animal.id} 
             className="animal-item"
             onClick={() => setAnimalActivo(animal)}
-            style={{ opacity: animal.estado?.includes('Baja') ? 0.6 : 1, position: "relative" }}
+            style={{ opacity: esBajaAnimal(animal) ? 0.6 : 1, position: "relative" }}
           >
             <input 
               type="checkbox"
@@ -873,7 +945,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
               onClick={(e) => e.stopPropagation()}
               style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", width: "18px", height: "18px", cursor: "pointer" }}
             />
-            <div className={`animal-avatar ${animal.sexo?.toLowerCase() === "macho" ? "macho" : "hembra"}`} style={{ marginLeft: "30px" }}>
+            <div className={`animal-avatar ${esMachoAnimal(animal) ? "macho" : "hembra"}`} style={{ marginLeft: "30px" }}>
               {getAnimalEmoji(animal.tipo, animal.sexo)}
             </div>
             <div className="animal-info">
@@ -884,7 +956,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
               </div>
             </div>
             <span className={`animal-status ${getStatusClass(animal.estado)}`}>
-              {animal.estado || "Sano"}
+              {String(animal.estado || "").toLowerCase().trim() === "santo" ? "Sano" : (animal.estado || "Sano")}
             </span>
           </div>
         ))}
@@ -1099,14 +1171,14 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                   <button onClick={() => setEditandoEstado(false)} style={{ padding: "2px 6px", fontSize: "11px", backgroundColor: "#f3f4f6", color: "#4b5563", border: "1px solid #d1d5db", borderRadius: "4px", cursor: "pointer" }}>Cancelar</button>
                 </span>
               ) : (
-                <span style={{ color: animalActivo.estado?.includes("Alerta") ? "red" : (animalActivo.estado === "Disponible para Venta" ? "orange" : "green") }}>
-                  {animalActivo.estado || "Sano"}
-                  <button onClick={() => { setEditandoEstado(true); setNuevoEstadoManual(animalActivo.estado || "Sano"); }} style={{ background: "none", border: "none", color: "#3b82f6", cursor: "pointer", marginLeft: "6px", fontSize: "12px", padding: 0 }} title="Editar Estado Manualmente">✏️</button>
+                <span style={{ color: esBajaAnimal(animalActivo) || animalActivo.estado?.includes("Alerta") ? "red" : (esVentaAnimal(animalActivo) ? "orange" : "green") }}>
+                  {String(animalActivo.estado || "").toLowerCase().trim() === "santo" ? "Sano" : (animalActivo.estado || "Sano")}
+                  <button onClick={() => { setEditandoEstado(true); setNuevoEstadoManual(String(animalActivo.estado || "").toLowerCase().trim() === "santo" ? "Sano" : (animalActivo.estado || "Sano")); }} style={{ background: "none", border: "none", color: "#3b82f6", cursor: "pointer", marginLeft: "6px", fontSize: "12px", padding: 0 }} title="Editar Estado Manualmente">✏️</button>
                 </span>
               )}
             </div>
 
-            {(!animalActivo.estado?.includes('Baja') && usuario?.rol !== "tecnico") && (
+            {(!esBajaAnimal(animalActivo) && usuario?.rol !== "tecnico") && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "20px" }}>
                 <button className="btn-primary" style={{ flex: 1, margin: 0, minWidth: "120px" }} onClick={() => { 
                   if (mostrandoFormulario && tipoFormularioIndiv === "evento") { setMostrandoFormulario(false); } 
