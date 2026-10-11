@@ -109,8 +109,9 @@ export default function App() {
             let userData = perfil.data();
             
             // Activación automática para cuentas con pago ya verificado en Stripe
+            const correoUsuario = (userData.correo || userData.email || firebaseUser.email || "").toLowerCase();
             const correosVerificados = ["juanantonio.sotelo", "prueba2@gmail.com"];
-            const esVerificado = correosVerificados.some(c => userData.correo && userData.correo.toLowerCase().includes(c));
+            const esVerificado = correosVerificados.some(c => correoUsuario.includes(c));
             if (esVerificado && !userData.suscripcionActiva) {
               await updateDoc(doc(db, "usuarios", firebaseUser.uid), { 
                 suscripcionActiva: true, 
