@@ -1,0 +1,75 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Colección de Usuarios: cada usuario puede leer y actualizar su propio perfil
+    match /usuarios/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId);
+    }
+
+    // Colección de Animales: requiere autenticación
+    match /animales/{animalId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Historial de Eventos (partos, pesajes, tratamientos, palpaciones)
+    match /eventos/{eventoId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Potreros y Grupos de manejo
+    match /potreros/{potreroId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /grupos/{grupoId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Alertas sanitarias y reproductivas
+    match /alertas/{alertaId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Configuración financiera y del rancho
+    match /configuracion/{docId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Módulo de Producción de Leche
+    match /leche/{registroId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Portal de Asociaciones Ganaderas y Citas
+    match /citas/{citaId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /ganaderas/{ganaderaId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Benchmarks regionales: lectura para usuarios autenticados, escritura solo backend / admin
+    match /benchmarks/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.token.admin == true;
+    }
+
+    // Regla global por defecto: Denegar cualquier acceso no autenticado
+    match /{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}
