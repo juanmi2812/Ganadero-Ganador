@@ -3,10 +3,13 @@ import { CheckCircle2, ShieldCheck, Zap, ArrowRight, LogOut } from "lucide-react
 import { httpsCallable } from "firebase/functions";
 import { doc, updateDoc } from "firebase/firestore";
 import { functions, signOut, auth, db } from "../firebase";
+import ModalLegal from "../components/ModalLegal";
 
 export default function Suscripcion({ usuario, setUsuario, onVolver }) {
   const [cargando, setCargando] = useState(false);
   const [verificando, setVerificando] = useState(false);
+  const [modalLegalAbierto, setModalLegalAbierto] = useState(false);
+  const [tabLegal, setTabLegal] = useState("terminos");
 
   // Reemplazar con los IDs reales de los precios de Stripe que creaste
   const PRICE_ID_MENSUAL = "price_1TkFZLDveqVmu6L4W4IjbROt"; 
@@ -203,12 +206,34 @@ export default function Suscripcion({ usuario, setUsuario, onVolver }) {
           </button>
         </div>
 
-        <div style={{ marginTop: "24px", color: "#6b7280", fontSize: "13px", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+        <div style={{ marginTop: "24px", color: "#6b7280", fontSize: "13px", display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", textAlign: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <ShieldCheck size={16} /> Pagos seguros procesados por Stripe. Cancela en cualquier momento.
           </div>
+          <div style={{ fontSize: "12px", color: "#9ca3af" }}>
+            Al suscribirte, confirmas que has leído y aceptas nuestros{" "}
+            <button
+              onClick={() => { setTabLegal("terminos"); setModalLegalAbierto(true); }}
+              style={{ background: "none", border: "none", color: "#16a34a", fontWeight: "600", cursor: "pointer", textDecoration: "underline", padding: 0, fontSize: "12px" }}
+            >
+              Términos de Servicio
+            </button>{" "}
+            y nuestro{" "}
+            <button
+              onClick={() => { setTabLegal("privacidad"); setModalLegalAbierto(true); }}
+              style={{ background: "none", border: "none", color: "#16a34a", fontWeight: "600", cursor: "pointer", textDecoration: "underline", padding: 0, fontSize: "12px" }}
+            >
+              Aviso de Privacidad
+            </button>.
+          </div>
         </div>
       </main>
+
+      <ModalLegal 
+        isOpen={modalLegalAbierto} 
+        onClose={() => setModalLegalAbierto(false)} 
+        tabInicial={tabLegal} 
+      />
     </div>
   );
 }

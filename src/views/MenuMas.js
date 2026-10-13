@@ -1,13 +1,17 @@
-import React from 'react';
-import { Map, BookOpen, BarChart3, Trophy, Truck, LogOut, Download } from 'lucide-react';
+import React, { useState } from 'react';
+import { Map, BookOpen, BarChart3, Trophy, Truck, LogOut, Download, ShieldCheck } from 'lucide-react';
+import ModalLegal from '../components/ModalLegal';
 
 export default function MenuMas({ setVistaActiva, cerrarSesion }) {
+  const [modalLegalAbierto, setModalLegalAbierto] = useState(false);
+
   const menuItems = [
     { id: "rancho", label: "Mi Rancho", icon: Map, color: "#10b981", desc: "Configura tus potreros y UPPs" },
     { id: "bitacoras", label: "Bitácoras", icon: BookOpen, color: "#f59e0b", desc: "Registro histórico y tratamientos" },
     { id: "reportes", label: "Reportes", icon: BarChart3, color: "#3b82f6", desc: "Análisis y gráficas de tu ganado" },
     { id: "benchmark", label: "Ranking Regional", icon: Trophy, color: "#8b5cf6", desc: "Compara tu rancho con otros" },
     { id: "movilizacion", label: "Movilización", icon: Truck, color: "#0ea5e9", desc: "Guías de tránsito y citas ganaderas" },
+    { id: "legal", label: "Legal y Privacidad", icon: ShieldCheck, color: "#6366f1", desc: "Términos del servicio y aviso de privacidad" },
   ];
 
   return (
@@ -21,7 +25,13 @@ export default function MenuMas({ setVistaActiva, cerrarSesion }) {
             <button 
               key={item.id} 
               className="card" 
-              onClick={() => setVistaActiva(item.id)}
+              onClick={() => {
+                if (item.id === "legal") {
+                  setModalLegalAbierto(true);
+                } else {
+                  setVistaActiva(item.id);
+                }
+              }}
               style={{ display: "flex", alignItems: "center", gap: "16px", padding: "20px", cursor: "pointer", border: "none", textAlign: "left", width: "100%", background: "white", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}
             >
               <div style={{ padding: "12px", borderRadius: "12px", backgroundColor: `${item.color}15`, color: item.color }}>
@@ -44,6 +54,12 @@ export default function MenuMas({ setVistaActiva, cerrarSesion }) {
           <LogOut size={20} /> Cerrar Sesión
         </button>
       </div>
+
+      <ModalLegal 
+        isOpen={modalLegalAbierto} 
+        onClose={() => setModalLegalAbierto(false)} 
+        tabInicial="terminos" 
+      />
     </div>
   )
 }

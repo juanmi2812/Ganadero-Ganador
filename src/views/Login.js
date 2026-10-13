@@ -10,6 +10,7 @@ import {
 import {
   doc, setDoc, getDoc, collection, query, getDocs, orderBy,
 } from "firebase/firestore";
+import ModalLegal from "../components/ModalLegal";
 
 // pantalla: "login" | "elegir-registro" | "registro-admin" | "registro-empleado"
 export default function Login({ alIniciarSesion }) {
@@ -34,6 +35,10 @@ export default function Login({ alIniciarSesion }) {
 
   // Usuario Firebase de Google (guardado en state para el flujo de registro con Google)
   const [googleUser, setGoogleUser] = useState(null);
+
+  // Modal Legal y Privacidad
+  const [modalLegalAbierto, setModalLegalAbierto] = useState(false);
+  const [tabLegal, setTabLegal] = useState("terminos");
 
   const reset = () => {
     setError("");
@@ -414,7 +419,33 @@ export default function Login({ alIniciarSesion }) {
           </>
         )}
 
+        {/* ══════════ AVISO LEGAL Y PRIVACIDAD ══════════ */}
+        <div style={{ marginTop: "24px", paddingTop: "14px", borderTop: "1px solid #f3f4f6", textAlign: "center", fontSize: "12px", color: "#6b7280", lineHeight: "1.5" }}>
+          Al ingresar o registrarte, aceptas nuestros{" "}
+          <button 
+            type="button" 
+            onClick={() => { setTabLegal("terminos"); setModalLegalAbierto(true); }}
+            style={{ background: "none", border: "none", color: "#16a34a", fontWeight: "600", cursor: "pointer", textDecoration: "underline", padding: 0, fontSize: "12px" }}
+          >
+            Términos y Condiciones
+          </button>{" "}
+          y nuestro{" "}
+          <button 
+            type="button" 
+            onClick={() => { setTabLegal("privacidad"); setModalLegalAbierto(true); }}
+            style={{ background: "none", border: "none", color: "#16a34a", fontWeight: "600", cursor: "pointer", textDecoration: "underline", padding: 0, fontSize: "12px" }}
+          >
+            Aviso de Privacidad
+          </button>.
+        </div>
+
       </div>
+
+      <ModalLegal 
+        isOpen={modalLegalAbierto} 
+        onClose={() => setModalLegalAbierto(false)} 
+        tabInicial={tabLegal} 
+      />
     </div>
   );
 }
