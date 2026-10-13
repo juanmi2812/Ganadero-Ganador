@@ -57,7 +57,7 @@ b) Estadísticas Disociadas y Benchmark: El Usuario autoriza a la Plataforma a c
     {
       numero: "9",
       titulo: "Contacto y Soporte Oficial",
-      contenido: `Para dudas, aclaraciones, asistencia con su facturación o soporte técnico, puede comunicarse directamente al correo: contacto@convivet.com`
+      contenido: `Para dudas, aclaraciones, asistencia con su facturación o soporte técnico, puede comunicarse directamente al correo: contacto.ganadero.ganador@gmail.com`
     }
   ]
 };
@@ -98,7 +98,7 @@ Finalidades Secundarias (No esenciales):
 1. Elaboración de estadísticas comparativas regionales (Benchmark) con datos 100% anonimizados y agregados.
 2. Envío de boletines informativos o encuestas de satisfacción para mejora del producto.
 
-(Si no desea que sus datos se utilicen para finalidades secundarias, puede solicitarlo en cualquier momento enviando un correo a contacto@convivet.com).`
+(Si no desea que sus datos se utilicen para finalidades secundarias, puede solicitarlo en cualquier momento enviando un correo a contacto.ganadero.ganador@gmail.com).`
     },
     {
       numero: "4",
@@ -114,7 +114,7 @@ Sus datos únicamente son transmitidos a proveedores de servicios tecnológicos 
       titulo: "Ejercicio de Derechos ARCO",
       contenido: `Usted tiene derecho a conocer qué datos personales tenemos de usted, para qué los usamos y las condiciones del uso que les damos (Acceso). Asimismo, es su derecho solicitar la corrección de su información (Rectificación), que la eliminemos de nuestros registros cuando considere que no está siendo utilizada adecuadamente (Cancelación), así como oponerse al uso de sus datos para fines específicos (Oposición).
 
-Para ejercer cualquiera de sus Derechos ARCO, deberá enviar una solicitud por correo electrónico a contacto@convivet.com, adjuntando:
+Para ejercer cualquiera de sus Derechos ARCO, deberá enviar una solicitud por correo electrónico a contacto.ganadero.ganador@gmail.com, adjuntando:
 1. Nombre completo del titular y correo registrado en la plataforma.
 2. Copia digitalizada de identificación oficial vigente.
 3. Descripción clara de los datos respecto de los cuales busca ejercer el derecho y el motivo.

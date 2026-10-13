@@ -182,7 +182,7 @@ export default function ModalLegal({ isOpen, onClose, tabInicial = "terminos" })
         {/* Footer del Modal */}
         <div style={{ padding: "14px 24px", borderTop: "1px solid #e5e7eb", backgroundColor: "#f9fafb", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontSize: "12px", color: "#6b7280" }}>
-            Contacto oficial: <strong>contacto@convivet.com</strong>
+            Contacto oficial: <strong>contacto.ganadero.ganador@gmail.com</strong>
           </span>
           <button 
             onClick={onClose}
