@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { LogOut, CalendarDays, Settings, Users, Inbox } from "lucide-react";
 import logoConvivet from "../assets/logo_convivet.jpg";
+import logoUnionGanadera from "../assets/logo_union_ganadera.jpg";
 
 import GanaderaConfiguracion from "./Ganadera/GanaderaConfiguracion";
 import GanaderaEmpleados from "./Ganadera/GanaderaEmpleados";
@@ -24,16 +25,12 @@ export default function GanaderaApp({ usuario, cerrarSesion }) {
     <div style={{ backgroundColor: "#f0f2f5", minHeight: "100vh" }}>
       {/* === TOP HEADER === */}
       <header className="top-header" style={{ borderBottomColor: "#2563eb" }}>
-        <div className="top-header-brand">
-          <img src={logoConvivet} alt="Convivet" />
+        <div className="top-header-brand" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <img src={logoConvivet} alt="Convivet" style={{ height: "30px", width: "auto", borderRadius: "6px", backgroundColor: "#ffffff" }} />
+          <img src={logoUnionGanadera} alt="UGR del Norte de Veracruz" style={{ height: "46px", width: "auto", borderRadius: "6px", backgroundColor: "#ffffff", padding: "2px", objectFit: "contain" }} />
           <span>Portal Ganadera</span>
         </div>
-        
-        <div className="publicidad-wrapper" style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", margin: "0 20px" }}>
-            <div style={{ width: "100%", maxWidth: "450px", height: "45px", backgroundColor: "#f9fafb", border: "2px dashed #93c5fd", borderRadius: "8px", display: "flex", justifyContent: "center", alignItems: "center", color: "#3b82f6", fontSize: "12px", fontWeight: "bold" }}>
-                ASOCIACIÓN GANADERA
-            </div>
-        </div>
+
         <div className="top-header-actions">
           <button title="Cerrar Sesión" onClick={cerrarSesion} style={{ color: "#ef4444" }}>
             <LogOut size={18} />

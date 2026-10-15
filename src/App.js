@@ -16,8 +16,8 @@ import ProduccionLeche from "./views/ProduccionLeche";
 import ConfiguracionEquipo from "./views/ConfiguracionEquipo";
 import Movilizacion from "./views/Movilizacion";
 import MenuMas from "./views/MenuMas";
-import { Home, BookOpen, CalendarDays, BarChart3, Settings, LogOut, Plus, Map, CreditCard, Droplets, Users, Truck, Download, Trophy, Menu } from "lucide-react";
 import logoConvivet from "./assets/logo_convivet.jpg";
+import logoUnionGanadera from "./assets/logo_union_ganadera.jpg";
 import { auth, db, onAuthStateChanged, signOut, functions } from "./firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
@@ -198,17 +198,12 @@ export default function App() {
     <div style={{ backgroundColor: "#f0f2f5", minHeight: "100vh" }}>
       {/* === TOP HEADER === */}
       <header className="top-header">
-        <div className="top-header-brand">
-          <img src={logoConvivet} alt="Convivet" />
+        <div className="top-header-brand" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <img src={logoConvivet} alt="Convivet" style={{ height: "30px", width: "auto", borderRadius: "6px", backgroundColor: "#ffffff" }} />
+          <img src={logoUnionGanadera} alt="UGR del Norte de Veracruz" style={{ height: "46px", width: "auto", borderRadius: "6px", backgroundColor: "#ffffff", padding: "2px", objectFit: "contain" }} />
           <span>Ganadero Ganador</span>
         </div>
-        
-        {/* Espacio para Publicidad */}
-        <div className="publicidad-wrapper" style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", margin: "0 20px" }}>
-            <div style={{ width: "100%", maxWidth: "450px", height: "45px", backgroundColor: "#f9fafb", border: "2px dashed #e5e7eb", borderRadius: "8px", display: "flex", justifyContent: "center", alignItems: "center", color: "#9ca3af", fontSize: "12px", fontWeight: "bold" }}>
-                ESPACIO PARA PUBLICIDAD
-            </div>
-        </div>
+
         <div className="top-header-actions">
           {deferredPrompt && (
             <button
