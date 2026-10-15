@@ -16,6 +16,7 @@ import ProduccionLeche from "./views/ProduccionLeche";
 import ConfiguracionEquipo from "./views/ConfiguracionEquipo";
 import Movilizacion from "./views/Movilizacion";
 import MenuMas from "./views/MenuMas";
+import { Home, BookOpen, CalendarDays, BarChart3, Settings, LogOut, Plus, Map, CreditCard, Droplets, Users, Truck, Download, Trophy, Menu } from "lucide-react";
 import logoConvivet from "./assets/logo_convivet.jpg";
 import logoUnionGanadera from "./assets/logo_union_ganadera.jpg";
 import { auth, db, onAuthStateChanged, signOut, functions } from "./firebase";
