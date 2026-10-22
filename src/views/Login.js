@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, Plus, Users, ShieldCheck } from "lucide-react";
-import logoConvivet from "../assets/logo_convivet.jpg";
+import logoUnionGanadera from "../assets/logo_union_ganadera.jpg";
 import {
   db,
   iniciarSesionCorreo,
@@ -257,8 +257,8 @@ export default function Login({ alIniciarSesion }) {
   return (
     <div className="login-wrapper">
       <div className="login-card">
-        <img src={logoConvivet} alt="Convivet Logo"
-          style={{ height: "55px", width: "auto", margin: "0 auto 16px auto", display: "block" }} />
+        <img src={logoUnionGanadera} alt="UGR del Norte de Veracruz"
+          style={{ height: "72px", width: "auto", margin: "0 auto 16px auto", display: "block", objectFit: "contain" }} />
 
         {/* ══════════ PANTALLA: LOGIN ══════════ */}
         {pantalla === "login" && (
