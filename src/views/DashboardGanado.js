@@ -12,8 +12,8 @@ const CheckboxOption = (props) => (
     <label>{props.label}</label>
   </components.Option>
 );
-import { Search, X, Plus, Activity, Baby, Scale, AlertTriangle, TrendingUp, Trash2 } from "lucide-react";
-import { collection, onSnapshot, addDoc, query, where, doc, updateDoc, getDocs, deleteDoc } from "firebase/firestore"; 
+import { Search, X, Plus, Activity, Baby, Scale, AlertTriangle, TrendingUp, Trash2, Sparkles } from "lucide-react";
+import { collection, onSnapshot, addDoc, query, where, doc, updateDoc, getDocs, deleteDoc, writeBatch } from "firebase/firestore"; 
 import { differenceInMonths } from "date-fns";
 import { db } from "../firebase";
 import Header from "../components/Header";
@@ -42,6 +42,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   const [tipoFormularioIndiv, setTipoFormularioIndiv] = useState("evento");
   const [editandoDatosAnimal, setEditandoDatosAnimal] = useState(false);
   const [datosEdicionAnimal, setDatosEdicionAnimal] = useState({});
+  const [asignandoGenealogiasHato, setAsignandoGenealogiasHato] = useState(false);
   
   // Acciones Masivas (Selección)
   const [seleccionados, setSeleccionados] = useState(new Set());
@@ -204,6 +205,15 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   }, [usuario]);
 
   useEffect(() => {
+    if (animalActivo && inventario.length > 0) {
+      const actualizado = inventario.find(a => a.id === animalActivo.id);
+      if (actualizado && (actualizado.madre !== animalActivo.madre || actualizado.padre !== animalActivo.padre || actualizado.estado !== animalActivo.estado || actualizado.potrero !== animalActivo.potrero || actualizado.grupo !== animalActivo.grupo)) {
+        setAnimalActivo(actualizado);
+      }
+    }
+  }, [inventario]);
+
+  useEffect(() => {
     if (!animalActivo) return;
     const q = query(collection(db, "eventos"), where("animalId", "==", animalActivo.id));
     const cancelarEventos = onSnapshot(q, (snapshot) => {
@@ -222,6 +232,8 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     });
     return () => cancelarConfig();
   }, [usuario]);
+
+  
 
   useEffect(() => {
     if (mostrarModalPalpacion) {
@@ -364,6 +376,18 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
 
   const listaPotreros = ["Todos", ...new Set([...inventario.map(a => a.potrero || a.hectarea), ...potrerosCol.map(p => p.nombre)].filter(Boolean))].sort();
   const listaGrupos = ["Todos", ...new Set([...inventario.map(a => a.grupo), ...gruposCol.map(g => g.nombre)].filter(Boolean))].sort();
+
+  const vacasDisponibles = inventario.filter(a => 
+    (a.tipo === "Vaca" || a.tipo === "Novillona" || a.tipo === "Vientre" || a.sexo?.toLowerCase() === "hembra" || a.arete?.startsWith("VC-")) &&
+    !a.estado?.includes("Baja") &&
+    (!animalActivo || a.id !== animalActivo.id)
+  );
+
+  const sementalesDisponibles = inventario.filter(a => 
+    (a.tipo === "Semental" || a.tipo === "Toro" || a.sexo?.toLowerCase() === "macho" || a.arete?.startsWith("SM-")) &&
+    !a.estado?.includes("Baja") &&
+    (!animalActivo || a.id !== animalActivo.id)
+  );
 
   // --- ACCIONES ---
   const guardarEvento = async (e) => {
@@ -664,6 +688,90 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
     }
   };
 
+  const autoAsignarLinajeSugerido = async () => {
+    if (!animalActivo) return;
+
+    const madreSugerida = vacasDisponibles.length > 0
+      ? vacasDisponibles[Math.floor(Math.random() * vacasDisponibles.length)].arete
+      : `VC-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const padreSugerido = sementalesDisponibles.length > 0
+      ? sementalesDisponibles[Math.floor(Math.random() * sementalesDisponibles.length)].arete
+      : `SM-${Math.floor(100 + Math.random() * 900)}`;
+
+    try {
+      await updateDoc(doc(db, "animales", animalActivo.id), {
+        madre: madreSugerida,
+        padre: padreSugerido
+      });
+      setAnimalActivo(prev => ({
+        ...prev,
+        madre: madreSugerida,
+        padre: padreSugerido
+      }));
+    } catch (error) {
+      console.error("Error al asignar linaje sugerido:", error);
+      alert("Hubo un error al guardar la genealogía.");
+    }
+  };
+
+  const autoCompletarGenealogiasHato = async () => {
+    if (!inventario || inventario.length === 0) return;
+
+    const animalesSinLinaje = inventario.filter(a => 
+      !a.estado?.includes("Baja") &&
+      (!a.madre || a.madre === "--" || a.madre.trim() === "" || !a.padre || a.padre === "--" || a.padre.trim() === "") &&
+      ["Becerro", "Becerra", "Novillona", "Torete", "Novillo", "Cría"].includes(a.tipo)
+    );
+
+    if (animalesSinLinaje.length === 0) {
+      alert("¡Todas las crías, novillonas y toretes de tu hato ya tienen linaje asignado!");
+      return;
+    }
+
+    const confirmar = window.confirm(
+      `Se detectaron ${animalesSinLinaje.length} animales (crías, novillonas y toretes) sin genealogía registrada.\n\n¿Deseas autocompletar su linaje con madres (vacas) y sementales de tu hato para que tus fichas y crías vinculadas queden 100% completas?\n\n(Esta acción es ideal para tus capturas de pantalla de la landing page).`
+    );
+    if (!confirmar) return;
+
+    setAsignandoGenealogiasHato(true);
+    try {
+      const vacas = inventario.filter(a => (a.tipo === "Vaca" || a.arete?.startsWith("VC-")) && !a.estado?.includes("Baja"));
+      const sementales = inventario.filter(a => (a.tipo === "Semental" || a.arete?.startsWith("SM-")) && !a.estado?.includes("Baja"));
+
+      const batch = writeBatch(db);
+      let count = 0;
+
+      animalesSinLinaje.forEach((animal, idx) => {
+        const updates = {};
+        if (!animal.madre || animal.madre === "--" || animal.madre.trim() === "") {
+          updates.madre = vacas.length > 0 ? vacas[idx % vacas.length].arete : `VC-${1000 + (idx % 60)}`;
+        }
+        if (!animal.padre || animal.padre === "--" || animal.padre.trim() === "") {
+          updates.padre = sementales.length > 0 ? sementales[idx % sementales.length].arete : `SM-${100 + (idx % 5)}`;
+        }
+        
+        const animalRef = doc(db, "animales", animal.id);
+        batch.update(animalRef, updates);
+        count++;
+      });
+
+      await batch.commit();
+
+      if (animalActivo && animalesSinLinaje.some(c => c.id === animalActivo.id)) {
+        const fresco = inventario.find(a => a.id === animalActivo.id);
+        if (fresco) setAnimalActivo(fresco);
+      }
+
+      alert(`¡Listo! Se asignó genealogía a ${count} animales. Ahora todas las fichas y crías vinculadas lucen impecables para tus capturas.`);
+    } catch (err) {
+      console.error("Error al completar genealogías:", err);
+      alert("Hubo un error al completar las genealogías: " + err.message);
+    } finally {
+      setAsignandoGenealogiasHato(false);
+    }
+  };
+
   const guardarPalpacionMasiva = async (e) => {
     e.preventDefault();
     setGuardandoPalpacion(true);
@@ -845,6 +953,15 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
               style={{ margin: 0, width: "auto", display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#16a34a", borderColor: "#16a34a", padding: "10px 20px" }}
             >
               💊 Cargar Tratamiento
+            </button>
+            <button 
+              className="btn-outline" 
+              onClick={autoCompletarGenealogiasHato}
+              disabled={asignandoGenealogiasHato}
+              style={{ margin: 0, width: "auto", display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#fff", borderColor: "#3b82f6", color: "#1d4ed8", padding: "10px 18px", fontWeight: "600", borderRadius: "8px" }}
+              title="Asigna automáticamente padres a las crías y animales sin linaje para completar sus fichas"
+            >
+              <Sparkles size={16} color="#2563eb" /> {asignandoGenealogiasHato ? "Completando..." : "Completar Genealogías"}
             </button>
           </div>
         )}
@@ -1104,14 +1221,155 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                   </div>
                 </div>
               )}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <div style={{ color: "#6b7280", fontSize: "11px", fontWeight: "bold" }}>MADRE</div>
-                  <div style={{ fontSize: "14px", fontWeight: "700", color: "#111827" }}>{animalActivo.madre || "--"}</div>
+              <div style={{ marginTop: "14px", paddingTop: "12px", borderTop: "1px solid #e5e7eb" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                  <div style={{ color: "#4b5563", fontSize: "11px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.5px", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span>🧬 Genealogía y Linaje</span>
+                  </div>
+                  {(!animalActivo.madre || animalActivo.madre === "--" || !animalActivo.padre || animalActivo.padre === "--") && (
+                    <button 
+                      type="button"
+                      onClick={autoAsignarLinajeSugerido} 
+                      style={{ 
+                        background: "linear-gradient(135deg, #eff6ff, #dbeafe)", 
+                        border: "1px solid #bfdbfe", 
+                        borderRadius: "12px", 
+                        color: "#1d4ed8", 
+                        padding: "2px 10px", 
+                        fontSize: "11px", 
+                        fontWeight: "600", 
+                        cursor: "pointer", 
+                        display: "inline-flex", 
+                        alignItems: "center", 
+                        gap: "4px" 
+                      }}
+                      title="Asignar madre y padre sugeridos de tu hato con 1 clic"
+                    >
+                      <Sparkles size={12} color="#2563eb" /> Sugerir Padres
+                    </button>
+                  )}
                 </div>
-                <div>
-                  <div style={{ color: "#6b7280", fontSize: "11px", fontWeight: "bold" }}>PADRE</div>
-                  <div style={{ fontSize: "14px", fontWeight: "700", color: "#111827" }}>{animalActivo.padre || "--"}</div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  {/* Madre */}
+                  <div style={{ backgroundColor: "#fdf2f8", border: "1px solid #fbcfe8", borderRadius: "8px", padding: "10px" }}>
+                    <div style={{ color: "#9d174d", fontSize: "11px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "4px", marginBottom: "4px" }}>
+                      🐮 MADRE
+                    </div>
+                    {animalActivo.madre && animalActivo.madre !== "--" ? (
+                      <div>
+                        {(() => {
+                          const madreObj = inventario.find(a => a.arete === animalActivo.madre || (a.nombre && a.nombre === animalActivo.madre));
+                          return (
+                            <div>
+                              <div style={{ fontSize: "14px", fontWeight: "800", color: "#831843" }}>
+                                {animalActivo.madre}
+                              </div>
+                              {madreObj ? (
+                                <div style={{ marginTop: "4px", display: "flex", alignItems: "center", gap: "6px" }}>
+                                  <span style={{ fontSize: "11px", color: "#9d174d" }}>
+                                    {madreObj.raza || "Vaca"}{madreObj.potrero ? ` • ${madreObj.potrero}` : ""}
+                                  </span>
+                                  <button 
+                                    type="button"
+                                    onClick={() => setAnimalActivo(madreObj)}
+                                    style={{ background: "#fff", border: "1px solid #fbcfe8", borderRadius: "4px", color: "#be185d", fontSize: "10px", padding: "1px 6px", cursor: "pointer", fontWeight: "bold" }}
+                                    title="Ver ficha de la madre"
+                                  >
+                                    Ver Ficha ↗
+                                  </button>
+                                </div>
+                              ) : (
+                                <div style={{ fontSize: "11px", color: "#be185d", marginTop: "2px" }}>
+                                  Registro Oficial / Pedigree
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "2px" }}>
+                        <span style={{ fontSize: "12px", color: "#9ca3af", fontStyle: "italic" }}>Sin registrar</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditandoDatosAnimal(true);
+                            setDatosEdicionAnimal({
+                              raza: animalActivo.raza,
+                              peso: animalActivo.peso,
+                              fechaNacimiento: animalActivo.fechaNacimiento,
+                              madre: animalActivo.madre,
+                              padre: animalActivo.padre
+                            });
+                          }}
+                          style={{ padding: "2px 8px", fontSize: "10px", backgroundColor: "#fff", color: "#db2777", border: "1px solid #fbcfe8", borderRadius: "4px", cursor: "pointer", fontWeight: "bold" }}
+                        >
+                          + Asignar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Padre */}
+                  <div style={{ backgroundColor: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "8px", padding: "10px" }}>
+                    <div style={{ color: "#1e40af", fontSize: "11px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "4px", marginBottom: "4px" }}>
+                      🐂 PADRE / SEMENTAL
+                    </div>
+                    {animalActivo.padre && animalActivo.padre !== "--" ? (
+                      <div>
+                        {(() => {
+                          const padreObj = inventario.find(a => a.arete === animalActivo.padre || (a.nombre && a.nombre === animalActivo.padre));
+                          return (
+                            <div>
+                              <div style={{ fontSize: "14px", fontWeight: "800", color: "#1e3a8a" }}>
+                                {animalActivo.padre}
+                              </div>
+                              {padreObj ? (
+                                <div style={{ marginTop: "4px", display: "flex", alignItems: "center", gap: "6px" }}>
+                                  <span style={{ fontSize: "11px", color: "#1e40af" }}>
+                                    {padreObj.raza || "Semental"}{padreObj.potrero ? ` • ${padreObj.potrero}` : ""}
+                                  </span>
+                                  <button 
+                                    type="button"
+                                    onClick={() => setAnimalActivo(padreObj)}
+                                    style={{ background: "#fff", border: "1px solid #bfdbfe", borderRadius: "4px", color: "#1d4ed8", fontSize: "10px", padding: "1px 6px", cursor: "pointer", fontWeight: "bold" }}
+                                    title="Ver ficha del semental"
+                                  >
+                                    Ver Ficha ↗
+                                  </button>
+                                </div>
+                              ) : (
+                                <div style={{ fontSize: "11px", color: "#2563eb", marginTop: "2px" }}>
+                                  Inseminación / Semental Externo
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "2px" }}>
+                        <span style={{ fontSize: "12px", color: "#9ca3af", fontStyle: "italic" }}>Sin registrar</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditandoDatosAnimal(true);
+                            setDatosEdicionAnimal({
+                              raza: animalActivo.raza,
+                              peso: animalActivo.peso,
+                              fechaNacimiento: animalActivo.fechaNacimiento,
+                              madre: animalActivo.madre,
+                              padre: animalActivo.padre
+                            });
+                          }}
+                          style={{ padding: "2px 8px", fontSize: "10px", backgroundColor: "#fff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: "4px", cursor: "pointer", fontWeight: "bold" }}
+                        >
+                          + Asignar
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1138,15 +1396,66 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
               <strong>Ubicación:</strong> <span style={{ color: "var(--verde-medio)", fontWeight: "bold" }}>{animalActivo.potrero || animalActivo.hectarea || "Sin Asignar"}</span> <br/>
               
               {editandoDatosAnimal ? (
-                <div style={{ marginTop: "10px", marginBottom: "10px", display: "grid", gap: "8px", gridTemplateColumns: "1fr 1fr" }}>
-                  <div><label style={{fontSize: "11px", fontWeight: "bold", display: "block"}}>Raza</label><input type="text" value={datosEdicionAnimal.raza || ""} onChange={e => setDatosEdicionAnimal({...datosEdicionAnimal, raza: e.target.value})} style={{width: "100%", padding: "6px", fontSize:"12px", border: "1px solid #d1d5db", borderRadius: "4px"}}/></div>
-                  <div><label style={{fontSize: "11px", fontWeight: "bold", display: "block"}}>Peso Inicial</label><input type="text" value={datosEdicionAnimal.peso || ""} onChange={e => setDatosEdicionAnimal({...datosEdicionAnimal, peso: e.target.value})} style={{width: "100%", padding: "6px", fontSize:"12px", border: "1px solid #d1d5db", borderRadius: "4px"}}/></div>
-                  <div><label style={{fontSize: "11px", fontWeight: "bold", display: "block"}}>Nacimiento</label><input type="date" value={datosEdicionAnimal.fechaNacimiento || ""} onChange={e => setDatosEdicionAnimal({...datosEdicionAnimal, fechaNacimiento: e.target.value})} style={{width: "100%", padding: "6px", fontSize:"12px", border: "1px solid #d1d5db", borderRadius: "4px"}}/></div>
-                  <div></div>
-                  <div><label style={{fontSize: "11px", fontWeight: "bold", display: "block"}}>Madre</label><input type="text" value={datosEdicionAnimal.madre || ""} onChange={e => setDatosEdicionAnimal({...datosEdicionAnimal, madre: e.target.value})} style={{width: "100%", padding: "6px", fontSize:"12px", border: "1px solid #d1d5db", borderRadius: "4px"}}/></div>
-                  <div><label style={{fontSize: "11px", fontWeight: "bold", display: "block"}}>Padre</label><input type="text" value={datosEdicionAnimal.padre || ""} onChange={e => setDatosEdicionAnimal({...datosEdicionAnimal, padre: e.target.value})} style={{width: "100%", padding: "6px", fontSize:"12px", border: "1px solid #d1d5db", borderRadius: "4px"}}/></div>
+                <div style={{ marginTop: "10px", marginBottom: "10px", display: "grid", gap: "10px", gridTemplateColumns: "1fr 1fr" }}>
+                  <div>
+                    <label style={{fontSize: "11px", fontWeight: "bold", display: "block", marginBottom: "3px"}}>Raza</label>
+                    <input type="text" value={datosEdicionAnimal.raza || ""} onChange={e => setDatosEdicionAnimal({...datosEdicionAnimal, raza: e.target.value})} style={{width: "100%", padding: "6px", fontSize:"12px", border: "1px solid #d1d5db", borderRadius: "4px", boxSizing: "border-box"}}/>
+                  </div>
+                  <div>
+                    <label style={{fontSize: "11px", fontWeight: "bold", display: "block", marginBottom: "3px"}}>Peso Inicial</label>
+                    <input type="text" value={datosEdicionAnimal.peso || ""} onChange={e => setDatosEdicionAnimal({...datosEdicionAnimal, peso: e.target.value})} style={{width: "100%", padding: "6px", fontSize:"12px", border: "1px solid #d1d5db", borderRadius: "4px", boxSizing: "border-box"}}/>
+                  </div>
+                  <div>
+                    <label style={{fontSize: "11px", fontWeight: "bold", display: "block", marginBottom: "3px"}}>Fecha Nacimiento</label>
+                    <input type="date" value={datosEdicionAnimal.fechaNacimiento || ""} onChange={e => setDatosEdicionAnimal({...datosEdicionAnimal, fechaNacimiento: e.target.value})} style={{width: "100%", padding: "6px", fontSize:"12px", border: "1px solid #d1d5db", borderRadius: "4px", boxSizing: "border-box"}}/>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "flex-end" }}>
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        const madreSugerida = vacasDisponibles.length > 0 ? vacasDisponibles[Math.floor(Math.random() * vacasDisponibles.length)].arete : "VC-204";
+                        const padreSugerido = sementalesDisponibles.length > 0 ? sementalesDisponibles[Math.floor(Math.random() * sementalesDisponibles.length)].arete : "SM-101";
+                        setDatosEdicionAnimal(prev => ({ ...prev, madre: madreSugerida, padre: padreSugerido }));
+                      }}
+                      style={{ width: "100%", padding: "6px", fontSize: "11px", backgroundColor: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0", borderRadius: "4px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}
+                    >
+                      <Sparkles size={12} /> Sugerir Padres del Hato
+                    </button>
+                  </div>
+                  <div>
+                    <label style={{fontSize: "11px", fontWeight: "bold", display: "block", marginBottom: "3px"}}>🐮 Madre (Arete / Nombre)</label>
+                    <input 
+                      list="lista-madres-edicion" 
+                      type="text" 
+                      placeholder="Seleccionar o escribir arete..." 
+                      value={datosEdicionAnimal.madre || ""} 
+                      onChange={e => setDatosEdicionAnimal({...datosEdicionAnimal, madre: e.target.value})} 
+                      style={{width: "100%", padding: "6px", fontSize:"12px", border: "1px solid #d1d5db", borderRadius: "4px", boxSizing: "border-box"}}
+                    />
+                    <datalist id="lista-madres-edicion">
+                      {vacasDisponibles.map(v => (
+                        <option key={v.id} value={v.arete}>{`${v.arete}${v.nombre ? ` (${v.nombre})` : ""} - ${v.raza || "Vaca"}${v.potrero ? ` • ${v.potrero}` : ""}`}</option>
+                      ))}
+                    </datalist>
+                  </div>
+                  <div>
+                    <label style={{fontSize: "11px", fontWeight: "bold", display: "block", marginBottom: "3px"}}>🐂 Padre / Semental</label>
+                    <input 
+                      list="lista-padres-edicion" 
+                      type="text" 
+                      placeholder="Seleccionar o escribir arete..." 
+                      value={datosEdicionAnimal.padre || ""} 
+                      onChange={e => setDatosEdicionAnimal({...datosEdicionAnimal, padre: e.target.value})} 
+                      style={{width: "100%", padding: "6px", fontSize:"12px", border: "1px solid #d1d5db", borderRadius: "4px", boxSizing: "border-box"}}
+                    />
+                    <datalist id="lista-padres-edicion">
+                      {sementalesDisponibles.map(s => (
+                        <option key={s.id} value={s.arete}>{`${s.arete}${s.nombre ? ` (${s.nombre})` : ""} - ${s.raza || "Semental"}${s.potrero ? ` • ${s.potrero}` : ""}`}</option>
+                      ))}
+                    </datalist>
+                  </div>
                   <div style={{gridColumn: "1 / -1", display: "flex", gap: "8px", marginTop: "4px"}}>
-                    <button onClick={guardarEdicionAnimal} style={{padding: "6px 12px", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "4px", cursor: "pointer"}}>Guardar</button>
+                    <button onClick={guardarEdicionAnimal} style={{padding: "6px 14px", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontWeight: "bold"}}>Guardar Cambios</button>
                     <button onClick={() => setEditandoDatosAnimal(false)} style={{padding: "6px 12px", backgroundColor: "#e5e7eb", color: "#4b5563", border: "none", borderRadius: "4px", cursor: "pointer"}}>Cancelar</button>
                   </div>
                 </div>
@@ -1276,7 +1585,14 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
               {historialEventos.map(ev => (
                 <div key={ev.id} style={{ padding: "8px", borderBottom: "1px solid #eee", fontSize: "13px", display: "flex", justifyContent: "space-between" }}>
                   <span>
-                    <strong>{ev.tipo}:</strong> {ev.resultado} {ev.tipo === "Repeso" ? "kg" : ""}
+                    <strong>{ev.tipo}:</strong> {(() => {
+                      let resultadoLimpio = String(ev.resultado || "").trim();
+                      resultadoLimpio = resultadoLimpio.replace(/(\s*kg)+/gi, " kg").trim();
+                      if ((ev.tipo === "Repeso" || ev.tipo === "Pesaje") && !resultadoLimpio.toLowerCase().endsWith("kg")) {
+                        resultadoLimpio = `${resultadoLimpio} kg`;
+                      }
+                      return resultadoLimpio;
+                    })()}
                   </span>
                   <span style={{ color: "#9ca3af", display: "flex", alignItems: "center", gap: "8px" }}>
                       {ev.fecha}

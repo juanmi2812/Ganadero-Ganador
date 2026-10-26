@@ -543,59 +543,26 @@ export default function ImportadorMasivo({ usuario }) {
 
     const animalesAGenerar = [];
 
-    // 150 animales totales
+    // 150 animales totales con genealogía estructurada
+    const vacasDemo = [];
     for(let i=0; i<70; i++){
-      animalesAGenerar.push({
+      vacasDemo.push({
         arete: `VC-${getRandomInt(1000, 9999)}`,
         tipo: "Vaca", sexo: "Hembra", raza: getRandom(razas),
         fechaNacimiento: restarMesesAFecha(getRandomInt(50, 120)),
         pesoActual: getRandomInt(400, 650),
-        estado: Math.random() > 0.1 ? "Sano" : "Desecho", // Casos de desecho
+        estado: Math.random() > 0.1 ? "Sano" : "Desecho",
         potrero: getRandom(potrerosNombres), grupo: "Vacas",
         fechaRegistro: new Date().toISOString().split('T')[0],
-        ranchoId: usuario?.ranchoId
+        ranchoId: usuario?.ranchoId,
+        madre: i % 3 === 0 ? `VC-REG-${getRandomInt(100, 999)}` : "",
+        padre: i % 3 === 0 ? `SM-IMP-${getRandomInt(10, 99)}` : ""
       });
     }
-    for(let i=0; i<20; i++){
-      const meses = i < 5 ? 60 : getRandomInt(14, 30); // 5 novillonas de 5 años para activar el KPI de Infertilidad
-      animalesAGenerar.push({
-        arete: `NV-${getRandomInt(1000, 9999)}`,
-        tipo: "Novillona", sexo: "Hembra", raza: getRandom(razas),
-        fechaNacimiento: restarMesesAFecha(meses),
-        pesoActual: getRandomInt(280, 420),
-        estado: "Sano",
-        potrero: getRandom(potrerosNombres), grupo: "Desarrollo",
-        fechaRegistro: new Date().toISOString().split('T')[0],
-        ranchoId: usuario?.ranchoId
-      });
-    }
-    for(let i=0; i<15; i++){
-      animalesAGenerar.push({
-        arete: `TR-${getRandomInt(1000, 9999)}`,
-        tipo: "Torete", sexo: "Macho", raza: getRandom(razas),
-        fechaNacimiento: restarMesesAFecha(getRandomInt(13, 20)), // Edad perfecta para ser Torete (1-2 años)
-        pesoActual: getRandomInt(350, 500),
-        estado: "Sano",
-        potrero: getRandom(potrerosNombres), grupo: "Engorda",
-        fechaRegistro: new Date().toISOString().split('T')[0],
-        ranchoId: usuario?.ranchoId
-      });
-    }
-    for(let i=0; i<40; i++){
-      const esMacho = Math.random() > 0.5;
-      animalesAGenerar.push({
-        arete: `CR-${getRandomInt(1000, 9999)}`,
-        tipo: esMacho ? "Becerro" : "Becerra", sexo: esMacho ? "Macho" : "Hembra", raza: getRandom(razas),
-        fechaNacimiento: restarMesesAFecha(getRandomInt(2, 11)),
-        pesoActual: getRandomInt(80, 220),
-        estado: "Sano",
-        potrero: getRandom(potrerosNombres), grupo: "Crías Lactantes",
-        fechaRegistro: new Date().toISOString().split('T')[0],
-        ranchoId: usuario?.ranchoId
-      });
-    }
+
+    const sementalesDemo = [];
     for(let i=0; i<5; i++){
-      animalesAGenerar.push({
+      sementalesDemo.push({
         arete: `SM-${getRandomInt(100, 999)}`,
         tipo: "Semental", sexo: "Macho", raza: getRandom(razas),
         fechaNacimiento: restarMesesAFecha(getRandomInt(60, 100)),
@@ -603,9 +570,63 @@ export default function ImportadorMasivo({ usuario }) {
         estado: "Sano",
         potrero: getRandom(potrerosNombres), grupo: "Sementales",
         fechaRegistro: new Date().toISOString().split('T')[0],
-        ranchoId: usuario?.ranchoId
+        ranchoId: usuario?.ranchoId,
+        madre: `VC-ELITE-${getRandomInt(10, 99)}`,
+        padre: `SM-CAMPEON-${getRandomInt(1, 9)}`
       });
     }
+
+    const novillonasDemo = [];
+    for(let i=0; i<20; i++){
+      const meses = i < 5 ? 60 : getRandomInt(14, 30);
+      novillonasDemo.push({
+        arete: `NV-${getRandomInt(1000, 9999)}`,
+        tipo: "Novillona", sexo: "Hembra", raza: getRandom(razas),
+        fechaNacimiento: restarMesesAFecha(meses),
+        pesoActual: getRandomInt(280, 420),
+        estado: "Sano",
+        potrero: getRandom(potrerosNombres), grupo: "Desarrollo",
+        fechaRegistro: new Date().toISOString().split('T')[0],
+        ranchoId: usuario?.ranchoId,
+        madre: vacasDemo[i % vacasDemo.length].arete,
+        padre: sementalesDemo[i % sementalesDemo.length].arete
+      });
+    }
+
+    const toretesDemo = [];
+    for(let i=0; i<15; i++){
+      toretesDemo.push({
+        arete: `TR-${getRandomInt(1000, 9999)}`,
+        tipo: "Torete", sexo: "Macho", raza: getRandom(razas),
+        fechaNacimiento: restarMesesAFecha(getRandomInt(13, 20)),
+        pesoActual: getRandomInt(350, 500),
+        estado: "Sano",
+        potrero: getRandom(potrerosNombres), grupo: "Engorda",
+        fechaRegistro: new Date().toISOString().split('T')[0],
+        ranchoId: usuario?.ranchoId,
+        madre: vacasDemo[(i + 20) % vacasDemo.length].arete,
+        padre: sementalesDemo[(i + 1) % sementalesDemo.length].arete
+      });
+    }
+
+    const criasDemo = [];
+    for(let i=0; i<40; i++){
+      const esMacho = Math.random() > 0.5;
+      criasDemo.push({
+        arete: `CR-${getRandomInt(1000, 9999)}`,
+        tipo: esMacho ? "Becerro" : "Becerra", sexo: esMacho ? "Macho" : "Hembra", raza: getRandom(razas),
+        fechaNacimiento: restarMesesAFecha(getRandomInt(2, 11)),
+        pesoActual: getRandomInt(80, 220),
+        estado: "Sano",
+        potrero: getRandom(potrerosNombres), grupo: "Crías Lactantes",
+        fechaRegistro: new Date().toISOString().split('T')[0],
+        ranchoId: usuario?.ranchoId,
+        madre: vacasDemo[(i + 35) % vacasDemo.length].arete,
+        padre: sementalesDemo[(i + 2) % sementalesDemo.length].arete
+      });
+    }
+
+    animalesAGenerar.push(...vacasDemo, ...novillonasDemo, ...toretesDemo, ...criasDemo, ...sementalesDemo);
 
     // Algunos casos de Baja (Índice de Bajas)
     for(let i=0; i<4; i++){
