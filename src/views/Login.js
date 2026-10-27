@@ -69,25 +69,6 @@ export default function Login({ alIniciarSesion }) {
     }
   };
 
-  const ingresarRanchoRobleDemo = async () => {
-    const emailDemo = "demo.roble@ganaderoganador.com";
-    const passDemo = "DemoRoble2026!";
-    setCorreo(emailDemo);
-    setPassword(passDemo);
-    setError("");
-    setCargando(true);
-    try {
-      const cred = await iniciarSesionCorreo(emailDemo, passDemo);
-      const perfil = await getDoc(doc(db, "usuarios", cred.user.uid));
-      if (!perfil.exists()) throw new Error("No se encontró perfil de usuario.");
-      alIniciarSesion({ uid: cred.user.uid, ...perfil.data() });
-    } catch (err) {
-      setError(mensajeError(err.code || err.message));
-    } finally {
-      setCargando(false);
-    }
-  };
-
   // ─── Registro Admin ───────────────────────────────────────────────────────
   // ─── Registro Admin Rancho ───────────────────────────────────────────────────
   const manejarRegistroAdmin = async (e) => {
@@ -303,33 +284,6 @@ export default function Login({ alIniciarSesion }) {
               </button>
             </form>
 
-            <div style={{ marginTop: "14px", padding: "10px 12px", backgroundColor: "#f0fdf4", border: "1px dashed #16a34a", borderRadius: "8px", textAlign: "center" }}>
-              <div style={{ fontSize: "11px", fontWeight: "700", color: "#166534", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "4px" }}>
-                🎬 Modo Grabación / Tutoriales
-              </div>
-              <button 
-                type="button" 
-                onClick={ingresarRanchoRobleDemo}
-                disabled={cargando}
-                style={{ 
-                  background: "#16a34a", 
-                  border: "none", 
-                  color: "#ffffff", 
-                  fontSize: "12px", 
-                  fontWeight: "bold", 
-                  padding: "8px 14px", 
-                  borderRadius: "6px", 
-                  cursor: "pointer", 
-                  width: "100%", 
-                  display: "flex", 
-                  alignItems: "center", 
-                  justifyContent: "center", 
-                  gap: "6px" 
-                }}
-              >
-                🌲 Entrar a "Rancho El Roble - Demo" (1 Clic)
-              </button>
-            </div>
 
             <div style={{ margin: "16px 0", textAlign: "center", fontSize: "13px", color: "#9ca3af" }}>— o continúa con —</div>
 
