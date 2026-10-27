@@ -214,15 +214,30 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   }, [inventario]);
 
   useEffect(() => {
-    if (!animalActivo) return;
+    if (!animalActivo?.id) {
+      setHistorialEventos([]);
+      return;
+    }
     const q = query(collection(db, "eventos"), where("animalId", "==", animalActivo.id));
     const cancelarEventos = onSnapshot(q, (snapshot) => {
       const eventos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      eventos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+      eventos.sort((a, b) => {
+        let da = new Date(a.fecha);
+        let db = new Date(b.fecha);
+        if (isNaN(da.getTime()) && String(a.fecha).includes('/')) {
+          const parts = String(a.fecha).split('/');
+          if (parts.length === 3) da = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+        }
+        if (isNaN(db.getTime()) && String(b.fecha).includes('/')) {
+          const parts = String(b.fecha).split('/');
+          if (parts.length === 3) db = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+        }
+        return (isNaN(db.getTime()) ? 0 : db.getTime()) - (isNaN(da.getTime()) ? 0 : da.getTime());
+      });
       setHistorialEventos(eventos);
     });
     return () => cancelarEventos();
-  }, [animalActivo]);
+  }, [animalActivo?.id]);
 
   useEffect(() => {
     if (!usuario?.ranchoId) return;
@@ -254,40 +269,68 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
   }, [mostrarModalPalpacion, inventario]);
 
   // --- LÓGICA DE NEGOCIO (BI & CALCULOS) ---
+  const parsearFechaSegura = (f) => {
+    if (!f) return null;
+    let d = new Date(f);
+    if (!isNaN(d.getTime())) return d;
+    if (String(f).includes('/')) {
+      const parts = String(f).split('/');
+      if (parts.length === 3) {
+        d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+        if (!isNaN(d.getTime())) return d;
+      }
+    }
+    return null;
+  };
+
   const obtenerEstadisticasPeso = () => {
     if (!animalActivo) return null;
 
-    const pesoInicial = parseFloat(animalActivo.peso?.toString().replace(/[^0-9.]/g, '')) || 0;
+    const pesoInicialConfig = parseFloat((animalActivo.peso || animalActivo.pesoActual)?.toString().replace(/[^0-9.]/g, '')) || 0;
     
     const repesos = historialEventos
       .filter(ev => ev.tipo === "Repeso")
-      .map(ev => ({
-        peso: parseFloat(ev.resultado?.toString().replace(/[^0-9.]/g, '')),
-        fecha: new Date(ev.fecha)
-      }))
-      .sort((a, b) => b.fecha - a.fecha);
+      .map(ev => {
+        const pesoNum = parseFloat(ev.resultado?.toString().replace(/[^0-9.]/g, ''));
+        const fechaObj = parsearFechaSegura(ev.fecha) || new Date();
+        return { peso: pesoNum, fecha: fechaObj };
+      })
+      .filter(ev => !isNaN(ev.peso) && ev.peso > 0)
+      .sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
 
-    if (repesos.length === 0) return { actual: pesoInicial, gananciaTotal: 0, gdp: 0 };
+    if (repesos.length === 0) {
+      return { actual: pesoInicialConfig, gananciaTotal: 0, gdp: 0 };
+    }
 
     const pesoActual = repesos[0].peso;
-    const gananciaTotal = pesoActual - pesoInicial;
+
+    // Si el animal no tenía peso inicial registrado, usar el pesaje más antiguo disponible como base
+    const pesoBase = (pesoInicialConfig > 0)
+      ? pesoInicialConfig
+      : (repesos.length > 1 ? repesos[repesos.length - 1].peso : 0);
+
+    const gananciaTotal = pesoBase > 0 ? (pesoActual - pesoBase) : pesoActual;
     let gdp = 0;
 
     if (repesos.length > 1) {
-      // Calcular GDP del último periodo entre repesos
+      // Calcular GDP entre el pesaje más reciente y el anterior
       const gananciaPeriodo = repesos[0].peso - repesos[1].peso;
-      const diffTiempo = Math.abs(repesos[0].fecha - repesos[1].fecha);
-      const dias = Math.ceil(diffTiempo / (1000 * 60 * 60 * 24)) || 1;
+      const diffTiempo = Math.abs(repesos[0].fecha.getTime() - repesos[1].fecha.getTime());
+      const dias = Math.max(1, Math.round(diffTiempo / (1000 * 60 * 60 * 24)));
       gdp = gananciaPeriodo / dias;
     } else {
-      // Si hay solo 1 repeso, usar la fecha de nacimiento si existe (ideal para becerros), si no la de registro
-      const fechaInicial = new Date(animalActivo.fechaNacimiento || animalActivo.fechaRegistro || new Date());
-      const diffTiempo = Math.abs(repesos[0].fecha - fechaInicial);
-      const dias = Math.ceil(diffTiempo / (1000 * 60 * 60 * 24)) || 1;
-      gdp = gananciaTotal / dias;
+      // Si hay 1 solo repeso, comparar con fecha de nacimiento o registro
+      const fechaInicial = parsearFechaSegura(animalActivo.fechaNacimiento || animalActivo.fechaRegistro) || new Date();
+      const diffTiempo = Math.abs(repesos[0].fecha.getTime() - fechaInicial.getTime());
+      const dias = Math.max(1, Math.round(diffTiempo / (1000 * 60 * 60 * 24)));
+      gdp = dias > 0 ? (gananciaTotal / dias) : 0;
     }
 
-    return { actual: pesoActual, gananciaTotal: gananciaTotal.toFixed(2), gdp: gdp.toFixed(3) };
+    return { 
+      actual: pesoActual, 
+      gananciaTotal: Number(gananciaTotal.toFixed(2)), 
+      gdp: Number(gdp.toFixed(3)) 
+    };
   };
 
   const obtenerRentabilidad = () => {
@@ -970,22 +1013,22 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
       <div className="kpi-grid">
         <div className="kpi-card" onClick={() => setFiltroActivo(["Todos"])} style={{cursor: "pointer", border: filtroActivo.includes("Todos") ? "2px solid var(--verde-primario)" : "1px solid #e5e7eb"}}>
           <div style={{ fontSize: "22px", marginBottom: "6px" }}>🐄</div>
-          <div className="kpi-value">{conteos.Todos}</div>
+          <div className="kpi-value">{cargandoInventario ? "..." : conteos.Todos}</div>
           <div className="kpi-label">Total Cabezas</div>
         </div>
         <div className="kpi-card" onClick={() => setFiltroActivo(["Machos"])} style={{cursor: "pointer", border: filtroActivo.includes("Machos") ? "2px solid #1565c0" : "1px solid #e5e7eb"}}>
           <div style={{ fontSize: "22px", marginBottom: "6px" }}>♂️</div>
-          <div className="kpi-value" style={{ color: "#1565c0" }}>{machos}</div>
+          <div className="kpi-value" style={{ color: "#1565c0" }}>{cargandoInventario ? "..." : machos}</div>
           <div className="kpi-label">Machos</div>
         </div>
         <div className="kpi-card" onClick={() => setFiltroActivo(["Hembras"])} style={{cursor: "pointer", border: filtroActivo.includes("Hembras") ? "2px solid #7b1fa2" : "1px solid #e5e7eb"}}>
           <div style={{ fontSize: "22px", marginBottom: "6px" }}>♀️</div>
-          <div className="kpi-value" style={{ color: "#7b1fa2" }}>{hembras}</div>
+          <div className="kpi-value" style={{ color: "#7b1fa2" }}>{cargandoInventario ? "..." : hembras}</div>
           <div className="kpi-label">Hembras</div>
         </div>
         <div className="kpi-card" onClick={() => setFiltroActivo(["En Venta"])} style={{cursor: "pointer", border: filtroActivo.includes("En Venta") ? "2px solid #ef6c00" : "1px solid #e5e7eb"}}>
           <div style={{ fontSize: "22px", marginBottom: "6px" }}>💰</div>
-          <div className="kpi-value" style={{ color: "#ef6c00" }}>{conteos["En Venta"]}</div>
+          <div className="kpi-value" style={{ color: "#ef6c00" }}>{cargandoInventario ? "..." : conteos["En Venta"]}</div>
           <div className="kpi-label">En Venta</div>
         </div>
       </div>
@@ -1173,13 +1216,21 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                 <div style={{ color: "#166534", fontSize: "11px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "4px" }}>
                   <TrendingUp size={14} /> GANANCIA TOTAL
                 </div>
-                <span style={{ fontSize: "18px", fontWeight: "bold", color: "#14532d" }}>{stats?.gananciaTotal > 0 ? `+${stats.gananciaTotal} kg` : "--"}</span>
+                <span style={{ fontSize: "18px", fontWeight: "bold", color: "#14532d" }}>
+                  {stats && !isNaN(stats.gananciaTotal) && stats.actual > 0 
+                    ? `${stats.gananciaTotal >= 0 ? "+" : ""}${stats.gananciaTotal} kg` 
+                    : "--"}
+                </span>
               </div>
               <div style={{ backgroundColor: "#eff6ff", padding: "12px", borderRadius: "8px", border: "1px solid #bfdbfe" }}>
                 <div style={{ color: "#1e40af", fontSize: "11px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "4px" }}>
                   <Activity size={14} /> GDP (PROM. DIARIO)
                 </div>
-                <span style={{ fontSize: "18px", fontWeight: "bold", color: "#1e3a8a" }}>{stats?.gdp > 0 ? `${stats.gdp} kg/d` : "--"}</span>
+                <span style={{ fontSize: "18px", fontWeight: "bold", color: "#1e3a8a" }}>
+                  {stats && !isNaN(stats.gdp) && stats.gdp > 0 
+                    ? `${stats.gdp} kg/d` 
+                    : "--"}
+                </span>
               </div>
             </div>
 
@@ -1391,7 +1442,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
 
             <div style={{ backgroundColor: "#f3f4f6", padding: "12px", borderRadius: "8px", marginBottom: "16px", fontSize: "13px", position: "relative" }}>
               {!editandoDatosAnimal && (
-                <button onClick={() => { setEditandoDatosAnimal(true); setDatosEdicionAnimal({ raza: animalActivo.raza, peso: animalActivo.peso, fechaNacimiento: animalActivo.fechaNacimiento, madre: animalActivo.madre, padre: animalActivo.padre }); }} style={{ position: "absolute", top: "12px", right: "12px", background: "none", border: "none", color: "#3b82f6", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}>✏️ Editar Detalles</button>
+                <button onClick={() => { setEditandoDatosAnimal(true); setDatosEdicionAnimal({ raza: animalActivo.raza || "", peso: animalActivo.peso || animalActivo.pesoActual || "", fechaNacimiento: animalActivo.fechaNacimiento || "", madre: animalActivo.madre || "", padre: animalActivo.padre || "" }); }} style={{ position: "absolute", top: "12px", right: "12px", background: "none", border: "none", color: "#3b82f6", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}>✏️ Editar Detalles</button>
               )}
               <strong>Ubicación:</strong> <span style={{ color: "var(--verde-medio)", fontWeight: "bold" }}>{animalActivo.potrero || animalActivo.hectarea || "Sin Asignar"}</span> <br/>
               
@@ -1461,7 +1512,7 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
                 </div>
               ) : (
                 <>
-                  <strong>Info:</strong> {animalActivo.raza} | <strong>Peso Inicial:</strong> {animalActivo.peso} <br/>
+                  <strong>Info:</strong> {animalActivo.raza} | <strong>Peso Inicial:</strong> {animalActivo.peso || animalActivo.pesoActual || "--"} <br/>
                   <strong>Nacimiento / Registro:</strong> {animalActivo.fechaNacimiento || animalActivo.fechaRegistro || "--"} {animalActivo.fechaNacimiento ? `(${differenceInMonths(new Date(), new Date(animalActivo.fechaNacimiento + "T00:00:00"))} meses)` : ""} <br/>
                 </>
               )}
