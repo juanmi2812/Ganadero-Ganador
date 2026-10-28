@@ -105,7 +105,7 @@ exports.actualizarCategoriasGanado = functions.pubsub
 // ==========================================
 
 // Para producción o despliegue real, Firebase usa variables de entorno:
-const stripeKey = process.env.STRIPE_SECRET_KEY || "CLAVE_SECRETA_AQUI";
+const stripeKey = process.env.STRIPE_SECRET_KEY || "";
 const stripe = require("stripe")(stripeKey);
 
 exports.createCheckoutSession = functions.https.onCall(async (data, context) => {

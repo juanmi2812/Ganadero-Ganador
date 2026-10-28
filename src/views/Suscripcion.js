@@ -11,9 +11,12 @@ export default function Suscripcion({ usuario, setUsuario, onVolver }) {
   const [modalLegalAbierto, setModalLegalAbierto] = useState(false);
   const [tabLegal, setTabLegal] = useState("terminos");
 
-  // Reemplazar con los IDs reales de los precios de Stripe que creaste
-  const PRICE_ID_MENSUAL = "price_1TkFZLDveqVmu6L4W4IjbROt"; 
-  const PRICE_ID_ANUAL = "price_1TkFZLDveqVmu6L4zQnqPosO";
+  // IDs y Enlaces directos de Stripe Producción (En vivo)
+  const PRICE_ID_MENSUAL = "price_1UVKCXDBEw2YkxclpKhKt7J5"; 
+  const PRICE_ID_ANUAL = "price_1UVKCYDBEw2YkxclFVcizqO2";
+
+  const LINK_MENSUAL = "https://buy.stripe.com/eVq3cv6ue9QVe88bR66sw00";
+  const LINK_ANUAL = "https://buy.stripe.com/8x23cv3i21kp9RSbR66sw01";
 
   const comprobarSuscripcion = async (silencioso = false) => {
     setVerificando(true);
@@ -72,20 +75,21 @@ export default function Suscripcion({ usuario, setUsuario, onVolver }) {
     }
   }, []);
 
-  const iniciarCheckout = async (priceId) => {
+  const iniciarCheckout = async (planOrPriceId) => {
     setCargando(true);
     try {
-      const createCheckoutSession = httpsCallable(functions, 'createCheckoutSession');
-      const result = await createCheckoutSession({
-        priceId: priceId,
-        successUrl: window.location.origin + "?pago=exito&session_id={CHECKOUT_SESSION_ID}",
-        cancelUrl: window.location.origin + "?pago=cancelado"
-      });
-      
-      const data = result.data;
-      if (data.url) {
-        window.location.assign(data.url);
-      }
+      const email = usuario?.correo || usuario?.email || auth.currentUser?.email || "";
+      const uid = usuario?.uid || auth.currentUser?.uid || "";
+      const esAnual = planOrPriceId === "anual" || planOrPriceId === PRICE_ID_ANUAL;
+      const baseLink = esAnual ? LINK_ANUAL : LINK_MENSUAL;
+
+      const queryParams = new URLSearchParams();
+      if (email) queryParams.append("prefilled_email", email);
+      if (uid) queryParams.append("client_reference_id", uid);
+
+      const paramsStr = queryParams.toString();
+      const redirectUrl = paramsStr ? `${baseLink}?${paramsStr}` : baseLink;
+      window.location.assign(redirectUrl);
     } catch (error) {
       console.error("Error al iniciar checkout:", error);
       alert("Hubo un problema al conectar con Stripe. Intenta de nuevo.");
