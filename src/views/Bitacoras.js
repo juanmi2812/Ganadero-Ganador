@@ -22,11 +22,21 @@ export default function Bitacoras({ usuario }) {
 
   useEffect(() => {
     if (!usuario?.ranchoId) return;
-    const q = query(collection(db, "bitacoras"), where("ranchoId", "==", usuario.ranchoId), orderBy("fecha", "desc"));
-    const unsub = onSnapshot(q, (snap) => {
-      setBitacoras(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      setCargando(false);
-    });
+    setCargando(true);
+    const q = query(collection(db, "bitacoras"), where("ranchoId", "==", usuario.ranchoId));
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const lista = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        lista.sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0));
+        setBitacoras(lista);
+        setCargando(false);
+      },
+      (error) => {
+        console.error("Error al cargar bitácoras:", error);
+        setCargando(false);
+      }
+    );
     return () => unsub();
   }, [usuario]);
 

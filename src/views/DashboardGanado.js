@@ -997,15 +997,6 @@ export default function DashboardGanado({ usuario, abrirModalTratamientoMasivo, 
             >
               💊 Cargar Tratamiento
             </button>
-            <button 
-              className="btn-outline" 
-              onClick={autoCompletarGenealogiasHato}
-              disabled={asignandoGenealogiasHato}
-              style={{ margin: 0, width: "auto", display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#fff", borderColor: "#3b82f6", color: "#1d4ed8", padding: "10px 18px", fontWeight: "600", borderRadius: "8px" }}
-              title="Asigna automáticamente padres a las crías y animales sin linaje para completar sus fichas"
-            >
-              <Sparkles size={16} color="#2563eb" /> {asignandoGenealogiasHato ? "Completando..." : "Completar Genealogías"}
-            </button>
           </div>
         )}
       </Header>
