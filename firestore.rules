@@ -67,6 +67,13 @@ service cloud.firestore {
       allow write: if isAuthenticated() && request.auth.token.admin == true;
     }
 
+    // Captura de prospectos/leads desde la Landing Page oficial:
+    // Permite a cualquier visitante enviar sus datos para demo/prueba, pero protege los datos de lectura no autorizada
+    match /leads_landing/{leadId} {
+      allow create: if true;
+      allow read, update, delete: if isAuthenticated();
+    }
+
     // Regla global por defecto: Denegar cualquier acceso no autenticado
     match /{document=**} {
       allow read, write: if isAuthenticated();
