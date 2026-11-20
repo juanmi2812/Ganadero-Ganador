@@ -17,7 +17,7 @@ import ConfiguracionEquipo from "./views/ConfiguracionEquipo";
 import Movilizacion from "./views/Movilizacion";
 import MenuMas from "./views/MenuMas";
 import { Home, BookOpen, CalendarDays, BarChart3, Settings, LogOut, Plus, Map, CreditCard, Droplets, Users, Truck, Download, Trophy, Menu, MessageCircle, Phone } from "lucide-react";
-import logoUnionGanadera from "./assets/logo_union_ganadera.jpg";
+import logoConvivet from "./assets/logo_convivet.jpg";
 import { auth, db, onAuthStateChanged, signOut, functions } from "./firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
@@ -199,7 +199,7 @@ export default function App() {
       {/* === TOP HEADER === */}
       <header className="top-header">
         <div className="top-header-brand" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <img src={logoUnionGanadera} alt="UGR del Norte de Veracruz" style={{ height: "54px", width: "auto", borderRadius: "8px", backgroundColor: "#ffffff", padding: "3px", objectFit: "contain" }} />
+          <img src={logoConvivet} alt="Convivet" style={{ height: "38px", width: "auto", borderRadius: "6px", backgroundColor: "#ffffff", padding: "2px", objectFit: "contain" }} />
           <span>Ganadero Ganador</span>
         </div>
 

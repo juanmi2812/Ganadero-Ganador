@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { LogOut, CalendarDays, Settings, Users, Inbox } from "lucide-react";
-import logoUnionGanadera from "../assets/logo_union_ganadera.jpg";
+import logoConvivet from "../assets/logo_convivet.jpg";
 
 import GanaderaConfiguracion from "./Ganadera/GanaderaConfiguracion";
 import GanaderaEmpleados from "./Ganadera/GanaderaEmpleados";
@@ -25,7 +25,7 @@ export default function GanaderaApp({ usuario, cerrarSesion }) {
       {/* === TOP HEADER === */}
       <header className="top-header" style={{ borderBottomColor: "#2563eb" }}>
         <div className="top-header-brand" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <img src={logoUnionGanadera} alt="UGR del Norte de Veracruz" style={{ height: "54px", width: "auto", borderRadius: "8px", backgroundColor: "#ffffff", padding: "3px", objectFit: "contain" }} />
+          <img src={logoConvivet} alt="Convivet" style={{ height: "38px", width: "auto", borderRadius: "6px", backgroundColor: "#ffffff", padding: "2px", objectFit: "contain" }} />
           <span>Portal Ganadera</span>
         </div>
 
