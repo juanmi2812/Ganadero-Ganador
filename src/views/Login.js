@@ -438,6 +438,17 @@ export default function Login({ alIniciarSesion }) {
           >
             Aviso de Privacidad
           </button>.
+          <div style={{ marginTop: "12px", textAlign: "center", fontSize: "12px", color: "#4b5563" }}>
+            ¿Necesitas ayuda o tienes dudas?{" "}
+            <a 
+              href="https://wa.me/5217461022162?text=Hola,%20tengo%20una%20duda%20para%20ingresar%20a%20la%20app%20Ganadero%20Ganador" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ color: "#16a34a", fontWeight: "700", textDecoration: "none" }}
+            >
+              WhatsApp +52 1 746 102 2162
+            </a>
+          </div>
         </div>
 
       </div>

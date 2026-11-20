@@ -16,7 +16,7 @@ import ProduccionLeche from "./views/ProduccionLeche";
 import ConfiguracionEquipo from "./views/ConfiguracionEquipo";
 import Movilizacion from "./views/Movilizacion";
 import MenuMas from "./views/MenuMas";
-import { Home, BookOpen, CalendarDays, BarChart3, Settings, LogOut, Plus, Map, CreditCard, Droplets, Users, Truck, Download, Trophy, Menu } from "lucide-react";
+import { Home, BookOpen, CalendarDays, BarChart3, Settings, LogOut, Plus, Map, CreditCard, Droplets, Users, Truck, Download, Trophy, Menu, MessageCircle, Phone } from "lucide-react";
 import logoUnionGanadera from "./assets/logo_union_ganadera.jpg";
 import { auth, db, onAuthStateChanged, signOut, functions } from "./firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -204,6 +204,29 @@ export default function App() {
         </div>
 
         <div className="top-header-actions">
+          <a
+            href="https://wa.me/5217461022162?text=Hola,%20tengo%20una%20duda%20en%20la%20app%20Ganadero%20Ganador"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Contacto y Soporte (+52 1 746 102 2162)"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              backgroundColor: "#16a34a",
+              color: "white",
+              padding: "6px 12px",
+              borderRadius: "20px",
+              fontWeight: "600",
+              fontSize: "13px",
+              textDecoration: "none",
+              boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+              flexShrink: 0
+            }}
+          >
+            <MessageCircle size={15} />
+            <span>Contacto</span>
+          </a>
           {deferredPrompt && (
             <button
               onClick={handleInstallClick}

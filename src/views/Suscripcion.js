@@ -229,6 +229,17 @@ export default function Suscripcion({ usuario, setUsuario, onVolver }) {
             >
               Aviso de Privacidad
             </button>.
+            <div style={{ marginTop: "12px", textAlign: "center", fontSize: "12px", color: "#4b5563" }}>
+              ¿Dudas con tu pago o facturación?{" "}
+              <a 
+                href="https://wa.me/5217461022162?text=Hola,%20tengo%20una%20duda%20sobre%20el%20pago%20o%20suscripci%C3%B3n%20en%20Ganadero%20Ganador" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{ color: "#16a34a", fontWeight: "700", textDecoration: "none" }}
+              >
+                Habla con un asesor por WhatsApp (+52 1 746 102 2162)
+              </a>
+            </div>
           </div>
         </div>
       </main>

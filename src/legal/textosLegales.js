@@ -57,7 +57,7 @@ b) Estadísticas Disociadas y Benchmark: El Usuario autoriza a la Plataforma a c
     {
       numero: "9",
       titulo: "Contacto y Soporte Oficial",
-      contenido: `Para dudas, aclaraciones, asistencia con su facturación o soporte técnico, puede comunicarse directamente al correo: contacto.ganadero.ganador@gmail.com`
+      contenido: `Para dudas, aclaraciones, asistencia con su facturación o soporte técnico, puede comunicarse directamente al correo: contacto.ganadero.ganador@gmail.com o vía telefónica/WhatsApp al +52 1 746 102 2162`
     }
   ]
 };
@@ -114,7 +114,7 @@ Sus datos únicamente son transmitidos a proveedores de servicios tecnológicos 
       titulo: "Ejercicio de Derechos ARCO",
       contenido: `Usted tiene derecho a conocer qué datos personales tenemos de usted, para qué los usamos y las condiciones del uso que les damos (Acceso). Asimismo, es su derecho solicitar la corrección de su información (Rectificación), que la eliminemos de nuestros registros cuando considere que no está siendo utilizada adecuadamente (Cancelación), así como oponerse al uso de sus datos para fines específicos (Oposición).
 
-Para ejercer cualquiera de sus Derechos ARCO, deberá enviar una solicitud por correo electrónico a contacto.ganadero.ganador@gmail.com, adjuntando:
+Para ejercer cualquiera de sus Derechos ARCO, deberá enviar una solicitud por correo electrónico a contacto.ganadero.ganador@gmail.com o comunicarse al +52 1 746 102 2162, adjuntando:
 1. Nombre completo del titular y correo registrado en la plataforma.
 2. Copia digitalizada de identificación oficial vigente.
 3. Descripción clara de los datos respecto de los cuales busca ejercer el derecho y el motivo.

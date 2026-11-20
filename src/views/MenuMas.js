@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Map, BookOpen, BarChart3, Trophy, Truck, LogOut, Download, ShieldCheck, HelpCircle } from 'lucide-react';
+import { Map, BookOpen, BarChart3, Trophy, Truck, LogOut, Download, ShieldCheck, HelpCircle, Phone, MessageCircle } from 'lucide-react';
 import ModalLegal from '../components/ModalLegal';
 
 export default function MenuMas({ setVistaActiva, cerrarSesion }) {
   const [modalLegalAbierto, setModalLegalAbierto] = useState(false);
 
   const menuItems = [
+    { id: "soporte", label: "Contacto y Soporte (+52 1 746 102 2162)", icon: MessageCircle, color: "#16a34a", desc: "Atención directa vía WhatsApp o llamada", url: "https://wa.me/5217461022162?text=Hola,%20tengo%20una%20duda%20en%20la%20app%20Ganadero%20Ganador" },
     { id: "tutoriales", label: "Manual y Tutoriales", icon: HelpCircle, color: "#16a34a", desc: "Guía paso a paso y videos de la app", url: "https://ganadero-landing.vercel.app/tutoriales.html" },
     { id: "rancho", label: "Mi Rancho", icon: Map, color: "#10b981", desc: "Configura tus potreros y UPPs" },
     { id: "bitacoras", label: "Bitácoras", icon: BookOpen, color: "#f59e0b", desc: "Registro histórico y tratamientos" },
@@ -49,6 +50,35 @@ export default function MenuMas({ setVistaActiva, cerrarSesion }) {
         })}
       </div>
       
+            {/* Caja de Contacto Directo */}
+      <div style={{ marginTop: "24px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "14px", padding: "18px 20px", display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0 }}>
+            <Phone size={20} />
+          </div>
+          <div>
+            <div style={{ fontWeight: "700", color: "#15803d", fontSize: "15px" }}>Línea de Atención Oficial al Ganadero</div>
+            <div style={{ fontSize: "13px", color: "#4b5563" }}>Llámanos o escríbenos ante cualquier duda técnica, veterinaria o de uso del sistema: <strong>+52 1 746 102 2162</strong></div>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "4px" }}>
+          <a
+            href="https://wa.me/5217461022162?text=Hola,%20tengo%20una%20duda%20en%20la%20app%20Ganadero%20Ganador"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "#16a34a", color: "white", padding: "10px 16px", borderRadius: "8px", textDecoration: "none", fontWeight: "600", fontSize: "14px" }}
+          >
+            <MessageCircle size={18} /> Escribir por WhatsApp
+          </a>
+          <a
+            href="tel:+5217461022162"
+            style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "white", color: "#15803d", border: "1px solid #86efac", padding: "10px 16px", borderRadius: "8px", textDecoration: "none", fontWeight: "600", fontSize: "14px" }}
+          >
+            <Phone size={18} /> Llamar (+52 1 746 102 2162)
+          </a>
+        </div>
+      </div>
+
       <div style={{ marginTop: "30px" }}>
         <button 
           onClick={cerrarSesion}

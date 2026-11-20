@@ -30,6 +30,28 @@ export default function GanaderaApp({ usuario, cerrarSesion }) {
         </div>
 
         <div className="top-header-actions">
+          <a
+            href="https://wa.me/5217461022162?text=Hola,%20tengo%20una%20duda%20en%20el%20Portal%20Ganadera"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Contacto y Soporte (+52 1 746 102 2162)"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              backgroundColor: "#16a34a",
+              color: "white",
+              padding: "6px 12px",
+              borderRadius: "20px",
+              fontWeight: "600",
+              fontSize: "13px",
+              textDecoration: "none",
+              marginRight: "8px"
+            }}
+          >
+            <MessageCircle size={15} />
+            <span>Contacto</span>
+          </a>
           <button title="Cerrar Sesión" onClick={cerrarSesion} style={{ color: "#ef4444" }}>
             <LogOut size={18} />
           </button>
