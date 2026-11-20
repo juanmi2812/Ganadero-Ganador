@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Map, BookOpen, BarChart3, Trophy, Truck, LogOut, Download, ShieldCheck } from 'lucide-react';
+import { Map, BookOpen, BarChart3, Trophy, Truck, LogOut, Download, ShieldCheck, HelpCircle } from 'lucide-react';
 import ModalLegal from '../components/ModalLegal';
 
 export default function MenuMas({ setVistaActiva, cerrarSesion }) {
   const [modalLegalAbierto, setModalLegalAbierto] = useState(false);
 
   const menuItems = [
+    { id: "tutoriales", label: "Manual y Tutoriales", icon: HelpCircle, color: "#16a34a", desc: "Guía paso a paso y videos de la app", url: "https://ganadero-landing.vercel.app/tutoriales.html" },
     { id: "rancho", label: "Mi Rancho", icon: Map, color: "#10b981", desc: "Configura tus potreros y UPPs" },
     { id: "bitacoras", label: "Bitácoras", icon: BookOpen, color: "#f59e0b", desc: "Registro histórico y tratamientos" },
     { id: "reportes", label: "Reportes", icon: BarChart3, color: "#3b82f6", desc: "Análisis y gráficas de tu ganado" },
@@ -26,7 +27,9 @@ export default function MenuMas({ setVistaActiva, cerrarSesion }) {
               key={item.id} 
               className="card" 
               onClick={() => {
-                if (item.id === "legal") {
+                if (item.url) {
+                  window.open(item.url, '_blank', 'noopener,noreferrer');
+                } else if (item.id === "legal") {
                   setModalLegalAbierto(true);
                 } else {
                   setVistaActiva(item.id);
