@@ -108,17 +108,31 @@ export default function App() {
           if (perfil.exists()) {
             let userData = perfil.data();
             
-            // Activación automática para cuentas con pago ya verificado en Stripe
+            // Activación automática para cuentas con pago verificado en Stripe y Colaboradores VIP
             const correoUsuario = (userData.correo || userData.email || firebaseUser.email || "").toLowerCase();
-            const correosVerificados = ["juanantonio.sotelo", "prueba2@gmail.com"];
+            const correosVerificados = [
+              "juanantonio.sotelo", 
+              "prueba2@gmail.com",
+              "canudas.pari@gmail.com",
+              "canudas"
+            ];
             const esVerificado = correosVerificados.some(c => correoUsuario.includes(c));
-            if (esVerificado && !userData.suscripcionActiva) {
-              await updateDoc(doc(db, "usuarios", firebaseUser.uid), { 
-                suscripcionActiva: true, 
-                estadoSuscripcion: "active",
-                fechaActivacion: new Date().toISOString()
-              });
+            if (esVerificado) {
+              if (!userData.suscripcionActiva) {
+                try {
+                  await updateDoc(doc(db, "usuarios", firebaseUser.uid), { 
+                    suscripcionActiva: true, 
+                    estadoSuscripcion: "active",
+                    plan: "colaborador_vip",
+                    esColaborador: true,
+                    fechaActivacion: new Date().toISOString()
+                  });
+                } catch (errAct) {
+                  console.warn("Aviso al actualizar doc usuario:", errAct);
+                }
+              }
               userData.suscripcionActiva = true;
+              userData.estadoSuscripcion = "active";
             }
             
             setUsuario({ uid: firebaseUser.uid, ...userData });
@@ -177,7 +191,8 @@ export default function App() {
   }
 
   // Lógica de Suscripción / Paywall para Ranchos
-  const tieneSuscripcionActiva = usuario.suscripcionActiva === true;
+  const esVipColaborador = ["canudas.pari@gmail.com", "canudas", "juanantonio.sotelo", "prueba2@gmail.com"].some(c => ((usuario.correo || usuario.email || "")).toLowerCase().includes(c));
+  const tieneSuscripcionActiva = usuario.suscripcionActiva === true || esVipColaborador;
   const hoy = new Date();
   const finPrueba = usuario.fechaFinPrueba ? new Date(usuario.fechaFinPrueba) : new Date(0); // Si no tiene, se venció
   const enPeriodoDePrueba = hoy <= finPrueba;
